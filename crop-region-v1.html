@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>MapForge — Custom Region Crop</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #12141e;
+    font-family: Georgia, serif;
+    color: #faf6ee;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── Header ── */
+  #header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 16px;
+    background: #1a1c28;
+    border-bottom: 1px solid #2a3050;
+    flex-shrink: 0;
+    height: 46px;
+  }
+  #back-btn {
+    color: #c8a84b;
+    cursor: pointer;
+    font-size: 13px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  #back-btn:hover { color: #faf6ee; }
+  #header-sep { color: #3a4060; font-size: 18px; }
+  #header-title {
+    color: #faf6ee;
+    font-size: 13px;
+    letter-spacing: 1px;
+    flex: 1;
+    text-align: center;
+  }
+  #header-hint {
+    font-size: 11px;
+    color: #556688;
+    font-style: italic;
+  }
+
+  /* Zoom controls */
+  .zoom-wrap { display: flex; align-items: center; gap: 6px; }
+  .zoom-btn {
+    background: #252838;
+    border: 1px solid #3a4070;
+    color: #faf6ee;
+    border-radius: 4px;
+    width: 26px; height: 26px;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.1s;
+  }
+  .zoom-btn:hover { background: #3a4070; }
+  #zoom-label {
+    color: #c8a84b;
+    font-size: 12px;
+    min-width: 42px;
+    text-align: center;
+  }
+
+  /* Export button */
+  #export-btn {
+    background: linear-gradient(180deg, #4a80d4 0%, #2d57a8 100%);
+    border: 1.5px solid #78b0ff;
+    color: #fff;
+    border-radius: 6px;
+    padding: 5px 18px;
+    cursor: pointer;
+    font-family: Georgia, serif;
+    font-size: 13px;
+    transition: background 0.12s, box-shadow 0.12s, opacity 0.12s;
+    white-space: nowrap;
+  }
+  #export-btn:hover:not(:disabled) {
+    background: linear-gradient(180deg, #5a90e4 0%, #3d67b8 100%);
+    box-shadow: 0 0 10px rgba(80,140,255,0.4);
+  }
+  #export-btn:disabled { opacity: 0.35; cursor: default; }
+
+  /* ── Map viewport ── */
+  #map-outer {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+    background: #0c0d18;
+    cursor: crosshair;
+    /* Framed inset: sits inside the window rather than filling it edge-to-edge */
+    margin: 16px;
+    border: 1px solid #2a3050;
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.4), 0 4px 18px rgba(0,0,0,0.45);
+  }
+  /* Add padding so user can scroll map to edges comfortably */
+  #map-inner {
+    display: inline-block;
+    position: relative;
+    margin: 40px;
+  }
+  #map-img {
+    display: block;
+    image-rendering: auto;
+  }
+  #sel-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    pointer-events: none;
+  }
+
+  /* ── Status bar ── */
+  #statusbar {
+    height: 26px;
+    background: #1a1c28;
+    border-top: 1px solid #2a3050;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 20px;
+    font-size: 11px;
+    color: #556688;
+    flex-shrink: 0;
+  }
+  #status-hint { flex: 1; }
+  #status-dims { color: #c8a84b; font-style: italic; }
+
+  /* ── Loading overlay ── */
+  #loading {
+    position: fixed; inset: 0;
+    background: #12141e;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+  }
+  #loading-title { font-size: 20px; letter-spacing: 2px; color: #faf6ee; }
+  #loading-sub   { font-size: 13px; color: #8899bb; font-style: italic; }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid #2a3050;
+    border-top-color: #c8a84b;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Export progress overlay ── */
+  #export-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+  #export-overlay.open { display: flex; }
+  #export-overlay .msg { font-size: 16px; color: #faf6ee; letter-spacing: 1px; }
+  #export-overlay .sub { font-size: 12px; color: #8899bb; font-style: italic; }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="spinner"></div>
+  <div id="loading-title">Loading World Map…</div>
+  <div id="loading-sub">Loading high-resolution base map…</div>
+</div>
+
+<!-- Export progress -->
+<div id="export-overlay">
+  <div class="spinner"></div>
+  <div class="msg">Loading region into MapForge…</div>
+  <div class="sub">Preparing your custom base map</div>
+</div>
+
+<!-- Header -->
+<div id="header">
+  <a id="back-btn" href="index.html">← MapForge</a>
+  <span id="header-sep">|</span>
+  <div id="header-title">🌍 Custom Region Crop</div>
+  <span id="header-hint">Ctrl+scroll or +/− to zoom · drag to select</span>
+  <div class="zoom-wrap">
+    <button class="zoom-btn" onclick="adjustZoom(-0.15)" title="Zoom out">−</button>
+    <span id="zoom-label">80%</span>
+    <button class="zoom-btn" onclick="adjustZoom(+0.15)" title="Zoom in">+</button>
+  </div>
+  <button id="export-btn" onclick="exportCrop()" disabled>Use This Region</button>
+</div>
+
+<!-- Map area -->
+<div id="map-outer">
+  <div id="map-inner">
+    <img id="map-img" src="worldmap-base-v1.svg" draggable="false" alt="World map">
+    <canvas id="sel-canvas"></canvas>
+  </div>
+</div>
+
+<!-- Status bar -->
+<div id="statusbar">
+  <span id="status-hint">Drag on the map to select the region you want to use as a base map</span>
+  <span id="status-dims"></span>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────
+// Constants — SVG coordinate space (viewBox)
+// ─────────────────────────────────────────────────────
+const SVG_W = 2269.4569;
+const SVG_H = 1110.2865;
+const SVG_SRC = 'worldmap-base-v1.svg';
+const EXPORT_WIDTH = 1980;  // output PNG width to match existing base maps
+
+// ─────────────────────────────────────────────────────
+// DOM refs
+// ─────────────────────────────────────────────────────
+const mapOuter    = document.getElementById('map-outer');
+const mapInner    = document.getElementById('map-inner');
+const mapImg      = document.getElementById('map-img');
+const selCanvas   = document.getElementById('sel-canvas');
+const sc          = selCanvas.getContext('2d');
+const exportBtn   = document.getElementById('export-btn');
+const statusDims  = document.getElementById('status-dims');
+const statusHint  = document.getElementById('status-hint');
+const zoomLabel   = document.getElementById('zoom-label');
+const loading     = document.getElementById('loading');
+const exportOvl   = document.getElementById('export-overlay');
+
+// ─────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────
+let zoom = 0.80;
+let sel  = null;           // finalized selection in SVG coords {x,y,w,h}
+let drag = null;           // active drag: {startCX, startCY, curCX, curCY}
+let svgText = null;        // cached SVG source for export
+
+// ─────────────────────────────────────────────────────
+// Zoom
+// ─────────────────────────────────────────────────────
+function setZoom(z) {
+  z = Math.max(0.08, Math.min(5.0, Math.round(z * 100) / 100));
+  // Preserve the fractional position of the viewport center
+  const oldW = SVG_W * zoom;
+  const oldH = SVG_H * zoom;
+  const cx = (mapOuter.scrollLeft + mapOuter.clientWidth  / 2) / oldW;
+  const cy = (mapOuter.scrollTop  + mapOuter.clientHeight / 2) / oldH;
+  zoom = z;
+  applyZoom();
+  mapOuter.scrollLeft = cx * SVG_W * zoom - mapOuter.clientWidth  / 2;
+  mapOuter.scrollTop  = cy * SVG_H * zoom - mapOuter.clientHeight / 2;
+}
+
+// Buttons step by a multiplicative factor so each press feels the same at any
+// zoom level (e.g. +25% / −20% per click). `delta` sign chooses direction.
+function adjustZoom(delta) { setZoom(zoom * (delta > 0 ? 1.25 : 0.8)); }
+
+function applyZoom() {
+  const w = Math.round(SVG_W * zoom);
+  const h = Math.round(SVG_H * zoom);
+  mapImg.style.width  = w + 'px';
+  mapImg.style.height = h + 'px';
+  selCanvas.width  = w;
+  selCanvas.height = h;
+  zoomLabel.textContent = Math.round(zoom * 100) + '%';
+  redrawOverlay();
+}
+
+// Ctrl/Cmd + scroll → zoom toward cursor.
+// Multiplicative + proportional to the scroll amount, so a touchpad's many
+// small wheel events accumulate smoothly instead of lurching by fixed steps.
+mapOuter.addEventListener('wheel', e => {
+  if (!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault();
+  const rect = mapOuter.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const oldW = SVG_W * zoom;
+  const oldH = SVG_H * zoom;
+  const fracX = (mapOuter.scrollLeft + mx) / oldW;
+  const fracY = (mapOuter.scrollTop  + my) / oldH;
+  // Sensitivity: lower = gentler. Clamp per-event delta so a fast flick or a
+  // mouse wheel's large deltaY can't jump too far at once.
+  const SENSITIVITY = 0.0015;
+  const d = Math.max(-40, Math.min(40, e.deltaY));
+  const factor = Math.exp(-d * SENSITIVITY);
+  zoom = Math.max(0.08, Math.min(5.0, zoom * factor));
+  applyZoom();
+  mapOuter.scrollLeft = fracX * SVG_W * zoom - mx;
+  mapOuter.scrollTop  = fracY * SVG_H * zoom - my;
+}, { passive: false });
+
+// ─────────────────────────────────────────────────────
+// Coordinate helpers
+// ─────────────────────────────────────────────────────
+// Convert a point on the canvas overlay to SVG root coordinate space
+function canvasToSVG(cx, cy) {
+  return { x: cx / zoom, y: cy / zoom };
+}
+// Convert SVG coords back to canvas overlay coords
+function svgToCanvas(sx, sy) {
+  return { x: sx * zoom, y: sy * zoom };
+}
+
+// Get mouse position relative to the sel-canvas (= map image), clamped to image bounds
+function getCanvasXY(e) {
+  const rect = selCanvas.getBoundingClientRect();
+  return {
+    cx: Math.max(0, Math.min(selCanvas.width,  e.clientX - rect.left)),
+    cy: Math.max(0, Math.min(selCanvas.height, e.clientY - rect.top)),
+  };
+}
+
+// ─────────────────────────────────────────────────────
+// Selection drawing
+// ─────────────────────────────────────────────────────
+// Returns the drag rectangle in canvas pixels (normalized so x<x2, y<y2)
+function getDragRect() {
+  if (!drag) return null;
+  return {
+    x: Math.min(drag.startCX, drag.curCX),
+    y: Math.min(drag.startCY, drag.curCY),
+    w: Math.abs(drag.curCX - drag.startCX),
+    h: Math.abs(drag.curCY - drag.startCY),
+  };
+}
+
+// Returns the finalized selection rect in canvas pixels (from sel in SVG coords)
+function getSelRect() {
+  if (!sel) return null;
+  const p1 = svgToCanvas(sel.x, sel.y);
+  const p2 = svgToCanvas(sel.x + sel.w, sel.y + sel.h);
+  return { x: p1.x, y: p1.y, w: p2.x - p1.x, h: p2.y - p1.y };
+}
+
+function redrawOverlay() {
+  const cw = selCanvas.width, ch = selCanvas.height;
+  sc.clearRect(0, 0, cw, ch);
+
+  const r = drag ? getDragRect() : getSelRect();
+  if (!r || r.w < 4 || r.h < 4) return;
+
+  // Darken area outside selection
+  sc.fillStyle = 'rgba(0,0,0,0.50)';
+  sc.fillRect(0, 0, cw, ch);
+  // Punch out the selected rectangle (clear = let map show through)
+  sc.clearRect(r.x, r.y, r.w, r.h);
+
+  // Thin white border around selection
+  sc.strokeStyle = 'rgba(255,255,255,0.9)';
+  sc.lineWidth = 1.5;
+  sc.setLineDash([6, 4]);
+  sc.lineDashOffset = 0;
+  sc.strokeRect(r.x + 0.75, r.y + 0.75, r.w - 1.5, r.h - 1.5);
+  sc.setLineDash([]);
+
+  // Corner handles
+  const hs = 7;
+  sc.fillStyle = '#fff';
+  [ [r.x, r.y], [r.x + r.w, r.y], [r.x, r.y + r.h], [r.x + r.w, r.y + r.h] ]
+    .forEach(([hx, hy]) => sc.fillRect(hx - hs/2, hy - hs/2, hs, hs));
+}
+
+function updateStatusDims(r) {
+  if (!r || r.w < 2 || r.h < 2) { statusDims.textContent = ''; return; }
+  // Approximate degree span (equirectangular projection)
+  const degW = (r.w / (SVG_W * zoom) * 360).toFixed(0);
+  const degH = (r.h / (SVG_H * zoom) * 180).toFixed(0);
+  // Source pixels selected → exported at EXPORT_WIDTH
+  const srcW  = Math.round(r.w / zoom);
+  const srcH  = Math.round(r.h / zoom);
+  const outH  = Math.round(EXPORT_WIDTH * srcH / srcW);
+  statusDims.textContent = `~${degW}° wide × ${degH}° tall  ·  export: ${EXPORT_WIDTH}×${outH} px`;
+}
+
+// ─────────────────────────────────────────────────────
+// Mouse events — drag to select
+// ─────────────────────────────────────────────────────
+mapOuter.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  const {cx, cy} = getCanvasXY(e);
+  drag = { startCX: cx, startCY: cy, curCX: cx, curCY: cy };
+  sel  = null;
+  exportBtn.disabled = true;
+  statusDims.textContent = '';
+  statusHint.textContent = 'Release to confirm selection';
+  redrawOverlay();
+});
+
+mapOuter.addEventListener('mousemove', e => {
+  if (!drag) return;
+  const {cx, cy} = getCanvasXY(e);
+  drag.curCX = cx;
+  drag.curCY = cy;
+  redrawOverlay();
+  updateStatusDims(getDragRect());
+});
+
+window.addEventListener('mouseup', e => {
+  if (!drag || e.button !== 0) return;
+  const {cx, cy} = getCanvasXY(e);
+  drag.curCX = cx;
+  drag.curCY = cy;
+  finalizeSelection();
+});
+
+function finalizeSelection() {
+  const r = getDragRect();
+  drag = null;
+  if (!r || r.w < 12 || r.h < 12) {
+    sel = null;
+    exportBtn.disabled = true;
+    statusHint.textContent = 'Drag on the map to select the region you want to use as a base map';
+    statusDims.textContent = '';
+    redrawOverlay();
+    return;
+  }
+  // Convert canvas rect → SVG coords
+  const p1 = canvasToSVG(r.x, r.y);
+  const p2 = canvasToSVG(r.x + r.w, r.y + r.h);
+  sel = { x: p1.x, y: p1.y, w: p2.x - p1.x, h: p2.y - p1.y };
+  exportBtn.disabled = false;
+  statusHint.textContent = 'Region selected — click Use This Region to open it in MapForge, or drag again to reselect';
+  updateStatusDims(r);
+  redrawOverlay();
+}
+
+// ─────────────────────────────────────────────────────
+// Use Region — crops the SVG to the selection at 1980px,
+// hands the PNG to the map maker via sessionStorage, then
+// navigates there so it loads straight into the canvas.
+// ─────────────────────────────────────────────────────
+const HANDOFF_KEY = 'mapforge_pending_crop';
+
+async function loadSVGText() {
+  if (svgText) return svgText;
+  const resp = await fetch(SVG_SRC);
+  if (!resp.ok) throw new Error(`Could not fetch SVG: ${resp.status}`);
+  svgText = await resp.text();
+  return svgText;
+}
+
+async function exportCrop() {
+  if (!sel) return;
+  exportOvl.classList.add('open');
+  exportBtn.disabled = true;
+
+  try {
+    const src = await loadSVGText();
+
+    const aspect = sel.h / sel.w;
+    const outW   = EXPORT_WIDTH;
+    const outH   = Math.round(outW * aspect);
+
+    // Crop by replacing the SVG viewBox with the selected region
+    let modified = src
+      .replace(/viewBox='[^']*'/, `viewBox='${sel.x} ${sel.y} ${sel.w} ${sel.h}'`)
+      .replace(/width='[0-9.]*'/,  `width='${outW}'`)
+      .replace(/height='[0-9.]*'/, `height='${outH}'`);
+
+    const blob = new Blob([modified], { type: 'image/svg+xml;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+
+    await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const offscreen = document.createElement('canvas');
+        offscreen.width  = outW;
+        offscreen.height = outH;
+        offscreen.getContext('2d').drawImage(img, 0, 0, outW, outH);
+        URL.revokeObjectURL(url);
+
+        // PNG as a data URL → hand to the map maker through sessionStorage
+        const dataUrl = offscreen.toDataURL('image/png');
+        try {
+          sessionStorage.setItem(HANDOFF_KEY, dataUrl);
+        } catch (e) {
+          reject(new Error('Region is too large to transfer. Try a smaller area.'));
+          return;
+        }
+        statusHint.textContent = 'Loading region into MapForge…';
+        // Same-tab navigation preserves sessionStorage for index.html to read.
+        window.location.href = 'index.html';
+        resolve();
+      };
+      img.onerror = () => reject(new Error('SVG render failed'));
+      img.src = url;
+    });
+
+  } catch (err) {
+    alert('Could not load region: ' + err.message);
+    exportOvl.classList.remove('open');
+    exportBtn.disabled = false;
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────
+mapImg.onload = () => {
+  loading.style.display = 'none';
+  applyZoom();
+  requestAnimationFrame(() => {
+    mapOuter.scrollLeft = (SVG_W * zoom + 80 - mapOuter.clientWidth)  / 2;
+    mapOuter.scrollTop  = (SVG_H * zoom + 80 - mapOuter.clientHeight) / 2;
+  });
+  // Pre-fetch SVG text so first export is instant
+  loadSVGText().catch(() => {});
+};
+
+mapImg.onerror = () => {
+  document.getElementById('loading-title').textContent = 'Could not load world map';
+  document.getElementById('loading-sub').textContent =
+    'Ensure Blank_map_world_rivers.svg is in the stamp-app folder';
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# Ask crawlers to stay away from MapForge.
+#
+# IMPORTANT CAVEAT: this file is mostly symbolic. Crawlers only honour the
+# robots.txt at a DOMAIN root -- https://diboewdip.github.io/robots.txt -- and
+# this repo is served from a subpath (/mapforge/), so this file is not the
+# authoritative one for the domain. The <meta name="robots" content="noindex">
+# tags in index.html and crop-region-v1.html are what actually keep these pages
+# out of search results.
+#
+# This file becomes genuinely effective only if MapForge is ever moved to its
+# own custom domain, at which point it will sit at that domain's root.
+#
+# Neither this file nor the meta tags hide the GitHub repository itself. The
+# repo is public: it is listed on the diboEWDIP profile, is searchable on
+# GitHub, and every push to it appears in GitHub's public activity feed.
+
+User-agent: *
+Disallow: /

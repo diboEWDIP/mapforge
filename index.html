@@ -1890,9 +1890,16 @@
 <script>
 // ── Drawing functions ────────────────────────────────────────────────────────
 
-// Cache-bust icon fetches each page load so swapped PNG files always show the
-// latest art (cp can preserve old mtimes, which otherwise serves a stale cache).
-const ICON_BUST = '?v=' + Date.now();
+// Cache-bust icon fetches so swapped PNG files always show the latest art
+// (cp can preserve old mtimes, which otherwise serves a stale cache).
+//
+// This is a FIXED version tag, not Date.now(). Date.now() re-downloaded all 41
+// icons on every single page load — invisible on localhost, but slow and
+// bandwidth-hungry over the hosted GitHub Pages site.
+//
+// ⚠️ IF YOU REPLACE AN ICON PNG, BUMP THIS NUMBER — otherwise browsers that
+// already visited the site keep showing the old art.
+const ICON_BUST = '?v=2';
 
 // Offscreen canvas holding the mountain with white removed (luminance → alpha)
 let _mountainCanvas = null;

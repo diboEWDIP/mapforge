@@ -1,0 +1,75 @@
+{
+  "_doc": "Per-river label spot edits, applied by build-rivers.sh. Key = river name (English, as labeled). Fields, all optional: 'near': [lon, lat] — pull this river's label window toward a point; 'side': 1 or -1 — force the offset side; 'suppress': ['b2','b3'] — no label in these bands ('all' = every band); 'rank': number — override thinning priority (lower wins space fights). ALL fields can also be set per zoom band under 'bands' — band values win over the river's base values. Bands: b2 z2-3, b3 z3-4, b4 z4-5, b5 z5-6, b6 z6-7, b7 z7+. Rerun build-rivers.sh after editing.",
+  "_aliases": {
+    "_doc": "Reach-name aliasing: fold an upper-reach name into its mainstem's name. The reach's line merges into the main river's identity (rank, label windows, full-reach labeling). DEFAULT IS KEEP OWN NAME — Missouri/Snake etc. stay themselves unless listed here. Per Maddy 2026-08-03; broader policy pending Eric.",
+    "Maquan": "Brahmaputra",
+    "Yarlung": "Brahmaputra",
+    "Lualaba": "Congo",
+    "Sengge Zangbo": "Indus",
+    "Za": "Mekong",
+    "Huang": "Yellow",
+    "Xunjiang": "Xi",
+    "Verkhniy Yenisey": "Yenisey",
+    "Shishged": "Yenisey",
+    "Waal": "Rhine",
+    "Nederrijn": "Rhine",
+    "Lek": "Rhine",
+    "Paraná River": "Paraná",
+    "Jinsha": "Yangtze",
+    "Tongtian": "Yangtze",
+    "Derung-Nmai": "Irrawaddy",
+    "Tuotuo He": "Yangtze",
+    "Damqogkanbab": "Brahmaputra",
+    "Madison": "Missouri",
+    "Ider": "Selenga",
+    "Ucayali": "Amazon",
+    "Argun": "Amur",
+    "Neuquén": "Negro",
+    "North Saskatchewan": "Saskatchewan",
+    "Sukhona": "Northern Dvina",
+    "Teslin": "Yukon",
+    "Kibali": "Ubangi",
+    "Uele": "Ubangi",
+    "Little Yenisei": "Yenisey",
+    "Chilia branch": "Danube",
+    "Sfântu Gheorghe branch": "Danube",
+    "Sulina branch": "Danube",
+    "Borcea branch": "Danube",
+    "Rosetta Branch": "Nile",
+    "Damietta Branch": "Nile",
+    "Bykovskaya Protoka": "Lena",
+    "Trofimovskaya Protoka": "Lena",
+    "Tumatskaya Protoka": "Lena",
+    "Olenekskaya Protoka": "Lena",
+    "W. Branch Susquehanna": "Susquehanna"
+  },
+  "Mekong": {
+    "near": [
+      105.8,
+      11.5
+    ],
+    "side": 1
+  },
+  "Lena": {
+    "near": [
+      108.5,
+      55.5
+    ]
+  },
+  "Tigris": {
+    "side": 1
+  },
+  "Euphrates": {
+    "side": 1
+  },
+  "Congo": {
+    "near": [
+      21.0,
+      1.0
+    ],
+    "zref": 2.6
+  },
+  "Brahmaputra": {
+    "zref": 2.9
+  }
+}

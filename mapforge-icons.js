@@ -4,7 +4,10 @@
 
 // Cache-bust icon fetches each page load so swapped PNG files always show the
 // latest art (cp can preserve old mtimes, which otherwise serves a stale cache).
-const ICON_BUST = '?v=' + Date.now();
+// Pinned version tag, NOT Date.now() (Eric, 2026-07-21): the old value
+// re-fetched all 41 icon PNGs on every load — invisible locally, slow on a
+// hosted site. Bump the tag when swapping icon art.
+const ICON_BUST = '?v=2026-08-14';
 
 // Offscreen canvas holding the mountain with white removed (luminance → alpha)
 let _mountainCanvas = null;

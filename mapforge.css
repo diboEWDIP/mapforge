@@ -1,0 +1,2635 @@
+/* MapForge stylesheet — consolidated 2026-08-14 (cascade-safe pass).
+   Every declaration below is LIVE: dead same-selector declarations were
+   removed in place; no rule was moved, so the cascade is untouched.
+   Pre-consolidation original: mapforge.css.pre-consolidation-backup */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #a89878;
+  font-family: 'Jost', Georgia, serif;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+/* ── Toolbar ── */
+#toolbar { display: flex; flex-direction: column; width: 100%; }
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c8a030 #f3efe7;
+}
+.toolbar-row::-webkit-scrollbar { height: 4px; }
+.toolbar-row::-webkit-scrollbar-track { background: #f3efe7; }
+.toolbar-row::-webkit-scrollbar-thumb { background: #c8a030; border-radius: 2px; }
+.toolbar-row + .toolbar-row { border-top: none; }
+/* Row 1 = a scrollable tools region + a right-anchored document cluster,
+so Save/Export/Home can never scroll off-screen (1366px Chromebooks). */
+#row1 { overflow: visible; }
+#row1-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c8a030 transparent;
+}
+#row1-tools::-webkit-scrollbar { height: 4px; }
+#row1-tools::-webkit-scrollbar-thumb { background: #c8a030; border-radius: 2px; }
+#row1-doc { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+#toolbar span.lbl { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; flex-shrink: 0; }
+.sep { color: #c8a030; font-size: 20px; flex-shrink: 0; }
+.stamp-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 5px 8px;
+  background: #ffffff;
+  border: 1.5px solid #c8a030;
+  border-radius: 7px;
+  cursor: pointer;
+  color: #2a1f0e;
+  font-size: 10px;
+  font-family: 'Jost', Georgia, serif;
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s, color 0.12s, box-shadow 0.12s;
+  position: relative;
+}
+/* Tooltip */
+/* Toolbar tooltip — a single shared element positioned with JS (position:fixed)
+so it escapes the toolbar rows' overflow clipping and never spills off the
+top of the viewport. See the tooltip script near the end of <body>. */
+#toolbar-tip {
+  position: fixed;
+  display: none;
+  background: #180e04;
+  color: #e8d8a8;
+  font-family: 'Jost', Georgia, serif;
+  font-size: 10px;
+  white-space: nowrap;
+  padding: 3px 7px;
+  border-radius: 5px;
+  border: 1px solid #5a4020;
+  pointer-events: none;
+  z-index: 9999;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+#toolbar-tip.show { display: block; }
+.stamp-btn:hover { background: #eef0ec; border-color: #8a5808; color: #2a1f0e; }
+.stamp-btn.active {
+  background: #fdf4e0;
+  border-color: #a06810;
+  color: #2a1f0e;
+  box-shadow: 0 0 0 2px #e0a030, 0 0 8px rgba(200, 140, 30, 0.35);
+}
+.stamp-btn canvas { display: block; }
+/* Lines dropdown */
+.line-menu-wrap { position: relative; display: inline-flex; flex-shrink: 0; }
+.line-trigger { flex-direction: row !important; gap: 3px; }
+.line-caret { font-size: 9px; color: #2a1f0e; line-height: 1; }
+.line-menu {
+  position: fixed;
+  z-index: 3000;
+  background: #ffffff;
+  border: 1.5px solid #c8a030;
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.25);
+}
+.line-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 10px 6px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #2a1f0e;
+  font: 12px 'Jost', Georgia, serif;
+  text-align: left;
+  white-space: nowrap;
+  width: 100%;
+}
+.line-menu-item:hover { background: #eef0ec; }
+.line-menu-item.active { background: #fdf4e0; color: #2a1f0e; }
+.line-menu-item canvas { flex-shrink: 0; }
+.color-btn {
+  width: 19px;
+  height: 19px;
+  border-radius: 4px;
+  border: 2px solid #c8a030;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.12s, transform 0.1s, box-shadow 0.12s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.color-btn:hover { border-color: #8a5808; transform: scale(1.18); }
+.color-btn.active { border-color: #2a1f0e; box-shadow: 0 0 0 2px #e0a030, 0 1px 3px rgba(0,0,0,0.2); }
+/* Font size controls */
+.size-ctrl { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.size-ctrl button {
+  background: linear-gradient(180deg, #3e3220 0%, #2e2415 100%);
+  border: 1.5px solid #8a6a38;
+  border-radius: 5px;
+  color: #e8d8a8;
+  font-size: 14px;
+  font-family: 'Jost', Georgia, serif;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.12s, border-color 0.12s;
+}
+.size-ctrl button:hover { background: linear-gradient(180deg, #504030 0%, #3e3020 100%); border-color: #c8a048; }
+#font-size-display { min-width: 28px; text-align: center; color: #e8d8a8; font-size: 12px; }
+/* Font style toggle (lives inside #text-ctrl, always flex when visible) */
+#font-style-ctrl { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.font-style-btn {
+  padding: 3px 9px;
+  background: linear-gradient(180deg, #3e3220 0%, #2e2415 100%);
+  border: 1.5px solid #8a6a38;
+  border-radius: 5px;
+  color: #e8d8a8;
+  font-size: 12px;
+  font-family: 'Jost', Georgia, serif;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: background 0.12s, border-color 0.12s;
+}
+.font-style-btn:hover {
+  background: linear-gradient(180deg, #504030 0%, #3e3020 100%);
+  border-color: #c8a048;
+  color: #fff;
+}
+.font-style-btn.active {
+  background: linear-gradient(180deg, #a06018 0%, #7a4410 100%);
+  border-color: #e0a030;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(200,140,30,0.4);
+}
+/* Shade controls (inside #shade-ctrl wrapper) */
+#shade-ctrl input[type=range] { width: 80px; cursor: pointer; accent-color: #c8a030; }
+#shade-ctrl .lbl { white-space: nowrap; }
+.shade-style-btn {
+  padding: 3px 8px;
+  background: linear-gradient(180deg, #3e3220 0%, #2e2415 100%);
+  border: 1.5px solid #8a6a38;
+  border-radius: 5px;
+  color: #e8d8a8;
+  font-size: 10px;
+  font-family: 'Jost', Georgia, serif;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: background 0.12s, border-color 0.12s;
+}
+.shade-style-btn:hover {
+  background: linear-gradient(180deg, #504030 0%, #3e3020 100%);
+  border-color: #c8a048;
+  color: #fff;
+}
+.shade-style-btn.active {
+  background: linear-gradient(180deg, #a06018 0%, #7a4410 100%);
+  border-color: #e0a030;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(200,140,30,0.4);
+}
+/* Stamp size control (inside #stamp-size-ctrl wrapper) */
+#stamp-size-ctrl input[type=range] { width: 80px; cursor: pointer; accent-color: #c8a030; }
+#stamp-size-ctrl .lbl { white-space: nowrap; }
+/* ── Canvas area ── */
+/* ── Main area (toolbar below, sidebars + map) ── */
+#main-area { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+/* ── Left sidebar — Label panel always visible ── */
+#sidebar-left { width: 164px; flex-shrink: 0; background: #f3efe7; overflow-y: auto; overflow-x: hidden; }
+/* ── Right sidebar — Features / Religion / Trade always visible ── */
+#sidebar-right { width: 196px; flex-shrink: 0; background: #f3efe7; overflow-y: auto; overflow-x: hidden; }
+/* ── Tool rail (2026-08-14 restructure): vertical bar of MODES ── */
+/* original slate; row 2 is the darker one */
+#tool-rail {
+  width: 60px;
+  flex-shrink: 0;
+  background: #4C6472;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0;
+  overflow-y: auto;
+}
+.rail-btn {
+  width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 0 6px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #FAF5EA;
+  opacity: .85;
+}
+.rail-btn:hover { opacity: 1; background: rgba(250,245,234,0.08); }
+.rail-btn.active { background: #FAF5EA; color: #4C6472; opacity: 1; }
+.rail-btn span { font: 600 7.5px/1.1 'Jost', Georgia, serif; letter-spacing: .4px; text-align: center; }
+.rail-btn .rail-abc { font: 400 15px/1 'Colus', Georgia, serif; letter-spacing: 0; }
+.rail-rule { width: 28px; height: 1px; background: rgba(250,245,234,.25); margin: 4px 0; }
+body.live-explore #tool-rail { pointer-events: none; opacity: 0.35; transition: opacity .25s; }
+/* Header row 1: labeled document actions, left-aligned by importance */
+#row1-doc { margin-left: 8px; padding-left: 0; }
+.hdr-lbl { font: 600 11px/1 'Jost', Georgia, serif; color: #FAF5EA; opacity: .85; margin-left: 6px; }
+#toolbar #row1 .stamp-btn { flex-direction: row; }
+/* Row 2: fixed height, colour always present, groups in stable slots */
+#toolbar #row2 { height: 46px; box-sizing: border-box; align-items: center; flex-wrap: nowrap; }
+.r2-style-btn {
+  background: transparent;
+  border: 1px solid rgba(250,245,234,0.45);
+  border-radius: 6px;
+  color: #FAF5EA;
+  font-size: 12px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.r2-style-btn.active { background: #FAF5EA; border-color: #FAF5EA; }
+/* Labels panel retired from the left slot — text options live in row 2 */
+#sidebar-left, #sl-tab { display: none !important; }
+/* Right column: Map Layers pinned, palettes scroll independently */
+#sidebar-right { display: flex; flex-direction: column; overflow: hidden; }
+#ml-layers-panel { flex-shrink: 0; }
+#ml-layers-head { cursor: pointer; user-select: none; }
+#ml-layers-caret { float: right; color: #9a7a30; font-weight: 600; }
+#palette-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.terrain-btn canvas { display: block; margin: 0 auto; }
+/* Draw Lines: one row per item — symbol left, name right */
+#line-grid { display: flex; flex-direction: column; gap: 2px; padding: 0 12px 6px; }
+#line-grid .line-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+}
+#line-grid .line-menu-item:hover { background: rgba(160,104,16,0.08); }
+#line-grid .line-menu-item.active { background: #fdf4e0; }
+#feature-panel > .feature-grid { display: flex; flex-direction: column; gap: 2px; padding: 0 12px; }
+#feature-panel > .feature-grid .feature-btn {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 4px 6px;
+}
+#feature-panel > .feature-grid .feature-btn canvas { width: 64px; height: 22px; }
+/* Title modal: the inputs ARE the title box (Colus + Jost, neatline) */
+.title-mock {
+  background: #FAF7EF;
+  border: 1px solid #b8b2a6;
+  box-shadow: 0 2px 8px rgba(42,31,14,0.12);
+  padding: 14px 18px 12px;
+  text-align: center;
+  margin: 8px 0 4px;
+}
+.title-mock input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  outline: none;
+  text-align: center;
+}
+/* Jost, not Colus: Colus is caps-only — typed case must survive */
+.title-mock-title { font: 600 21px/1.25 'Jost', Georgia, serif; letter-spacing: 0.8px; color: #2a1f0e; }
+.title-mock-title::placeholder { color: #c0b9a8; }
+.title-mock-sub { font: italic 400 13px/1.4 'Jost', Georgia, serif; color: #4a4438; margin-top: 2px; }
+.title-mock-sub::placeholder { color: #c0b9a8; }
+/* Slim collapse tabs between each sidebar and the desk — reclaim width
+on small screens without losing the panels. */
+.sb-collapse {
+  width: 13px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3efe7;
+  color: #9a7a30;
+  cursor: pointer;
+  user-select: none;
+  font: 12px 'Jost', Georgia, serif;
+}
+.sb-collapse:hover { background: #ecdfc2; color: #7a5c1e; }
+body.sl-collapsed #sidebar-left { display: none; }
+body.live-explore .sb-collapse { pointer-events: none; opacity: 0.35; }
+.sr-section-header {
+  color: #7a5c1e;
+  font-family: 'Jost', Georgia, serif;
+  font-size: 9px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 8px 8px 5px;
+  border-bottom: 1px solid #d4b870;
+  margin-bottom: 6px;
+}
+/* Sub-heading within a panel (e.g. "Landmarks" under Features) */
+.sr-subhead {
+  color: #9a7a30;
+  font-family: 'Jost', Georgia, serif;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  margin: 10px 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sr-subhead::before, .sr-subhead::after { content: ''; flex: 1; height: 1px; background: #e0cfa0; }
+/* The desk clips its contents: a zoomed page can never slide under or
+over the sidebars/toolbar — they sit atop the desk. */
+/* Warm "desk surface": soft light pool behind the map → edge vignette for
+depth/focus → gentle warm gradient base (was a flat dark tan). */
+/* desk lightened 50% toward white (base was #9a8a6a) */
+#canvas-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  background-color: #ccc4b4;
+  background-image: radial-gradient(ellipse 75% 65% at 50% 44%, rgba(255,251,240,0.18) 0%, rgba(255,251,240,0) 62%),
+        radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 52%, rgba(38,26,10,0.18) 100%),
+        linear-gradient(155deg, #c5beaf 0%, #cfc8bb 50%, #c2bcad 100%);
+}
+/* ── Feature panel ── */
+#feature-panel { display: block; padding: 0 8px 10px; }
+/* ── Religion panel ── */
+#religion-panel { display: block; padding: 0 8px 10px; }
+.religion-panel-title {
+  color: #7a5c1e;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #d4b870;
+  padding-bottom: 6px;
+}
+.religion-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.religion-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 3px;
+  padding: 6px 4px;
+  background: #faf5ea;
+  border: 1.5px solid #c8a030;
+  border-radius: 7px;
+  cursor: pointer;
+  color: #2a1f0e;
+  font-size: 9px;
+  font-family: 'Jost', Georgia, serif;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+.religion-btn:hover { background: #e8d8a0; border-color: #8a5808; color: #2a1f0e; }
+.religion-btn.active {
+  background: linear-gradient(180deg, #a06810 0%, #7a4c08 100%);
+  border-color: #c8a030;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(160,100,20,0.3);
+}
+.feature-panel-title {
+  color: #7a5c1e;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #d4b870;
+  padding-bottom: 6px;
+}
+.feature-grid { display: flex; flex-direction: column; gap: 6px; }
+.feature-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px;
+  background: #faf5ea;
+  border: 1.5px solid #c8a030;
+  border-radius: 7px;
+  cursor: pointer;
+  color: #2a1f0e;
+  font-size: 9px;
+  font-family: 'Jost', Georgia, serif;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+.feature-btn:hover { background: #e8d8a0; border-color: #8a5808; color: #2a1f0e; }
+.feature-btn.active {
+  background: linear-gradient(180deg, #a06810 0%, #7a4c08 100%);
+  border-color: #c8a030;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(160,100,20,0.3);
+}
+/* ── Trade panel ── */
+#trade-panel { display: block; padding: 0 8px 10px; }
+.trade-panel-title {
+  color: #7a5c1e;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #d4b870;
+  padding-bottom: 6px;
+}
+.trade-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
+.trade-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+  background: #faf5ea;
+  border: 1.5px solid #c8a030;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #2a1f0e;
+  font-size: 8px;
+  font-family: 'Jost', Georgia, serif;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+.trade-btn:hover { background: #e8d8a0; border-color: #8a5808; color: #2a1f0e; }
+.trade-btn.active {
+  background: linear-gradient(180deg, #a06810 0%, #7a4c08 100%);
+  border-color: #c8a030;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(160,100,20,0.3);
+}
+/* Whiter workscreen: icon buttons get a white face so the black engraving
+icons read clearly. (Landing page keeps the parchment theme.) Placed after
+the rules above so it overrides their #faf5ea face + tan hover. */
+.trade-btn, .religion-btn, .feature-btn { background: #ffffff; }
+.trade-btn:hover, .religion-btn:hover, .feature-btn:hover { background: #eef0ec; border-color: #8a5808; }
+/* Selected = light face + bronze ring (keeps the black icon visible, unlike
+the old dark bronze-gradient active). */
+.trade-btn.active, .religion-btn.active, .feature-btn.active {
+  background: #fdf4e0;
+  border-color: #a06810;
+  color: #2a1f0e;
+  box-shadow: 0 0 0 2px #e0a030, 0 0 8px rgba(200,140,30,0.35);
+}
+/* Wrapper shrinks to fit the canvas — sized by JS */
+/* Layered shadow so the map reads as resting on the desk surface */
+#map-wrapper {
+  position: relative;
+  display: inline-flex;
+  box-shadow: 0 12px 34px rgba(20,12,4,0.42), 0 2px 6px rgba(20,12,4,0.35);
+}
+#map-canvas { display: block; cursor: crosshair; }
+/* ── Live MapLibre base (Custom Region) ── */
+/* Backdrop behind the globe (visible in globe view outside the sphere).
+Deep navy "space" tone from the map's ink family; MUST stay in sync
+with ML_BACKDROP in the export code so prints match the viewer. */
+#ml-map { display: none; position: absolute; inset: 0; z-index: 0; background-color: #ffffff; }
+body.live-base #ml-map { display: block; }
+/* above #ml-map, below #text-overlay */
+body.live-base #map-canvas { position: relative; z-index: 1; background: transparent; }
+/* While framing: map gets the mouse, tool sidebars are parked */
+#live-map-controls {
+  display: none;
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  max-width: calc(100% - 20px);
+  background: rgba(250,246,238,0.95);
+  border: 1.5px solid #b09a6a;
+  border-radius: 999px;
+  padding: 6px 12px;
+  box-shadow: 0 2px 8px rgba(20,12,4,0.35);
+  font-family: 'Jost', Georgia, serif;
+}
+body.live-base #live-map-controls { display: flex; }
+/* No layer-by-layer pop-in on load: the map stays invisible until its
+first idle (all sources rendered), then fades in as a whole. */
+#ml-map { opacity: 0; transition: opacity .25s ease; }
+#ml-map.ml-ready { opacity: 1; }
+#live-map-controls button {
+  font: 600 11px/1 'Jost', Georgia, serif;
+  white-space: nowrap;
+  padding: 5px 9px;
+  border: 1px solid #c8b284;
+  border-radius: 999px;
+  cursor: pointer;
+  background: #fffdf7;
+  color: #4a3a1a;
+}
+#live-map-controls button:hover { background: #fff; }
+#live-map-controls button.pill-on { background: #f0e2bd; border-color: #C8A030; color: #4a3a1a; }
+#live-map-controls button:disabled { opacity: 0.45; cursor: default; }
+#live-map-controls .lm-commit { background: #A06810; border-color: #A06810; color: #FAF5EA; }
+#live-map-controls .lm-commit:hover { background: #8a5808; }
+#live-map-controls button svg { display: inline-block; vertical-align: -3px; margin-right: 4px; }
+#live-map-controls .lm-note { font: italic 12px/1 'Jost', Georgia, serif; color: #7a5c1e; padding: 0 4px; }
+/* Map Layers rows: legend-feel with a live toggle switch */
+#ml-layers-panel { padding: 0 8px 10px; }
+.ml-layer-row {
+  margin: 3px 0;
+  border: 1px solid #e0cfa0;
+  border-radius: 8px;
+  background: #fffdf7;
+  user-select: none;
+}
+.ml-layer-sample { flex: 0 0 26px; }
+.ml-layer-abc { font: 600 italic 12px/1 'Jost', Georgia, serif; color: #1C6690; text-align: center; }
+.ml-switch {
+  flex: 0 0 26px;
+  width: 26px;
+  height: 15px;
+  border-radius: 8px;
+  background: #c9ccd1;
+  position: relative;
+  transition: background .15s;
+}
+.ml-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  transition: transform .15s;
+}
+.ml-switch.on { background: #A06810; }
+.ml-switch.on::after { transform: translateX(11px); }
+/* Apple-style segmented control: rounded-rect track, inset selected segment */
+/* Switch-style segmented control: fully rounded like the sibling pills,
+and the same overall height (matches the 11px/5px-padding pill buttons) */
+.lm-seg { display: flex; align-items: stretch; border: 1px solid #c8b284; background: #ece4d2; }
+.lm-seg .seg {
+  display: flex;
+  align-items: center;
+  padding: 2px 10px;
+  cursor: pointer;
+  font: 600 11px/1 'Jost', Georgia, serif;
+  color: #4a3a1a;
+  transition: background .15s;
+}
+.lm-seg .seg img { height: 13px; display: block; }
+.lm-seg .seg:hover { background: #f3ead6; }
+.lm-seg .seg.on { background: #A06810; color: #FAF5EA; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.lm-seg .seg.on:hover { background: #A06810; }
+.lm-seg .seg.on img { filter: brightness(0) invert(1); }
+/* Page Layout popover (anchored above the bottom pill bar) */
+#lm-layout-pop {
+  position: absolute;
+  bottom: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 31;
+  background: #faf5ea;
+  border: 1.5px solid #b09a6a;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 6px 24px rgba(40,20,5,0.35);
+  font-family: 'Jost', Georgia, serif;
+  min-width: 190px;
+}
+#lm-layout-pop .lp-pop-title {
+  font: 700 10px/1 'Jost', Georgia, serif;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #7a5c1e;
+  margin: 8px 0 6px;
+}
+#lm-layout-pop .lp-pop-title:first-child { margin-top: 0; }
+#lm-layout-pop .lp-sizes { display: flex; flex-direction: column; gap: 3px; }
+#lm-layout-pop .lp-size {
+  text-align: left;
+  font: 600 12px/1 'Jost', Georgia, serif;
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #4a3a1a;
+  cursor: pointer;
+}
+#lm-layout-pop .lp-size:hover { background: #f3ead6; }
+#lm-layout-pop .lp-size-in { float: right; margin-left: 14px; font: 400 11px/1.2 'Jost', Georgia, serif; opacity: 0.65; }
+#lm-layout-pop .lp-size.on { background: #A06810; color: #FAF5EA; }
+#live-map-controls #lm-zin, #live-map-controls #lm-zout { font: 700 14px/1 'Jost', Georgia, serif; padding: 4px 10px; }
+#live-map-controls select {
+  font: 600 11px/1 'Jost', Georgia, serif;
+  padding: 4px 6px;
+  border: 1px solid #c8b284;
+  border-radius: 999px;
+  background: #fffdf7;
+  color: #4a3a1a;
+  cursor: pointer;
+}
+/* Explore phase (live map, no page set yet): tools wait until the page
+view is locked in — Set Page View is the one bright action. */
+body.live-explore #toolbar, body.live-explore #sidebar-left, body.live-explore #sidebar-right { pointer-events: none; opacity: 0.35; transition: opacity .25s; }
+/* Desk-resting page navigation: circular, subtle, above the page */
+#page-nav {
+  position: absolute;
+  right: 16px;
+  bottom: 70px;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+#page-nav button {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(176,154,106,0.7);
+  background: rgba(250,246,238,0.82);
+  color: #4a3a1a;
+  font: 700 15px/1 'Jost', Georgia, serif;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(20,12,4,0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+}
+#page-nav button:hover { background: #fffdf7; }
+#page-nav button.pill-on { background: #2E8CC2; border-color: #1C6690; }
+#page-nav button.pill-on svg path { fill: #fff; stroke: #fff; }
+#page-nav #lm-panpage.pill-on { color: #fff; }
+/* ── Ink toolbar: #2A1F0E bar, #FAF5EA text & icons ── */
+/* Two-tier header: ink primary bar; the contextual second row sits on the
+desk tone (#9A8A6A) it visually belongs to. Rows carry their own padding
+so each tier's color runs full-bleed. */
+#toolbar { background: #2A1F0E; padding: 0; }
+#toolbar .toolbar-row { padding: 5px 16px; }
+#toolbar #row2 span.lbl { color: #FAF5EA; opacity: .85; }
+#toolbar #row2 .sep { color: rgba(250,245,234,0.35); }
+#toolbar span.lbl { color: #FAF5EA; opacity: .75; }
+#toolbar .sep { color: rgba(250,245,234,0.35); }
+/* Flat color swatches; selection = one gold ring, nothing else */
+.color-btn, .lp-color-swatch, .km-color-btn { border: none !important; box-shadow: none; }
+.color-btn.active, .lp-color-swatch.active, .km-color-btn.active { box-shadow: 0 0 0 2.5px #C8A030; }
+/* ── Chromeless right sidebar: icons live directly on the parchment ── */
+#sidebar-right .trade-btn, #sidebar-right .religion-btn, #sidebar-right .feature-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 8px;
+  transition: background .12s;
+}
+#sidebar-right .trade-btn:hover, #sidebar-right .religion-btn:hover, #sidebar-right .feature-btn:hover { background: rgba(160,104,16,0.12) !important; }
+#sidebar-right .trade-btn.active, #sidebar-right .religion-btn.active, #sidebar-right .feature-btn.active { background: rgba(160,104,16,0.22) !important; }
+/* Micro-label tier (STAMPS / COLOR / LINES / LABELS / FEATURES / section
+headers / form labels) sets in Tiller */
+#toolbar span.lbl, .sr-section-header, .religion-panel-title, .feature-panel-title, .trade-panel-title, .lp-title, .sr-subhead, .km-lbl, #ml-layers-panel .sr-section-header, #lm-layout-pop .lp-pop-title { font-family: 'Colus', 'Jost', Georgia, serif !important; }
+.lp-section-lbl { font-family: 'Jost', Georgia, serif !important; }
+/* Chromeless tools: bare cream icons floating on the ink bar */
+/* text-glyph buttons (⌫ ↩ ↪) go cream too */
+#toolbar .stamp-btn {
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: #FAF5EA;
+  opacity: 1;
+}
+/* dark-drawn tool icons flip to cream */
+#toolbar .stamp-btn canvas, #toolbar .stamp-btn svg { filter: invert(1) hue-rotate(180deg); opacity: 0.82; transition: opacity .12s; }
+#toolbar .stamp-btn:hover { background: rgba(250,245,234,0.1); }
+#toolbar .stamp-btn:hover canvas, #toolbar .stamp-btn:hover svg { opacity: 1; }
+/* active tool: cream pill, ink icon, no outline */
+/* no rings/glow — the pill alone marks selection */
+#toolbar .stamp-btn.active { background: #FAF5EA; border-radius: 999px; padding: 3px 7px; box-shadow: none; }
+/* icon returns to ink on the cream pill */
+#toolbar .stamp-btn.active canvas, #toolbar .stamp-btn.active svg { filter: none; opacity: 1; }
+#toolbar .stamp-btn.active { color: #2A1F0E; }
+#toolbar select, #toolbar input { color: #2A1F0E; }
+/* MapForge mark, upper-left of the bar */
+#toolbar-logo {
+  font-family: 'Rhau', 'Colus', Georgia, serif;
+  font-size: 21px;
+  color: #FAF5EA;
+  letter-spacing: 0;
+  padding-right: 14px;
+  margin-right: 4px;
+  flex-shrink: 0;
+  align-self: center;
+}
+body.pan-page #map-canvas { cursor: grab !important; }
+body.pan-page #map-canvas:active { cursor: grabbing !important; }
+#live-map-controls .pill-on { background: #e8f2fa; border-color: #2E8CC2; color: #1C6690; }
+/* No tool in hand (or space held): mouse goes through to the map */
+body.map-nav #map-canvas { pointer-events: none; }
+body.map-nav #ml-map { cursor: grab; }
+#map-canvas.shade-active { cursor: none; }
+#map-canvas.eraser-active { cursor: cell; }
+/* Shade brush cursor preview */
+#shade-cursor {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.55);
+  pointer-events: none;
+  display: none;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  background: transparent;
+  z-index: 10;
+}
+/* ── Map Key Modal ── */
+#key-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(40,20,5,0.55);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+}
+#key-modal-overlay.open { display: flex; }
+#key-modal {
+  background: #ede5d0;
+  border: 2px solid #c8a030;
+  border-radius: 12px;
+  padding: 20px 24px;
+  width: 400px;
+  box-shadow: 0 6px 32px rgba(40,20,5,0.4);
+  color: #2a1f0e;
+  font-family: 'Jost', Georgia, serif;
+}
+#key-modal h3 {
+  color: #7a5c1e;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #d4b870;
+  padding-bottom: 8px;
+}
+.km-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.km-lbl {
+  color: #7a5c1e;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  min-width: 46px;
+  flex-shrink: 0;
+}
+.km-type-btn, .km-style-btn {
+  padding: 3px 12px;
+  background: #faf5ea;
+  border: 1.5px solid #c8a030;
+  border-radius: 6px;
+  color: #2a1f0e;
+  font-size: 10px;
+  font-family: 'Jost', Georgia, serif;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.km-type-btn:hover, .km-style-btn:hover { background: #e8d8a0; border-color: #8a5808; }
+.km-type-btn.active {
+  background: linear-gradient(180deg, #a06810 0%, #7a4c08 100%);
+  border-color: #c8a030;
+  color: #fff;
+}
+.km-style-btn.active {
+  background: linear-gradient(180deg, #a06810 0%, #7a4c08 100%);
+  border-color: #c8a030;
+  color: #fff;
+}
+.km-color-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #c8a030;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.12s, transform 0.1s;
+}
+.km-color-btn:hover { border-color: #8a5808; transform: scale(1.15); }
+.km-color-btn.active { border-color: #2a1f0e; box-shadow: 0 0 0 2px #c8a030; }
+.km-input {
+  flex: 1;
+  background: #faf5ea;
+  border: 1.5px solid #c8a030;
+  border-radius: 5px;
+  color: #2a1f0e;
+  font-size: 12px;
+  font-family: 'Jost', Georgia, serif;
+  padding: 4px 8px;
+  outline: none;
+}
+.km-input:focus { border-color: #8a5808; }
+.km-actions { justify-content: center; margin-top: 14px; }
+.km-btn {
+  padding: 6px 20px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-family: 'Jost', Georgia, serif;
+  cursor: pointer;
+  border: 1.5px solid;
+  transition: background 0.12s;
+}
+.km-btn.primary {
+  background: linear-gradient(180deg, #a06810 0%, #7a4c08 100%);
+  border-color: #c8a030;
+  color: #fff;
+}
+.km-btn.primary:hover { background: linear-gradient(180deg, #b87818 0%, #8a5810 100%); }
+.km-btn.secondary { background: #faf5ea; border-color: #c8a030; color: #2a1f0e; }
+.km-btn.secondary:hover { background: #e8d8a0; border-color: #8a5808; }
+/* ── Saved Maps modal ── */
+#saves-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(40,20,5,0.55);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+}
+#saves-modal-overlay.open { display: flex; }
+#saves-modal {
+  background: #ede5d0;
+  border: 2px solid #c8a030;
+  border-radius: 12px;
+  padding: 20px 24px;
+  width: 440px;
+  max-width: 92vw;
+  box-shadow: 0 6px 32px rgba(40,20,5,0.4);
+  font-family: 'Jost', Georgia, serif;
+}
+#saves-modal h3 {
+  color: #7a5c1e;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #d4b870;
+  padding-bottom: 8px;
+}
+#saves-modal h4 {
+  color: #7a5c1e;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 14px 0 8px;
+}
+#save-status {
+  text-align: center;
+  font-size: 11px;
+  font-style: italic;
+  color: #4a7a2a;
+  min-height: 14px;
+  margin-top: 8px;
+}
+/* ── Export / Print modal (mirrors the Saves modal) ── */
+#export-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(40,20,5,0.55);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+}
+#export-modal-overlay.open { display: flex; }
+#export-modal {
+  position: relative;
+  background: #FAF5EA;
+  border: none;
+  border-radius: 14px;
+  padding: 22px 24px 20px;
+  width: 380px;
+  max-width: 92vw;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 14px 44px rgba(20,12,4,0.62);
+  font-family: 'Jost', Georgia, serif;
+}
+#export-modal h3 {
+  color: #2A1F0E;
+  font-family: 'Colus', 'Jost', Georgia, serif;
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: left;
+  margin-bottom: 4px;
+}
+#exp-x {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #8a7658;
+  font: 600 15px/1 'Jost', Georgia, serif;
+}
+#exp-x:hover { background: #efe4c8; color: #2A1F0E; }
+#exp-pageline {
+  font-size: 12.5px;
+  color: #7a5c1e;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+#exp-pageline .pl-link { color: #A06810; text-decoration: underline; cursor: pointer; }
+#exp-preview-wrap {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 20px;
+  margin: 12px 0 6px;
+  padding-left: 6px;
+}
+#exp-preview {
+  background: #fff;
+  border: 1px solid #b8b2a6;
+  border-radius: 2px;
+  box-shadow: 0 2px 10px rgba(20,12,4,.28);
+  max-width: 150px;
+  max-height: 150px;
+}
+#exp-caption {
+  text-align: center;
+  font-size: 11.5px;
+  font-style: italic;
+  color: #7a5c1e;
+  margin-bottom: 8px;
+  min-height: 14px;
+}
+.exp-btn {
+  display: block;
+  width: 100%;
+  padding: 11px;
+  cursor: pointer;
+  font: 600 13px/1 'Jost', Georgia, serif;
+  margin-top: 9px;
+  text-align: center;
+}
+.exp-primary { background: #A06810; border: none; color: #FAF5EA; }
+.exp-primary:hover { background: #8a5808; }
+.exp-ghost { background: transparent; border: 1.5px solid #c8b284; color: #4a3a1a; }
+.exp-ghost:hover { background: #f3ead6; }
+.exp-tiny { font-size: 12px; padding: 9px; }
+.exp-divider { border-top: 1px solid #e0cfa0; margin: 14px 0 10px; }
+.exp-keyhint {
+  text-align: center;
+  font: italic 400 11.5px/1.45 'Jost', Georgia, serif;
+  color: #9a8a6a;
+  margin-bottom: 2px;
+}
+#exp-includes { display: flex; flex-direction: column; gap: 12px; }
+.exp-inc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #4a3a1a;
+  cursor: pointer;
+}
+.exp-inc input { accent-color: #A06810; cursor: pointer; }
+#export-spinner-msg { font: 600 12px/1.3 'Jost', Georgia, serif; color: #7a5c1e; }
+.exp-paper-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.exp-hint { font-size: 11px; line-height: 1.45; color: #5a4020; margin: 0 0 2px; }
+.exp-trim-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #4a3a1a;
+  cursor: pointer;
+  margin: 2px 0 4px;
+  justify-content: center;
+}
+.exp-trim-row input { cursor: pointer; }
+#export-status {
+  text-align: center;
+  font-size: 11px;
+  font-style: italic;
+  color: #4a7a2a;
+  min-height: 14px;
+  margin-top: 10px;
+}
+.saves-hint { font-size: 11px; line-height: 1.45; color: #5a4020; margin-top: 10px; }
+.saves-hint code {
+  background: #faf2dc;
+  border: 1px solid #e0cfa0;
+  border-radius: 3px;
+  padding: 0 3px;
+  font-size: 10px;
+}
+#saves-list {
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #d4b870;
+  border-radius: 6px;
+  background: #faf6ee;
+}
+#saves-list:empty::after {
+  content: 'No saved maps yet.';
+  display: block;
+  padding: 14px;
+  text-align: center;
+  color: #8a7550;
+  font-size: 12px;
+  font-style: italic;
+}
+.save-item { display: flex; gap: 8px; padding: 7px 10px; border-bottom: 1px solid #ece2cb; }
+.save-item:last-child { border-bottom: none; }
+.save-item-info { flex: 1; min-width: 0; }
+.save-item-name {
+  font-size: 13px;
+  color: #2a1f0e;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.save-item-date { font-size: 10px; color: #8a7550; }
+.save-item-btn {
+  padding: 3px 11px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-family: 'Jost', Georgia, serif;
+  cursor: pointer;
+  border: 1.5px solid #c8a030;
+  background: #faf5ea;
+  color: #2a1f0e;
+  transition: background .12s;
+}
+.save-item-btn:hover { background: #e8d8a0; border-color: #8a5808; }
+.save-item-btn.danger { color: #a02020; border-color: #d8a0a0; }
+.save-item-btn.danger:hover { background: #f2dada; border-color: #b03030; }
+/* ── Session-recovery popup: full-screen overlay, standard modal chrome,
+GOLD card; Dismiss = palette red (destroys the autosave). ── */
+#recovery-banner {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(40,20,5,0.55);
+  align-items: center;
+  justify-content: center;
+  font-family: 'Jost', Georgia, serif;
+}
+#recovery-banner.show { display: flex; }
+#recovery-card {
+  background: #FAF5EA;
+  color: #2a1f0e;
+  border-radius: 14px;
+  padding: 20px 24px;
+  width: 400px;
+  max-width: 92vw;
+  box-shadow: 0 6px 32px rgba(40,20,5,0.4);
+}
+#recovery-card h3 {
+  font-family: 'Colus', Georgia, serif;
+  font-weight: 400;
+  font-size: 17px;
+  letter-spacing: 1px;
+  text-align: left;
+  margin: 0 0 6px;
+}
+#recovery-text { color: #2a1f0e; font-size: 13px; line-height: 1.5; margin: 0 0 14px; }
+#recovery-banner button {
+  padding: 8px 18px;
+  border-radius: 8px;
+  font: 600 13px/1 'Jost', Georgia, serif;
+  cursor: pointer;
+  border: none;
+  transition: background .12s;
+}
+#recovery-recover { background: #A06810; color: #FAF5EA; }
+#recovery-recover:hover { background: #b87818; }
+#recovery-dismiss { background: #cc503e; color: #FAF5EA; }
+#recovery-dismiss:hover { background: #b84431; }
+#km-addmore { text-align: center; padding: 10px 0; }
+#km-addmore p { font-size: 13px; color: #2a1f0e; margin-bottom: 14px; }
+.km-tab {
+  flex: 1;
+  padding: 5px 10px;
+  background: #faf5ea;
+  border: 1.5px solid #c8a030;
+  border-radius: 6px;
+  color: #2a1f0e;
+  font-size: 11px;
+  font-family: 'Jost', Georgia, serif;
+  cursor: pointer;
+}
+.km-tab:hover { background: #e8d8a0; border-color: #8a5808; }
+.km-tab.active {
+  background: linear-gradient(180deg, #a06810 0%, #7a4c08 100%);
+  border-color: #c8a030;
+  color: #fff;
+}
+.km-edit-list {
+  max-height: 190px;
+  overflow-y: auto;
+  border: 1px solid #d4b870;
+  border-radius: 5px;
+  padding: 4px;
+  margin-bottom: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: #c8a030 #ede5d0;
+}
+.km-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.km-edit-row:hover { background: #e4d8bc; }
+.km-edit-row input[type=checkbox] { cursor: pointer; accent-color: #c8a030; flex-shrink: 0; }
+.km-edit-row .km-label-input {
+  flex: 1;
+  background: #faf5ea;
+  border: 1px solid #d4b870;
+  border-radius: 4px;
+  color: #2a1f0e;
+  font-size: 11px;
+  font-family: 'Jost', Georgia, serif;
+  padding: 2px 6px;
+  outline: none;
+  min-width: 0;
+}
+.km-edit-row .km-label-input:focus { border-color: #8a5808; }
+#km-remove-btn:disabled { opacity: 0.4; cursor: default; }
+#title-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(40,20,5,0.55);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+}
+#title-modal-overlay.open { display: flex; }
+#title-modal {
+  background: #ede5d0;
+  border: 2px solid #c8a030;
+  border-radius: 12px;
+  padding: 20px 24px;
+  width: 380px;
+  box-shadow: 0 6px 32px rgba(40,20,5,0.4);
+  font-family: 'Jost', Georgia, serif;
+}
+#title-modal h3 {
+  color: #7a5c1e;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #d4b870;
+  padding-bottom: 8px;
+}
+#title-current { color: #5a4020; font-size: 11px; text-align: center; margin-bottom: 12px; font-style: italic; }
+/* ── On-map draggable title box ── */
+/* subtle on screen; export draws its own */
+#title-box {
+  display: none;
+  position: absolute;
+  background: #faf6ee;
+  border: 1px solid #b8b2a6;
+  padding: 6px 16px 7px;
+  text-align: center;
+  color: #111;
+  white-space: nowrap;
+  cursor: move;
+  user-select: none;
+  pointer-events: auto;
+  z-index: 50;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.25);
+  transform: translateX(-50%);
+}
+#title-box.visible { display: block; }
+/* Jost, not Colus: Colus is caps-only — typed case must survive */
+#title-box .tb-title-line {
+  font-family: 'Jost', Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(13px, 1.8vw, 22px);
+  letter-spacing: 0.6px;
+}
+#title-box .tb-subtitle-line {
+  font-family: 'Jost', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(10px, 1.2vw, 15px);
+  color: #4a3a1a;
+  margin-top: 1px;
+}
+/* ── Start screen ── */
+/* Layered: cream legibility scrim → photo background → parchment-gradient
+fallback (shows if homescreen-bg.png isn't present, so nothing breaks). */
+#start-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: linear-gradient(160deg, rgba(244,236,216,0.78) 0%, rgba(236,224,200,0.84) 60%, rgba(228,216,192,0.88) 100%),
+        url('header-bg.png') center / cover no-repeat,
+        linear-gradient(160deg, #e8e0d0 0%, #f2ead8 60%, #e4d8c0 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  padding: 48px 24px 56px;
+  box-sizing: border-box;
+  transition: opacity 0.3s;
+}
+#start-screen > * { position: relative; z-index: 1; }
+#ss-header { text-align: center; margin-bottom: 44px; }
+/* The wordmark alone wears Rhau; all other display type is Tiller Bold */
+#ss-header h1 {
+  font-family: 'Rhau', 'Colus', Georgia, serif;
+  font-size: 46px;
+  font-weight: 700;
+  color: #2a1f0e;
+  letter-spacing: 0;
+  margin: 0 0 4px;
+}
+#ss-tagline {
+  font-family: 'Colus', Georgia, serif;
+  font-size: 19px;
+  font-style: italic;
+  color: #2a1f0e;
+  margin: 0 0 10px;
+  letter-spacing: 1.5px;
+}
+#ss-header > p:last-child { font-family: 'Jost', Georgia, serif; font-size: 13px; color: #5a4a30; margin: 0; }
+/* Decorative rule under the header */
+#ss-header-rule { display: flex; align-items: center; gap: 10px; margin: 14px auto 0; width: fit-content; }
+#ss-header-rule span { display: block; height: 1px; width: 80px; background: #b8903a; opacity: 0.6; }
+#ss-header-rule svg { flex-shrink: 0; }
+#ss-choices { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; align-items: stretch; }
+.ss-choice, .ss-choice-primary {
+  background: #faf5ea;
+  border: 1.5px solid #c8a030;
+  border-radius: 14px;
+  padding: 30px 32px 28px;
+  width: 220px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.18s, box-shadow 0.18s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(100,70,10,0.10), 0 0 0 0 rgba(180,130,30,0);
+}
+.ss-choice-primary { border-color: #a06810; background: #fffbf0; box-shadow: 0 4px 18px rgba(100,70,10,0.15); }
+.ss-choice:hover, .ss-choice-primary:hover {
+  border-color: #8a5808;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px rgba(100,70,10,0.18);
+}
+.ss-choice-icon {
+  width: 52px;
+  height: 52px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ss-choice-title {
+  color: #2a1f0e;
+  font-family: 'Colus', Georgia, serif;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 9px;
+}
+.ss-choice-desc { color: #5a4a30; font-family: 'Jost', Georgia, serif; font-size: 15px; line-height: 1.6; }
+.ss-disclaimer {
+  color: #8a7a5a;
+  font-family: 'Jost', Georgia, serif;
+  font-size: 10px;
+  font-style: italic;
+  margin-top: 12px;
+  line-height: 1.5;
+  max-width: 180px;
+}
+#ss-library { width: 100%; max-width: 1200px; }
+#ss-back {
+  display: inline-block;
+  margin-bottom: 20px;
+  color: #8a5808;
+  font-family: 'Jost', Georgia, serif;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+#ss-back:hover { color: #2a1f0e; }
+#ss-library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+.ss-section-header {
+  grid-column: 1 / -1;
+  color: #7a5c1e;
+  font-family: 'Colus', Georgia, serif;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 6px 0 8px;
+  border-bottom: 1px solid #c8a030;
+  margin-top: 8px;
+}
+.ss-section-header:first-child { margin-top: 0; }
+.ss-map-card {
+  background: #faf5ea;
+  border: 1.5px solid #d4b870;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 6px rgba(100,70,10,0.08);
+}
+.ss-map-card:hover {
+  border-color: #8a5808;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(100,70,10,0.15);
+}
+.ss-map-card img { width: 100%; height: 150px; object-fit: cover; display: block; }
+.ss-map-label {
+  color: #2a1f0e;
+  font-family: 'Jost', Georgia, serif;
+  font-size: 11px;
+  padding: 7px 8px;
+  text-align: center;
+  line-height: 1.35;
+}
+/* ── Label Panel — always visible in left sidebar ── */
+#label-panel { display: block; padding: 12px 10px; }
+.lp-title {
+  color: #7a5c1e;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #d4b870;
+  padding-bottom: 6px;
+  font-family: 'Jost', Georgia, serif;
+}
+#lp-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #faf5ea;
+  border: 1.5px solid #c8a030;
+  border-radius: 6px;
+  color: #2a1f0e;
+  font-family: 'Jost', Georgia, serif;
+  font-size: 13px;
+  padding: 6px 8px;
+  margin-bottom: 10px;
+  outline: none;
+}
+#lp-input:focus { border-color: #8a5808; }
+#lp-input::placeholder { color: #a08850; font-style: italic; }
+.lp-section-lbl {
+  color: #7a5c1e;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.lp-color-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-bottom: 10px; }
+.lp-color-swatch {
+  width: 19px;
+  height: 19px;
+  border-radius: 4px;
+  border: 2px solid #c8a030;
+  cursor: pointer;
+  transition: border-color 0.12s, transform 0.1s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.lp-color-swatch:hover { border-color: #8a5808; transform: scale(1.15); }
+.lp-color-swatch.active { border-color: #2a1f0e; box-shadow: 0 0 0 2px #c8a030, 0 1px 4px rgba(0,0,0,0.2); }
+.lp-size-row { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+.lp-size-btn {
+  background: #faf5ea;
+  border: 1.5px solid #c8a030;
+  border-radius: 5px;
+  color: #2a1f0e;
+  font-size: 14px;
+  font-family: 'Jost', Georgia, serif;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.lp-size-btn:hover { background: #e8d8a0; border-color: #8a5808; }
+#lp-size-display {
+  flex: 1;
+  text-align: center;
+  color: #2a1f0e;
+  font-size: 12px;
+  font-family: 'Jost', Georgia, serif;
+}
+.lp-style-row { display: flex; gap: 4px; margin-bottom: 12px; }
+.lp-style-btn {
+  flex: 1;
+  padding: 4px 0;
+  background: #faf5ea;
+  border: 1.5px solid #c8a030;
+  border-radius: 5px;
+  color: #2a1f0e;
+  font-size: 11px;
+  font-family: 'Jost', Georgia, serif;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.12s, border-color 0.12s;
+}
+.lp-style-btn:hover { background: #e8d8a0; border-color: #8a5808; }
+.lp-style-btn.active {
+  background: linear-gradient(180deg, #a06810 0%, #7a4c08 100%);
+  border-color: #c8a030;
+  color: #fff;
+}
+/* Draggable preview chip */
+#lp-preview-wrap { margin-bottom: 6px; }
+#lp-preview {
+  background: #faf6ee;
+  border: 2px dashed #c8a84b;
+  border-radius: 7px;
+  padding: 8px 6px;
+  text-align: center;
+  cursor: grab;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, border-color 0.12s;
+  user-select: none;
+}
+#lp-preview:hover { background: #fff; border-color: #e0c060; }
+#lp-preview:active { cursor: grabbing; }
+#lp-preview.empty { border-style: dashed; opacity: 0.4; cursor: default; }
+#lp-preview-text {
+  font-family: 'Jost', Georgia, serif;
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lp-hint {
+  color: #8a7050;
+  font-family: 'Jost', Georgia, serif;
+  font-size: 9px;
+  text-align: center;
+  font-style: italic;
+}
+/* Drag ghost */
+#lp-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  background: #faf6ee;
+  border: 2px solid #c8a84b;
+  border-radius: 6px;
+  padding: 4px 10px;
+  opacity: 0.88;
+  display: none;
+  font-family: 'Jost', Georgia, serif;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+  transform: translate(-50%, -50%);
+}
+/* ── On-map Key Overlay ── */
+/* subtle on screen; export draws its own */
+#onmap-key {
+  display: none;
+  position: absolute;
+  max-width: 460px;
+  background: #faf6ee;
+  border: 1px solid #b8b2a6;
+  border-radius: 3px;
+  font-family: 'Jost', Georgia, serif;
+  box-shadow: 2px 3px 10px rgba(0,0,0,0.22);
+  pointer-events: auto;
+  user-select: none;
+  z-index: 50;
+  left: 2%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 200px;
+}
+#onmap-key.visible { display: block; }
+#onmap-key-header {
+  background: #ede8d5;
+  border-bottom: 1px solid #8a8478;
+  padding: 5px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: grab;
+  border-radius: 1px 1px 0 0;
+}
+#onmap-key-header:active { cursor: grabbing; }
+#onmap-key-htitle {
+  font-size: 12px;
+  font-weight: bold;
+  color: #111;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+#onmap-key-collapse {
+  border-radius: 2px;
+  color: #333;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+  font-family: 'Jost', Georgia, serif;
+}
+#onmap-key-collapse:hover { background: #d5cdb8; }
+#onmap-key-body { padding: 0; overflow: hidden; }
+.ok-entry { display: flex; align-items: center; gap: 5px; padding: 1px 0; }
+.ok-entry canvas { flex-shrink: 0; display: block; }
+.ok-entry-label {
+  font-family: 'Jost', Georgia, serif;
+  font-size: 12px;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ok-empty-hint {
+  font-family: 'Jost', Georgia, serif;
+  font-size: 10px;
+  font-style: italic;
+  color: #999;
+  padding: 4px 2px;
+}
+#onmap-key-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  cursor: se-resize;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 2px 3px;
+  color: #888;
+  font-size: 11px;
+  line-height: 1;
+  pointer-events: auto;
+}
+/* Key modal placement row */
+.km-placement {
+  border-top: 1px solid #d4b870;
+  margin-top: 10px;
+  padding-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.km-place-lbl { color: #7a5c1e; font-size: 11px; font-family: 'Jost', Georgia, serif; flex-shrink: 0; }
+.km-place-btn {
+  padding: 4px 10px;
+  background: #faf5ea;
+  border: 1.5px solid #c8a030;
+  border-radius: 5px;
+  color: #2a1f0e;
+  font-size: 11px;
+  font-family: 'Jost', Georgia, serif;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.km-place-btn:hover { background: #e8d8a0; border-color: #8a5808; }
+.km-place-btn.active {
+  background: linear-gradient(180deg, #a06810 0%, #7a4c08 100%);
+  border-color: #c8a030;
+  color: #fff;
+}
+/* Text overlay sits exactly over the canvas */
+#text-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+/* ── Text boxes ── */
+.text-box { position: absolute; pointer-events: auto; transform-origin: center center; user-select: none; }
+.tb-rotate-line {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 22px;
+  background: #4a6fa5;
+  display: none;
+}
+.tb-rotate-handle {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 22px);
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border: 2px solid #4a6fa5;
+  border-radius: 50%;
+  cursor: grab;
+  display: none;
+}
+.tb-rotate-handle:active { cursor: grabbing; }
+.text-box.selected .tb-rotate-line, .text-box.selected .tb-rotate-handle { display: block; }
+.tb-content {
+  font-family: 'Jost', Georgia, serif;
+  white-space: nowrap;
+  outline: none;
+  padding: 2px 5px;
+  min-width: 10px;
+  border: 2px dashed transparent;
+  cursor: move;
+  line-height: 1.3;
+}
+.text-box.selected .tb-content { border-color: #4a6fa5; cursor: text; }
+/* Text-to-canvas: unselected labels render on the annotation canvas;
+the DOM box stays mounted (pointer events, editing) but invisible. */
+.text-box:not(.selected) .tb-content { color: transparent !important; }
+@media (max-width: 1440px) {
+  #toolbar .toolbar-row { padding-left: 10px; padding-right: 10px; }
+  #row1-tools, #row1-doc { gap: 4px; }
+  .stamp-btn { padding: 4px 6px; }
+}
+@media (max-width: 1280px) {
+  #sidebar-left { width: 148px; }
+  #sidebar-right { width: 176px; }
+  .color-btn { width: 16px; height: 16px; }
+}
+/* ── Round 3 (2026-08-14): quiet chrome, standard headers, search ── */
+#toolbar .sep { display: none; }
+.sr-subhead::before, .sr-subhead::after { display: none; }
+/* ONE header style for every right-column group (incl. Map Layers) */
+.sr-section-header, .sr-subhead, .trade-panel-title {
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: #6b5a33;
+  background: #EAE2CE;
+  padding: 7px 12px;
+  margin: 0 0 6px;
+  border-bottom: none;
+  text-align: left;
+}
+.ml-layer-row { display: flex; align-items: center; cursor: pointer; }
+.ml-layer-row:hover { background: rgba(160,104,16,0.07); }
+.ml-layer-name { font: 500 12px/1 'Jost', Georgia, serif; color: #2a1f0e; flex: 1; }
+#ml-layers-panel .ml-switch { border-radius: 0; background: transparent; flex-shrink: 0; position: relative; border: none; }
+#ml-layers-panel .ml-switch::before { display: none; }
+#ml-layers-panel .ml-switch::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: #6b5a33;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+  mask-size: contain;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  transform: none;
+  border-radius: 0;
+  background-image: none;
+  box-shadow: none;
+}
+#ml-layers-panel .ml-switch:not(.on) { opacity: .4; }
+#ml-layers-panel .ml-switch:not(.on)::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9.88 9.88a3 3 0 1 0 4.24 4.24'/%3E%3Cpath d='M10.73 5.08A10.43 10.43 0 0 1 12 5c6.5 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68'/%3E%3Cpath d='M6.61 6.61A13.526 13.526 0 0 0 2 12s3.5 7 10 7a9.74 9.74 0 0 0 5.39-1.61'/%3E%3Cpath d='M2 2l20 20'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9.88 9.88a3 3 0 1 0 4.24 4.24'/%3E%3Cpath d='M10.73 5.08A10.43 10.43 0 0 1 12 5c6.5 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68'/%3E%3Cpath d='M6.61 6.61A13.526 13.526 0 0 0 2 12s3.5 7 10 7a9.74 9.74 0 0 0 5.39-1.61'/%3E%3Cpath d='M2 2l20 20'/%3E%3C/svg%3E");
+}
+/* Header row 2: text tools */
+#r2-label-input {
+  background: rgba(250,245,234,0.12);
+  border: 1px solid rgba(250,245,234,0.4);
+  border-radius: 6px;
+  color: #FAF5EA;
+  font: 400 12px/1 'Jost', Georgia, serif;
+}
+#r2-label-input::placeholder { color: rgba(250,245,234,0.55); }
+#r2-label-chip {
+  color: #FAF5EA;
+  background: rgba(250,245,234,0.14);
+  border: 1px dashed rgba(250,245,234,0.5);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: grab;
+  max-width: 140px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#r2-size-num { border-radius: 6px; color: #FAF5EA; font: 400 12px/1 'Jost', Georgia, serif; }
+/* Global search, right end of row 1 */
+#global-search-wrap { margin-left: auto; position: relative; flex-shrink: 0; }
+#global-search {
+  background: rgba(250,245,234,0.1);
+  color: #FAF5EA;
+  font: 400 12px/1 'Jost', Georgia, serif;
+  padding: 6px 14px;
+  width: 180px;
+}
+#global-search::placeholder { color: rgba(250,245,234,0.5); }
+#global-search-results {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 34px;
+  z-index: 80;
+  background: #FAF5EA;
+  border: 1px solid #c8a030;
+  border-radius: 10px;
+  min-width: 220px;
+  box-shadow: 0 6px 18px rgba(42,31,14,0.25);
+  overflow: hidden;
+}
+.gs-hit {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font: 400 12px/1 'Jost', Georgia, serif;
+  color: #2a1f0e;
+}
+.gs-hit:hover { background: #f1e6cc; }
+.gs-hint { color: #9a7a30; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+.gs-none { color: #9a8a6a; cursor: default; }
+@media (max-width: 1240px) {
+  .hdr-low .hdr-lbl { display: none; }
+  #global-search { width: 140px; }
+}
+@media (max-width: 1080px) {
+  .hdr-lbl { display: none; }
+  #global-search { width: 120px; }
+}
+/* ── Round 6 (2026-08-14): grouped right panel, layer rows, search fix ── */
+#global-search, #global-search:focus { color: #FAF5EA !important; caret-color: #FAF5EA; outline: none; }
+#global-search:focus { border-color: #C8A030; background: rgba(250,245,234,0.16); }
+/* Blue group headers (Map Layers / Lines / Stamps) — rail blue, white text */
+.palette-group-head {
+  text-transform: uppercase;
+  color: #FAF5EA;
+  background: #4C6472;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.pg-caret { float: right; opacity: .8; }
+.palette-group.collapsed .palette-group-body { display: none; }
+/* Map Layers: sample icon left, name, EYE ON THE RIGHT; tight + divided */
+#ml-layers-panel { border-bottom: none; position: relative; }
+.ml-layer-sample { display: inline-flex !important; width: 26px; justify-content: center; }
+.ml-layer-row { padding: 4px 10px; gap: 7px; }
+.ml-layer-row:not(:last-child) { border-bottom: 1px solid #e4dcc8; }
+body.layers-collapsed #ml-layers-panel { margin-bottom: 0; padding-bottom: 0; }
+body.layers-collapsed #ml-layers-panel .palette-group-head { margin-bottom: 0; }
+/* small collapse chip riding the panel's top-right corner */
+#ml-collapse-chip {
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  z-index: 2;
+  background: #FAF5EA;
+  color: #4C6472;
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(42,31,14,0.25);
+}
+#furn-title-input, #furn-sub-input {
+  background: rgba(250,245,234,0.12);
+  border: 1px solid rgba(250,245,234,0.4);
+  border-radius: 6px;
+  color: #FAF5EA;
+  caret-color: #FAF5EA;
+  font: 400 12px/1 'Jost', Georgia, serif;
+  padding: 5px 9px;
+}
+#furn-title-input { width: 140px; }
+#furn-sub-input { width: 120px; }
+#furn-title-input::placeholder, #furn-sub-input::placeholder { color: rgba(250,245,234,0.5); }
+/* Preview card rides the desk, upper-right of the frame; hidden while
+the cursor ghost has the page. */
+#tool-preview-wrap { top: 14px; right: 14px; z-index: 25; transition: opacity .15s; }
+/* The wordmark is permanent — never sheds (Maddy 2026-08-14). */
+#toolbar-logo { display: block !important; }
+/* Group headers in Colus; subgroup headers in Jost (Maddy 2026-08-14) */
+.palette-group-head { font: 400 11px/1 'Colus', Georgia, serif; letter-spacing: 1.8px; }
+.sr-section-header, .sr-subhead, .trade-panel-title { font: 600 10px/1 'Jost', Georgia, serif; }
+#r2-label-input { cursor: text; }
+#r2-label-chip { display: none; }
+/* Round 9: icon-only nav; uniform 3-column stamp grids (Maddy 2026-08-14) */
+.hdr-lbl { display: none !important; }
+#palette-scroll .trade-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 0;
+  justify-items: center;
+  padding: 0 6px 8px;
+}
+#palette-scroll .trade-grid .trade-btn, #palette-scroll .trade-grid .religion-btn { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+/* every stamp icon renders in the same 26px box, aspect preserved */
+#palette-scroll .trade-grid canvas, #palette-scroll .trade-grid img { height: 26px !important; width: auto !important; max-width: 44px; object-fit: contain; }
+/* Map Layers header = identical to every other group header */
+#ml-collapse-chip { display: none; }
+#ml-layers-panel .palette-group-head { margin-bottom: 0; }
+/* Lines group: every row = symbol LEFT-aligned, name right (Maddy) */
+#group-lines-body .line-menu-item, #group-lines-body .feature-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+}
+/* kill any auto-centering */
+#group-lines-body .line-menu-item canvas, #group-lines-body .feature-btn canvas { flex: 0 0 auto; margin: 0; }
+#group-lines-body .line-menu-item span { text-align: right; }
+/* Lines are ALWAYS single-column rows — never the 3-col stamp grid */
+#group-lines-body, #line-grid { display: flex; flex-direction: column; gap: 2px; }
+#group-lines-body .feature-grid { display: flex; flex-direction: column; gap: 2px; padding: 0; }
+/* Round 9b: uniform rules apply to EVERY stamp grid (religion had its own
+class and escaped; text/canvas sizing now normalized everywhere). */
+#palette-scroll .trade-grid, #palette-scroll .religion-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 0;
+  justify-items: center;
+  padding: 0 6px 8px;
+}
+/* one label size across all stamp grids */
+#palette-scroll .trade-grid .trade-btn, #palette-scroll .trade-grid .religion-btn, #palette-scroll .religion-grid .religion-btn, #palette-scroll .religion-grid .trade-btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  line-height: 1.2;
+}
+#palette-scroll .trade-grid canvas, #palette-scroll .trade-grid img, #palette-scroll .religion-grid canvas, #palette-scroll .religion-grid img { height: 26px !important; width: auto !important; max-width: 44px; object-fit: contain; }
+/* lines: identical left inset for line styles AND feature rows */
+#group-lines-body .line-menu-item, #group-lines-body .feature-btn { padding: 4px 12px; }
+/* Round 9c: half-length sliders, bold-gold compact readouts, tight label input */
+#row2 input[type="range"] { width: 60px; }
+#shade-size-display, #stamp-size-display, #icon-size-display, #line-width-display, #r2-size-num {
+  color: #C8A030 !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  min-width: 20px;
+}
+#r2-size-num { width: 34px; background: transparent; border: none; text-align: left; padding: 2px; }
+#r2-label-input { padding: 3px 7px; }
+/* the feature rows' CONTAINER carried its own indent — one inset for all */
+#group-lines-body .feature-grid, #group-lines-body #line-grid { padding: 0; }
+/* editable slider readouts share the bold-gold look, no spinner chrome */
+.r2-num {
+  background: transparent;
+  border: none;
+  padding: 2px;
+  color: #C8A030 !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  width: 30px;
+  text-align: left;
+  -moz-appearance: textfield;
+}
+.r2-num::-webkit-outer-spin-button, .r2-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.r2-num:focus { outline: 1px solid #C8A030; border-radius: 4px; }
+/* Text-entry fields in row 2 sit on cream, ink text (Maddy 2026-08-14) */
+/* no color here: the live preview sets inline color to the selected
+swatch (renderToolPreview) — an !important would freeze it dark */
+#r2-label-input, #furn-title-input, #furn-sub-input { background: #FAF5EA; border: 1px solid #d4b870; caret-color: #2a1f0e; }
+#r2-label-input::placeholder, #furn-title-input::placeholder, #furn-sub-input::placeholder { color: #9a8a6a; }
+/* ── Round 10: definitive right-sidebar cleanup (live-audited) ─────────
+Legacy panel paddings made some headers 160px in a 176px bar; subgroup
+bands inherited Colus; line labels mixed 12px/9px; carets mixed colors.
+One block settles all of it — keep LAST in the file. */
+#sidebar-right #ml-layers-panel, #sidebar-right #feature-panel, #sidebar-right #religion-panel, #sidebar-right .trade-panel, #sidebar-right #terrain-panel, #sidebar-right #war-panel { padding: 0 !important; margin: 0 !important; width: 100%; box-sizing: border-box; }
+/* full-bleed group + subgroup headers */
+#sidebar-right .palette-group-head { width: 100%; box-sizing: border-box; }
+#sidebar-right .sr-section-header, #sidebar-right .sr-subhead, #sidebar-right .trade-panel-title {
+  width: 100%;
+  box-sizing: border-box;
+  font: 600 10px/1 'Jost', Georgia, serif !important;
+  color: #6b5a33;
+  background: #EAE2CE;
+  padding: 7px 12px;
+  margin: 0 0 6px;
+  text-align: left;
+}
+/* grids re-inherit side padding the panels lost */
+#sidebar-right .trade-grid, #sidebar-right .religion-grid { padding: 0 6px 8px; }
+/* ONE label size everywhere in the lines group */
+#group-lines-body .line-menu-item span, #group-lines-body .feature-btn { font-size: 10px !important; font-family: 'Jost', Georgia, serif; color: #2a1f0e; }
+/* ONE caret color (cream — they all sit on the blue heads) */
+.pg-caret, #ml-layers-caret { color: #FAF5EA !important; float: right; opacity: .8; }
+/* right sidebar is PERMANENT — no collapse tab, no collapsed state */
+#sr-tab { display: none !important; }
+body.sr-collapsed #sidebar-right { display: flex !important; }
+/* label input: true-size render, auto width, no fixed width */
+#r2-label-input { width: auto; transition: width .08s; }
+/* trade panel is id, not class — the one 160px holdout */
+#sidebar-right #trade-panel { padding: 0 !important; margin: 0 !important; }
+#sidebar-right #trade-panel .trade-grid { padding: 0 6px 10px; }
+/* preview lives at the end of row 2, chromeless on the blue */
+#tool-preview-wrap {
+  position: static;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0;
+  padding: 0;
+  pointer-events: none;
+}
+#tool-preview-wrap canvas, #tool-preview { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* Map Layers rows: darker cream ground, lighter cream dividers */
+#ml-layers-panel { background: #EAE2CE; }
+#ml-layers-panel .ml-layer-row { background: #EAE2CE; }
+#ml-layers-panel .ml-layer-row:not(:last-child) { border-bottom: 1px solid #FAF5EA; }
+#ml-layers-panel .ml-layer-row:hover { background: #e2d8bf; }
+/* no divider lines on the rail or under the top nav */
+.rail-rule { display: none; }
+#toolbar { border-bottom: none; }
+#toolbar .toolbar-row + .toolbar-row { border-top: none; }
+/* group heads stick to the top of the scroll until scrolled past */
+#palette-scroll .palette-group-head { position: sticky; top: 0; z-index: 3; }
+/* collapse must beat the id-specificity display:flex rules */
+.palette-group.collapsed .palette-group-body, .palette-group.collapsed #group-lines-body, .palette-group.collapsed #group-stamps-body { display: none !important; }
+/* subgroup headers: sentence case, not uppercase */
+#sidebar-right .sr-section-header, #sidebar-right .sr-subhead, #sidebar-right .trade-panel-title { text-transform: none !important; letter-spacing: .6px; }
+/* feature swatches render at exactly the plain-line swatch size */
+#group-lines-body .feature-btn canvas { width: 52px !important; height: 16px !important; }
+/* eye toggles: 25% bigger, hard right */
+#ml-layers-panel .ml-switch { margin-left: auto; margin-right: 0; }
+/* label input: half the vertical padding */
+#r2-label-input { padding-top: 1px !important; padding-bottom: 1px !important; }
+/* drag & drop hint appears once a label is typed */
+#r2-drag-hint {
+  align-items: center;
+  font: 600 10px/1 'Jost', Georgia, serif;
+  color: rgba(250,245,234,0.75);
+  letter-spacing: .5px;
+  white-space: nowrap;
+  animation: hintPulse 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes hintPulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+/* ═══════════════════════════════════════════════════════════════════════
+DESIGN TOKENS (2026-08-14 standardization — the baseline going forward)
+Radii:  6px  = small interactive buttons & segmented controls
+8px  = palette tiles / rail buttons / larger touch targets
+12px = every modal, popover, dropdown card
+50%  = circular desk FABs only (deliberate exception)
+Type:   every control label = Jost; sizes stay role-based.
+Keep this block LAST — it is the authority over earlier ad-hoc rules.
+═══════════════════════════════════════════════════════════════════════ */
+/* small interactive buttons + segmented controls → 6px */
+.r2-style-btn, .shade-style-btn, .seg, .lp-size, .line-menu-item, .km-btn, .exp-btn, #onmap-key-collapse { border-radius: 6px !important; font-family: 'Jost', Georgia, serif !important; }
+/* palette tiles + rail → 8px */
+.trade-btn, .religion-btn, .feature-btn, .rail-btn, .stamp-btn { border-radius: 8px !important; font-family: 'Jost', Georgia, serif !important; }
+/* modals, popovers, dropdowns → 12px */
+#title-modal, #saves-modal, #export-modal, #key-modal, #lm-layout-pop, #global-search-results, #recovery-banner .rb-card { border-radius: 12px !important; }
+/* text inputs → 6px, one border language */
+#row2 input[type="text"], .km-input { border-radius: 6px !important; }
+/* header action buttons: quiet pills, consistent hover */
+#row1-doc .stamp-btn { border-radius: 8px !important; }
+/* last Arial holdouts: number readouts + any control text defaults to Jost */
+#row2 input, #row2 button, #row2 span { font-family: 'Jost', Georgia, serif; }
+/* colour swatches keep 4px — they read as chips, not buttons (deliberate) */
+/* popups avoid dividers (Maddy 2026-08-14) */
+#saves-modal h3, #title-modal h3, #export-modal h3, #key-modal h3, .lp-pop-title { border-bottom: none !important; padding-bottom: 2px; }
+/* Row 2: strictly left-aligned — nothing floats right */
+#row2 > div, #row2 #tool-preview-wrap { margin-left: 0 !important; margin-right: 0; }
+#row2 { justify-content: flex-start; }
+/* segmented pills: inner segment radius matches the outer track
+(the 6px token rule was squaring the inner pill) */
+.lm-seg { border-radius: 999px !important; }
+/* nav buttons: one exact size, centered glyphs */
+#nav-ctrl .r2-style-btn {
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+}
+#nav-ctrl .r2-style-btn svg { display: block; }
+/* fill tiles: uniform cards, swatch edge-to-edge, no dead space */
+.fill-tile {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.fill-tile canvas { display: block; outline: 1px solid rgba(250,245,234,0.35); }
+.fill-tile.active canvas { outline: 2px solid #C8A030; }
+.fill-tile span { font: 600 8.5px/1 'Jost', Georgia, serif; color: #FAF5EA; opacity: .85; }
+.fill-tile.active span { opacity: 1; color: #C8A030; }
+/* Row-2 buttons: grey/blue palette, not cream/gold (Maddy 2026-08-14) */
+#row2 .r2-style-btn, #row2 .fill-tile span { color: #E7EDF1; }
+#row2 .r2-style-btn { border-color: rgba(231,237,241,0.4); }
+#row2 .r2-style-btn.active { border-color: #E7EDF1; }
+#row2 .lm-seg { border-color: rgba(231,237,241,0.35); }
+#row2 .lm-seg .seg { color: #E7EDF1; }
+#row2 .lm-seg .seg:hover { background: rgba(231,237,241,0.12); }
+#row2 .lm-seg .seg.on { box-shadow: none; }
+#row2 .fill-tile canvas { outline-color: rgba(231,237,241,0.4); }
+#row2 .fill-tile.active canvas { outline-color: #E7EDF1; }
+#row2 .fill-tile.active span { color: #E7EDF1; }
+#row2 .r2-num, #shade-size-display, #stamp-size-display, #icon-size-display, #line-width-display { color: #E7EDF1 !important; }
+/* fill tiles = colour-card size, no captions (hover tooltips carry info) */
+/* matches .color-btn */
+.fill-tile canvas { width: 19px !important; height: 19px !important; border-radius: 4px; }
+.fill-tile span { display: none; }
+/* sliders + readouts: gold; track 50% taller */
+#row2 input[type="range"] { accent-color: #C8A030; height: 6px; }
+#row2 .r2-num, #shade-size-display, #stamp-size-display, #icon-size-display, #line-width-display, #r2-size-num { color: #C8A030 !important; }
+/* key modal text inputs: no outline boxes */
+#key-modal .km-input, #key-modal input[type="text"] { border: none !important; outline: none !important; background: rgba(0,0,0,0.04); }
+/* swatch parity: colour cards and fill tiles identical; selection = gold */
+.color-btn, .fill-tile canvas {
+  width: 19px !important;
+  height: 19px !important;
+  border-radius: 4px;
+  outline: none !important;
+  box-shadow: none;
+}
+.fill-tile { padding: 0; }
+.color-btn.active, .fill-tile.active canvas { outline: 2.5px solid #C8A030 !important; outline-offset: 0; }
+/* ── Modal standardization (baseline = Export & Print, 2026-08-14) ──
+Same card, heading, close, buttons, inputs across Save/Key/Title.
+Language (all text) unchanged; 6px corners on every button. */
+#saves-modal, #title-modal, #key-modal {
+  position: relative;
+  background: #FAF5EA !important;
+  border: none !important;
+  border-radius: 14px !important;
+  padding: 22px 24px 20px !important;
+  width: 380px;
+  max-width: 92vw;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 14px 44px rgba(20,12,4,0.62) !important;
+  font-family: 'Jost', Georgia, serif;
+}
+#saves-modal h3, #title-modal h3, #key-modal h3 {
+  color: #2A1F0E !important;
+  font-family: 'Colus', 'Jost', Georgia, serif !important;
+  font-weight: 400 !important;
+  font-size: 16px !important;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: left !important;
+  margin: 0 0 10px !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.modal-x {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #8a7658;
+  font: 600 15px/1 'Jost', Georgia, serif;
+}
+.modal-x:hover { background: #f3ead6; }
+/* section labels quiet, like export's captions */
+#saves-modal h4, .km-lbl, .lp-pop-title {
+  font: 600 10px/1 'Jost', Georgia, serif !important;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: #8a7658 !important;
+  margin: 12px 0 6px;
+}
+/* ONE button system: 6px corners, flat gold primary, sand ghost.
+Side-by-side pairs preserved (rows stay flex). */
+.km-btn, .exp-btn, .km-tab, .km-type-btn, .km-style-btn {
+  border-radius: 6px !important;
+  font: 600 12px/1 'Jost', Georgia, serif !important;
+  cursor: pointer;
+  box-shadow: none !important;
+  background-image: none !important;
+}
+.exp-btn { border-radius: 6px !important; }
+.km-btn.primary, .exp-primary { background: #A06810 !important; border: none !important; color: #FAF5EA !important; }
+.km-btn.primary:hover, .exp-primary:hover { background: #8a5808 !important; }
+.km-btn.secondary, .exp-ghost, .km-tab, .km-type-btn, .km-style-btn {
+  background: transparent !important;
+  border: 1.5px solid #c8b284 !important;
+  color: #4a3a1a !important;
+}
+.km-btn.secondary:hover, .exp-ghost:hover, .km-tab:hover, .km-type-btn:hover, .km-style-btn:hover { background: #f3ead6 !important; }
+.km-tab.active, .km-type-btn.active, .km-style-btn.active { background: #A06810 !important; border-color: #A06810 !important; color: #FAF5EA !important; }
+.km-actions { display: flex; gap: 8px; }
+.km-actions .km-btn { flex: 1; padding: 10px; }
+/* inputs: quiet cream wells, no hard outlines */
+#saves-modal .km-input, #key-modal .km-input, #key-modal input[type="text"] {
+  background: rgba(0,0,0,0.04) !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 8px 10px;
+  font: 400 13px/1.2 'Jost', Georgia, serif;
+}
+/* key modal preview reads as a card like export's thumbnail */
+#km-preview { border: 1px solid #b8b2a6 !important; border-radius: 4px; background: #fff; }
+/* tabs sit as a side-by-side pair under the heading */
+.km-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.km-tabs .km-tab { flex: 1; padding: 9px; }
+/* View controls (+ − pan): far right of row 2 — the ONE right-anchored
+group; everything else stays left (viewport vs tool-option split). */
+#row2 #nav-ctrl { margin-left: auto !important; }
+#row2 #tool-preview-wrap { margin-right: 10px; }
+#row2 #nav-ctrl { order: 99; }
+/* last in flex flow → truly far right */
+/* ── 8px UNIVERSAL RADIUS (Maddy 2026-08-14, supersedes the 6px rule) ──
+One radius for every button, segment, tile, and input. Modals stay 14px
+cards; colour/fill swatches stay 4px chips; keep this block LAST. */
+.r2-style-btn, .shade-style-btn, .seg, .lm-seg, .lp-size, .line-menu-item, .km-btn, .exp-btn, .km-tab, .km-type-btn, .km-style-btn, #onmap-key-collapse, .trade-btn, .religion-btn, .feature-btn, .rail-btn, .stamp-btn, .fill-tile, #row2 input[type="text"], #row2 input[type="number"], .km-input, #global-search, #global-search-results .gs-hit, .modal-x { border-radius: 8px !important; }
+#global-search { border-radius: 8px !important; }
+/* segments too: 8px (out-specify the old 999px pill rule) */
+#row2 .lm-seg, #row2 .lm-seg .seg, #lm-layout-pop .lm-seg, #lm-layout-pop .lm-seg .seg, #title-modal .lm-seg, #title-modal .lm-seg .seg { border-radius: 8px !important; }
+/* collapsed Map Layers hides ALL rows incl. Title/Key (inline display
+from syncFurnitureLayerRows must not resurrect them) */
+body.layers-collapsed #ml-layers-panel .ml-layer-row { display: none !important; }
+/* key edit-list label inputs: quiet wells, no outlines */
+.km-label-input, #key-modal .km-label-input {
+  border: none !important;
+  outline: none !important;
+  background: rgba(0,0,0,0.04);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font: 400 12px/1.2 'Jost', Georgia, serif;
+}
+.km-label-input:focus { background: rgba(0,0,0,0.07); }
+/* ── Key modal matches the current header language (Maddy 2026-08-14) ──
+Type/Style are lm-seg segments; colour chips match the header's 19px
+4px-radius swatches (no border, gold outline when selected). */
+#key-modal .lm-seg, #key-modal .lm-seg .seg { border-radius: 8px !important; }
+#key-modal .lm-seg .seg { padding: 4px 10px; font: 500 12px/1 'Jost', Georgia, serif; }
+#key-modal .km-color-btn {
+  width: 19px !important;
+  height: 19px !important;
+  border: none !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  transform: none !important;
+  padding: 0;
+}
+#key-modal .km-color-btn:hover { outline: 2px solid rgba(200,160,48,0.5); outline-offset: 1px; transform: none; }
+#key-modal .km-color-btn.active { outline: 2px solid #C8A030; outline-offset: 1px; }
+/* white chip needs an edge on the cream card */
+#key-modal .km-color-btn[title="White"] { border: 1px solid #c9c2b2 !important; }
+/* ── Header round (Maddy 2026-08-14 evening) ── */
+/* search icon inside the pill */
+#global-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(250,245,234,0.55);
+  pointer-events: none;
+}
+#global-search { padding-left: 32px; }
+/* no divider after the logo */
+#toolbar-logo { border-right: none; }
+#row1-doc { border-left: none; }
+/* row 2: 35% darker + Jost everywhere */
+#toolbar #row2 { background: #283740; }
+#row2, #row2 .lbl, #row2 button, #row2 input, #row2 .seg, #row2 .r2-num { font-family: 'Jost', Georgia, serif; }
+/* leave-map confirm: same chrome as the standardized modals */
+#leave-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(40,20,5,0.55);
+  z-index: 520;
+  align-items: center;
+  justify-content: center;
+}
+#leave-modal-overlay.open { display: flex; }
+#leave-modal {
+  position: relative;
+  background: #FAF5EA;
+  border: none;
+  border-radius: 14px;
+  padding: 20px 24px;
+  width: 380px;
+  box-shadow: 0 6px 32px rgba(40,20,5,0.4);
+  color: #2a1f0e;
+  font-family: 'Jost', Georgia, serif;
+}
+#leave-modal h3 {
+  font-family: 'Colus', Georgia, serif;
+  text-align: left;
+  color: #2a1f0e;
+  font-size: 17px;
+  letter-spacing: 1px;
+  margin: 0 0 4px;
+}
+/* ── Pill + outline round (Maddy 2026-08-14 evening #2) ──
+Toggle pills: inner segment fills the outer pill exactly (no inset gap),
+corner radii match (outer 8, inner 7 = 8 minus the 1px border).
+Row 2: selected segment is GOLD, container outline gone, labels take the
+grey/blue of the old page-control outlines, and buttons lose their
+outlines everywhere we can. */
+.lm-seg { padding: 0 !important; gap: 0 !important; overflow: hidden; }
+.lm-seg .seg { border-radius: 7px !important; align-self: stretch; }
+#row2 .lm-seg, #lm-layout-pop .lm-seg, #title-modal .lm-seg, #key-modal .lm-seg { padding: 0 !important; gap: 0 !important; }
+/* row 2 (navy): gold selection, no container outline, no button outlines */
+#row2 .lm-seg { border: none; background: rgba(231,237,241,0.10); }
+#row2 .lm-seg .seg.on { background: #C8A030; color: #283740; }
+#row2 .r2-style-btn { border: none; background: rgba(231,237,241,0.10); }
+#row2 .r2-style-btn:hover { background: rgba(231,237,241,0.18); }
+#row2 .r2-style-btn.active { background: #C8A030; color: #283740; }
+.r2-style-btn.active { color: #283740; }
+/* row-2 labels: the grey/blue the page-control outlines used to be */
+#row2 .lbl { color: #A9B8C0; }
+/* Jost for EVERYTHING on row 2 — out-specify the Colus small-caps label rule */
+#toolbar #row2 span.lbl, #row2 .lbl, #row2 button, #row2 input, #row2 .seg, #row2 .r2-num { font-family: 'Jost', Georgia, serif !important; letter-spacing: 0.3px; text-transform: none; }
+/* …and labels read bold + uppercase (Maddy) */
+#toolbar #row2 span.lbl, #row2 .lbl {
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-size: 11px;
+}
+/* ── Home-page Saved Maps panel ── */
+#ss-saves {
+  margin: 26px auto 0;
+  background: rgba(250,245,234,0.75);
+  border: 1px solid #d8c9a0;
+  border-radius: 14px;
+  padding: 14px 18px 10px;
+  box-shadow: 0 2px 10px rgba(42,31,14,0.08);
+}
+#ss-saves-list { list-style: none; margin: 0; padding: 0; max-height: 180px; overflow-y: auto; }
+.ss-save-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Jost', Georgia, serif;
+}
+.ss-save-item:hover { background: #f1e6cc; }
+.ss-save-name {
+  font: 500 13px/1.2 'Jost', Georgia, serif;
+  color: #2a1f0e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ss-save-date { font: 400 11px/1.2 'Jost', Georgia, serif; color: #9a8a6a; flex-shrink: 0; }
+/* saved-map thumbnails (home panel + Save/Open modal) */
+.ss-save-item { align-items: center; }
+.ss-save-thumb {
+  width: 64px;
+  height: 44px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border-radius: 6px;
+  border: 1px solid #d8c9a0;
+  background: #fff;
+}
+.ss-save-thumb-empty { background: #efe8d6; }
+.save-item { align-items: center; }
+.save-item-thumb {
+  width: 56px;
+  height: 40px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border-radius: 6px;
+  border: 1px solid #d8c9a0;
+  background: #fff;
+  margin-right: 8px;
+}
+.ss-save-name { flex: 1; text-align: left; margin-left: 12px; }
+.ss-save-thumb, .ss-save-thumb-empty { height: 44px; box-sizing: border-box; }
+/* Change Map destination picker */
+#changemap-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(40,20,5,0.55);
+  z-index: 520;
+  align-items: center;
+  justify-content: center;
+}
+#changemap-modal-overlay.open { display: flex; }
+#changemap-modal {
+  position: relative;
+  background: #FAF5EA;
+  border-radius: 14px;
+  padding: 20px 24px;
+  width: 400px;
+  max-width: 92vw;
+  box-shadow: 0 6px 32px rgba(40,20,5,0.4);
+  color: #2a1f0e;
+  font-family: 'Jost', Georgia, serif;
+}
+#changemap-modal h3 {
+  font-family: 'Colus', Georgia, serif;
+  font-weight: 400;
+  text-align: left;
+  color: #2a1f0e;
+  font-size: 17px;
+  letter-spacing: 1px;
+  margin: 0 0 4px;
+}
+.cm-options { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 10px; }
+.cm-opt {
+  text-align: left;
+  font: 600 13px/1 'Jost', Georgia, serif;
+  padding: 10px 12px;
+  border: 1px solid #d8c9a0;
+  border-radius: 8px;
+  background: #fff;
+  color: #2a1f0e;
+  cursor: pointer;
+}
+.cm-opt:hover { background: #f1e6cc; border-color: #c8a030; }
+/* ── Row-2 group spacing + bigger eye + desert retired (Maddy) ── */
+/* One uniform gap between control groups, regardless of tool view.
+Groups keep their own tight internal 6px gap. */
+#toolbar #row2 { gap: 0; }
+#row2 > div[id$="-ctrl"] { margin-right: 22px; }
+#row2 > #nav-ctrl { margin-right: 0; }
+/* Change Map: icon options + inline saved-maps list */
+.cm-opt { display: flex; align-items: center; gap: 10px; }
+#cm-saves-title {
+  font: 400 12px/1 'Colus', Georgia, serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #7a5c1e;
+  margin: 12px 0 6px;
+}
+#cm-saves-list { list-style: none; margin: 0 0 8px; padding: 0; max-height: 200px; overflow-y: auto; }
+/* ── Popup headers: left-sidebar slate band, white text (Maddy trial) ── */
+#key-modal h3, #title-modal h3, #saves-modal h3, #export-modal h3, #leave-modal h3, #changemap-modal h3, #recovery-card h3 {
+  background: #4C6472;
+  color: #FAF5EA !important;
+  border-bottom: none !important;
+  text-align: left !important;
+  font-family: 'Colus', Georgia, serif;
+  font-size: 15px;
+  letter-spacing: 1.2px;
+}
+/* export modal has 22px top padding */
+#export-modal h3 { margin-top: -22px !important; }
+/* close ✕ sits on the band — make it white */
+#key-modal .modal-x, #title-modal .modal-x, #saves-modal .modal-x, #leave-modal .modal-x, #changemap-modal .modal-x, #export-modal #exp-x { color: #FAF5EA; z-index: 2; }
+/* a label mid-group starts a new section: same 22px buffer as between
+groups. Explicit ids only — several groups open with a HIDDEN span, so
+:not(:first-child) would double-buffer their leading label. */
+#brush-size-lbl { margin-left: 22px; }
+/* number readouts: no trailing dead width */
+#row2 .r2-num { width: 24px !important; text-align: left; }
+/* ── Map Layers rows: match the Terrain/War/Landmarks bar sizing; name
+right-aligned beside the eye; eye 50% larger + centered (Maddy) ── */
+/* same box as .sr-section-header */
+#ml-layers-panel .ml-layer-row { padding: 7px 12px; min-height: 24px; display: flex; align-items: center; }
+#ml-layers-panel .ml-layer-name { margin-left: auto; text-align: right; }
+/* flex-basis, not just width: the base .ml-switch rule sets
+`flex: 0 0 26px`, and basis beats width on the main axis */
+/* centered; doesn't grow the row */
+#ml-layers-panel .ml-switch {
+  order: 2;
+  flex: 0 0 15px !important;
+  width: 15px !important;
+  height: 15px !important;
+  margin: -8px 0 -8px 10px;
+  align-self: center;
+}
+/* the eye glyph itself: fill the switch box (base rule pins ::after to 11px) */
+#ml-layers-panel .ml-switch::after { width: 100% !important; height: 100% !important; }
+/* Map Layers dividers: flat full-width lines between rows only — no
+rounded card chrome, no line after the last row (border-top on every
+row after the first; trailing hidden rows can't leave a bottom line) */
+#ml-layers-panel .ml-layer-row { border: none !important; border-radius: 0 !important; margin: 0 !important; }
+#ml-layers-panel .ml-layer-row + .ml-layer-row { border-top: 1px solid #FAF5EA !important; }
+/* ── Popup band snaps flush to the card top/corners; no cream slivers ──
+Zero the cards' top padding and let the band own the top edge. */
+/* band corners clip to the card radius */
+#key-modal, #title-modal, #saves-modal, #export-modal, #leave-modal, #changemap-modal, #recovery-card { padding-top: 0 !important; overflow: hidden; }
+/* card's overflow does the rounding */
+#key-modal h3, #title-modal h3, #saves-modal h3, #export-modal h3, #leave-modal h3, #changemap-modal h3, #recovery-card h3 { margin: 0 -24px 14px !important; padding: 14px 24px !important; border-radius: 0; }
+#recovery-card h3 { background: #4C6472; color: #FAF5EA !important; }
+/* header-2 tool preview: left-aligned in flow with the standard buffer */
+#tool-preview-wrap { margin-left: 0 !important; }
+/* home page: no outlines anywhere */
+.ss-choice, .ss-choice-primary, #ss-saves, .ss-save-thumb, .ss-save-thumb-empty { border: none !important; }
+/* key box hugs its content — the old 150px min-width left dead space
+beside narrow single-column keys */
+#onmap-key { min-width: 0 !important; }
+#onmap-key-header { min-width: 88px; }
+/* "MAP KEY" + collapse never crush */
+/* ── Home page round 2 (Maddy): cream tagline, #283840 drop shadows,
+light-blue cards, saves panel matches the card row width ── */
+/* cream chart background: original dark ink text, no shadows */
+#ss-header h1, #ss-header #ss-tagline, #ss-header p, #ss-saves-title, #ss-back { text-shadow: none; }
+/* panels: fully opaque cream */
+.ss-choice, .ss-choice-primary, #ss-saves { background: #FAF5EA; }
+.ss-choice:hover, .ss-choice-primary:hover { background: #fffdf7; }
+/* Saved Maps title matches the card titles */
+#ss-saves-title {
+  font: 600 19px/1 'Colus', Georgia, serif;
+  letter-spacing: 0.5px;
+  text-transform: none;
+  color: #2a1f0e;
+  margin-bottom: 10px;
+}
+#ss-saves { width: min(700px, 92vw); }
+/* = 3×220px cards + 2×20px gaps */
+/* saves panel sits one card-gap (20px) below the cards */
+#ss-choices { margin-bottom: 0; }
+#ss-saves { margin-top: 20px; }
+/* ── Site-wide hint bubble — SAME styling as the original toolbar
+tooltip (#toolbar-tip, now retired): dark ink card, gold text. ── */
+/* left-rail slate — ALL hints, one color */
+/* no outline */
+#mf-hint {
+  position: fixed;
+  z-index: 9999;
+  display: none;
+  background: #4C6472;
+  color: #FAF5EA;
+  font-family: 'Jost', Georgia, serif;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  line-height: 1.45;
+  padding: 4px 9px;
+  border-radius: 8px;
+  border: none;
+  max-width: 260px;
+  box-shadow: 0 2px 8px rgba(40,56,64,0.35);
+  pointer-events: none;
+}
+#mf-hint.on { display: block; }
+/* saved-map thumbs keep the page's true aspect (portrait vs landscape),
+like the export preview — fixed height, natural width, no crop */
+.ss-save-thumb, .save-item-thumb { width: auto !important; max-width: 78px; height: 44px; object-fit: contain; background: #fff; }
+/* saved-map rows (home + Change Map): name/date left, thumbnail right */
+.ss-save-item .ss-save-name { order: 1; flex: 0 1 auto; text-align: left; margin-left: 0; }
+.ss-save-item .ss-save-date { order: 2; margin-left: 10px; }
+.ss-save-item .ss-save-thumb, .ss-save-item .ss-save-thumb-empty { order: 3; margin-left: auto; }
+/* Import popup: standard modal chrome (band styling piggybacks the h3 set) */
+#import-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(40,20,5,0.55);
+  z-index: 520;
+  align-items: center;
+  justify-content: center;
+}
+#import-modal-overlay.open { display: flex; }
+#import-modal {
+  position: relative;
+  background: #FAF5EA;
+  border-radius: 14px;
+  padding: 0 24px 20px;
+  width: 400px;
+  max-width: 92vw;
+  box-shadow: 0 6px 32px rgba(40,20,5,0.4);
+  color: #2a1f0e;
+  font-family: 'Jost', Georgia, serif;
+  overflow: hidden;
+}
+#import-modal h3 {
+  background: #4C6472;
+  color: #FAF5EA;
+  margin: 0 -24px 14px;
+  padding: 14px 24px;
+  font-family: 'Colus', Georgia, serif;
+  font-weight: 400;
+  text-align: left;
+  font-size: 15px;
+  letter-spacing: 1.2px;
+}
+#import-modal .modal-x { color: #FAF5EA; z-index: 2; }
+#im-saves-title {
+  font: 400 12px/1 'Colus', Georgia, serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #7a5c1e;
+  margin: 2px 0 6px;
+}
+#im-saves-list { list-style: none; margin: 0 0 8px; padding: 0; max-height: 240px; overflow-y: auto; }
+/* home Saved Maps titles: bolder + bigger (Maddy) */
+.ss-save-name { font-weight: 700 !important; font-size: 15px !important; }
+@media (max-width: 1150px) {
+  #row2 .lbl { display: none !important; }
+}
+@media (max-width: 980px) {
+  #row2 > div[id$="-ctrl"] { margin-right: 12px; }
+  #brush-size-lbl { margin-left: 12px; }
+  #row2 .color-btn { width: 16px !important; height: 16px !important; }
+}
+/* search bar: no outline (Maddy) */
+#global-search { border: none !important; }
+#global-search:focus { outline: none; }
+/* ── MapForge logo: the SVG wordmark, recolorable via mask (Maddy).
+Source: design/map_forge_logo.svg → mapforge-logo.svg. ── */
+/* toolbar: cream on dark ink */
+.mf-logo {
+  display: inline-block;
+  aspect-ratio: 216 / 44.22;
+  background-color: #FAF5EA;
+  -webkit-mask: url('mapforge-logo.svg') no-repeat center / contain;
+  mask: url('mapforge-logo.svg') no-repeat center / contain;
+  height: 22px;
+  vertical-align: middle;
+}
+/* home: dark ink on cream chart */
+#ss-header .mf-logo-home { height: 52px; background-color: #2a1f0e; }
+/* key collapse: caret style matching the Map Layers group */
+#onmap-key-collapse { background: transparent !important; border: none !important; font-size: 11px; }
+/* saved-map titles inside POPUPS: quiet (home panel keeps its bold 15px) */
+#cm-saves-list .ss-save-name, #im-saves-list .ss-save-name { font-weight: 400 !important; font-size: 12px !important; }
+
+    /* home page: tighter gap between the title block and the cards */
+    #ss-header { margin-bottom: 18px; }
+
+    /* row-2 labels: lighter tint of the bar's own grey-teal hue (#283740) */
+    #row2 .lbl { color: #9FB6C2 !important; }
+
+    /* The row-2 Jost enforcement must NOT flatten the label tool's font
+       chooser or its live preview — those SHOW their own typefaces (the Colus
+       "ABC" button + the preview input tracking the picked family). */
+    #row2 #r2fs-cn { font-family: 'Colus', Georgia, serif !important; }
+    #row2 #r2fs-jn, #row2 #r2fs-ji { font-family: 'Jost', Georgia, serif !important; }

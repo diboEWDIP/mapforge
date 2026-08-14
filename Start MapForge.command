@@ -30,4 +30,13 @@ echo "  ->  KEEP THIS WINDOW OPEN while you work."
 echo "  ->  To stop: press Ctrl+C, or just close this window."
 echo ""
 
-python3 -m http.server 7800
+# No-cache server: a plain http.server lets the browser cache old copies of
+# the app after an update ("ghost bugs" that a git pull doesn't fix).
+python3 -c "
+import http.server, functools
+class H(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header('Cache-Control', 'no-store')
+        super().end_headers()
+http.server.ThreadingHTTPServer(('', 7800), H).serve_forever()
+" 

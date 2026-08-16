@@ -7,7 +7,7 @@
 // Pinned version tag, NOT Date.now() (Eric, 2026-07-21): the old value
 // re-fetched all 41 icon PNGs on every load — invisible locally, slow on a
 // hosted site. Bump the tag when swapping icon art.
-const ICON_BUST = '?v=2026-08-16d';
+const ICON_BUST = '?v=2026-08-16e';
 
 const drawMountainIcon = _makeSvgStamp('icons/Mountain.svg', 'icon-mountain');
 
@@ -326,7 +326,7 @@ const drawWildAnimals  = _makeSvgStamp('icons/Wild Animals.svg',    'icon-trade-
 const drawIvory        = _makeSvgStamp('icons/Ivory.svg',           'icon-trade-ivory');
 const drawObsidian     = _makeSvgStamp('icons/Obsidian.svg',        'icon-trade-obsidian');
 const drawCattle       = _makeSvgStamp('icons/Cattle.svg',          'icon-trade-cattle');
-const drawGoats        = _makeImageStamp('icons/Goats.png',           'icon-trade-goats');
+const drawGoats        = _makeSvgStamp('icons/Goats.svg',           'icon-trade-goats');
 const drawPigs         = _makeSvgStamp('icons/Pigs.svg',            'icon-trade-pigs');
 // Landmark icons — shown in the Features panel, behave as icon stamps
 const drawTemple       = _makeSvgStamp('icons/Temple.svg',                'icon-feat-temple');

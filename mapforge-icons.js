@@ -7,7 +7,7 @@
 // Pinned version tag, NOT Date.now() (Eric, 2026-07-21): the old value
 // re-fetched all 41 icon PNGs on every load — invisible locally, slow on a
 // hosted site. Bump the tag when swapping icon art.
-const ICON_BUST = '?v=2026-08-16c';
+const ICON_BUST = '?v=2026-08-16d';
 
 const drawMountainIcon = _makeSvgStamp('icons/Mountain.svg', 'icon-mountain');
 
@@ -285,11 +285,11 @@ const drawAmphora      = _makeSvgStamp('icons/Olives.svg',          'icon-trade-
 const drawSilk         = _makeSvgStamp('icons/Silk.svg',            'icon-trade-silk');
 const drawWheat        = _makeSvgStamp('icons/Wheat.svg',           'icon-trade-wheat');
 const drawCamel        = _makeSvgStamp('icons/Camel.svg',           'icon-trade-camel');
-const drawMolasses     = _makeImageStamp('icons/Molasses.png',        'icon-trade-molasses');
+const drawMolasses     = _makeSvgStamp('icons/Molasses.svg',        'icon-trade-molasses');
 const drawRum          = _makeSvgStamp('icons/Rum.svg',             'icon-trade-rum');
 const drawTea          = _makeSvgStamp('icons/Tea.svg',             'icon-trade-tea');
 const drawCoal         = _makeSvgStamp('icons/Coal.svg',            'icon-trade-coal');
-const drawCopper       = _makeImageStamp('icons/Copper.png',          'icon-trade-copper');
+const drawCopper       = _makeSvgStamp('icons/Copper.svg',          'icon-trade-copper');
 const drawCotton       = _makeSvgStamp('icons/Cotton.svg',          'icon-trade-cotton');
 const drawDyes         = _makeSvgStamp('icons/Dyes.svg',            'icon-trade-dyes');
 const drawFish         = _makeSvgStamp('icons/Fishing.svg',         'icon-trade-fish');
@@ -334,7 +334,7 @@ const drawMesoPyramid  = _makeSvgStamp('icons/Mesoamerican Pyramid.svg',  'icon-
 const drawPyramid      = _makeSvgStamp('icons/Pyramid.svg',               'icon-feat-pyramid');
 const drawFactory      = _makeSvgStamp('icons/Factory.svg',               'icon-feat-factory');
 const drawCataract     = _makeSvgStamp('icons/Cataract.svg',              'icon-feat-cataract');
-const drawFortress     = _makeImageStamp('icons/Fortress.png',              'icon-feat-fortress');
+const drawFortress     = _makeSvgStamp('icons/Fortress.svg',              'icon-feat-fortress');
 const drawZiggurat     = _makeSvgStamp('icons/Ziggurat.svg',              'icon-feat-ziggurat');
 // New landmarks (Noun Project flat set, 2026-08-16)
 const drawCapitol      = _makeSvgStamp('icons/Capitol.svg',               'icon-feat-capitol');

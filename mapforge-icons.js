@@ -7,60 +7,9 @@
 // Pinned version tag, NOT Date.now() (Eric, 2026-07-21): the old value
 // re-fetched all 41 icon PNGs on every load — invisible locally, slow on a
 // hosted site. Bump the tag when swapping icon art.
-const ICON_BUST = '?v=2026-08-16b';
+const ICON_BUST = '?v=2026-08-16c';
 
-// Offscreen canvas holding the mountain with white removed (luminance → alpha)
-let _mountainCanvas = null;
-
-(function() {
-  const img = new Image();
-  img.onload = () => {
-    const oc = document.createElement('canvas');
-    oc.width = img.naturalWidth; oc.height = img.naturalHeight;
-    const oc2 = oc.getContext('2d');
-    oc2.drawImage(img, 0, 0);
-    const id = oc2.getImageData(0, 0, oc.width, oc.height);
-    const d = id.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const lum = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-      // hard threshold: anything above 210 brightness → fully transparent
-      // everything else → pure black with boosted opacity
-      if (lum > 210) {
-        d[i+3] = 0;
-      } else {
-        d[i+3] = Math.min(255, Math.round((255 - lum) * 1.6));
-        d[i] = 0; d[i+1] = 0; d[i+2] = 0;
-      }
-    }
-    oc2.putImageData(id, 0, 0);
-    _mountainCanvas = _downscaleStepped(oc, 1024);   // high-quality master → sharp on map
-    // Redraw toolbar icon now that the processed canvas is ready
-    const c = document.getElementById('icon-mountain');
-    if (c) _drawMountainToolbarIcon(c.getContext('2d'), 14, 11, 26, 20);
-  };
-  img.src = 'icons/Mountain.png' + ICON_BUST;
-})();
-
-// Draws cream-tinted lines for the dark toolbar button
-function _drawMountainToolbarIcon(ctx, x, y, w, h) {
-  if (!_mountainCanvas) return;
-  // Sidebar palette shows the true map art, centred in the box
-  ctx.clearRect(x - w/2, y - h/2, w, h);
-  drawMountainIcon(ctx, x, y, Math.min(w, h) * 0.82);
-  return;
-  // temp canvas at DEVICE resolution — a logical-px temp was the blur
-    const _tdpr = window.devicePixelRatio || 1;
-    const tmp = document.createElement('canvas');
-    tmp.width = w * _tdpr; tmp.height = h * _tdpr;
-    const tc = tmp.getContext('2d');
-    tc.scale(_tdpr, _tdpr);
-  tc.fillStyle = '#111111';
-  tc.fillRect(0, 0, w, h);
-  tc.globalCompositeOperation = 'destination-in';
-  tc.drawImage(_mountainCanvas, 0, 0, w, h);
-  ctx.clearRect(x - w/2, y - h/2, w, h);
-  ctx.drawImage(tmp, x - w/2, y - h/2);
-}
+const drawMountainIcon = _makeSvgStamp('icons/Mountain.svg', 'icon-mountain');
 
 // Tint a black-alpha master to an arbitrary colour at draw time (cached per
 // colour on the master canvas object — cheap after first use).
@@ -79,90 +28,11 @@ function _tintedMaster(cv, color) {
   return t;
 }
 
-// Draws black line-art (no white bg) onto the map canvas
-function drawMountainIcon(ctx, x, y, size, color) {
-  const w = size * 1.6, h = size * 1.25;
-  ctx.save();
-  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-  if (_mountainCanvas) {
-    ctx.drawImage(_tintedMaster(_mountainCanvas, color), x - w/2, y - h/2, w, h);
-  } else {
-    // fallback triangle until image processes
-    ctx.fillStyle = color || '#111';
-    ctx.beginPath();
-    ctx.moveTo(x, y - h/2);
-    ctx.lineTo(x + w/2, y + h/2);
-    ctx.lineTo(x - w/2, y + h/2);
-    ctx.closePath(); ctx.fill();
-  }
-  ctx.restore();
-}
-
 function drawPeakIcon(ctx, x, y, size, color) {
   _peakStamp.draw(ctx, x, y, size, color);
 }
 
-let _oasisCanvas = null;
-
-(function() {
-  const img = new Image();
-  img.onload = () => {
-    const oc = document.createElement('canvas');
-    oc.width = img.naturalWidth; oc.height = img.naturalHeight;
-    const oc2 = oc.getContext('2d');
-    oc2.drawImage(img, 0, 0);
-    const id = oc2.getImageData(0, 0, oc.width, oc.height);
-    const d = id.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const lum = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-      if (lum > 210) {
-        d[i+3] = 0;
-      } else {
-        d[i+3] = Math.min(255, Math.round((255 - lum) * 1.6));
-        d[i] = 0; d[i+1] = 0; d[i+2] = 0;
-      }
-    }
-    oc2.putImageData(id, 0, 0);
-    _oasisCanvas = _downscaleStepped(oc, 1024);   // high-quality master → sharp on map
-    const c = document.getElementById('icon-oasis');
-    if (c) _drawOasisToolbarIcon(c.getContext('2d'), 14, 11, 26, 20);
-  };
-  img.src = 'icons/Oasis.png' + ICON_BUST;
-})();
-
-function _drawOasisToolbarIcon(ctx, x, y, w, h) {
-  if (!_oasisCanvas) return;
-  ctx.clearRect(x - w/2, y - h/2, w, h);
-  drawOasis(ctx, x, y, Math.min(w, h) * 0.82);
-  return;
-    const _tdpr = window.devicePixelRatio || 1;
-    const tmp = document.createElement('canvas');
-    tmp.width = w * _tdpr; tmp.height = h * _tdpr;
-    const tc = tmp.getContext('2d');
-    tc.scale(_tdpr, _tdpr);
-  tc.fillStyle = '#111111';
-  tc.fillRect(0, 0, w, h);
-  tc.globalCompositeOperation = 'destination-in';
-  tc.drawImage(_oasisCanvas, 0, 0, w, h);
-  ctx.clearRect(x - w/2, y - h/2, w, h);
-  ctx.drawImage(tmp, x - w/2, y - h/2, w, h);
-}
-
-function drawOasis(ctx, x, y, size, color) {
-  const w = size * 1.6, h = size * 1.25;
-  ctx.save();
-  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-  if (_oasisCanvas) {
-    ctx.drawImage(_tintedMaster(_oasisCanvas, color), x - w/2, y - h/2, w, h);
-  } else {
-    // fallback circle until image processes
-    ctx.fillStyle = '#2a6fbd';
-    ctx.beginPath();
-    ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-}
+const drawOasis = _makeSvgStamp('icons/Oasis.svg', 'icon-oasis');
 
 // ── Dark-toolbar image stamps (danger, peak) ─────────────────────────────────
 // Same pipeline as mountain/oasis: threshold a PNG to black line-art, draw a
@@ -216,16 +86,12 @@ function _makeDarkToolbarStamp(src, toolbarId) {
 }
 
 const _peakStamp   = _makeDarkToolbarStamp('icons/Major Peak.png', 'icon-peak');
-const _dangerStamp = _makeDarkToolbarStamp('icons/Danger.png',     'icon-danger');
-const _battleStamp = _makeDarkToolbarStamp('icons/Battle.png',     'icon-battle');
 
-function drawDanger(ctx, x, y, size, color) {
-  _dangerStamp.draw(ctx, x, y, size, color);
-}
-
-function drawBattle(ctx, x, y, size, color) {
-  _battleStamp.draw(ctx, x, y, size, color);
-}
+// Danger & Battle now render from crisp SVG (their toolbar buttons are drawn
+// by _makeSvgStamp on load — the old _dangerStamp/_battleStamp.toolbar() init
+// lines were removed to match).
+const drawDanger = _makeSvgStamp('icons/Danger.svg', 'icon-danger');
+const drawBattle = _makeSvgStamp('icons/Battle.svg', 'icon-battle');
 
 
 
@@ -344,87 +210,157 @@ function _makeImageStamp(src, toolbarId, tolerance=40) {
   return draw;
 }
 
-const drawHorse        = _makeImageStamp('icons/Horse.png',          'icon-trade-horses');
-const drawAmphora      = _makeImageStamp('icons/Olives.png',          'icon-trade-oliveoil');
-const drawSilk         = _makeImageStamp('icons/Silk.png',            'icon-trade-silk');
-const drawWheat        = _makeImageStamp('icons/Wheat.png',           'icon-trade-wheat');
-const drawCamel        = _makeImageStamp('icons/Camel.png',           'icon-trade-camel');
+// ── Vector (SVG) stamp factory — crisp at ANY zoom/export ────────────────────
+// Drop-in replacement for _makeImageStamp, but the source is an SVG that we
+// rasterize fresh at the exact device-pixel size each draw, then tint to the
+// annotation colour via source-in. Because the raster is generated at the
+// output resolution (not scaled up from a fixed master), edges stay sharp when
+// the map is zoomed or exported large — fixing the fuzzy PNG edges. Same
+// size*1.6 × size*1.25 footprint as _makeImageStamp, so placement, hit-testing
+// and the Select tool are unchanged. Noun Project icons are solid black paths
+// with transparent backgrounds, so no flood-fill background removal is needed.
+function _makeSvgStamp(svgSrc, toolbarId) {
+  const img = new Image();
+  let ready = false;
+  const cache = new Map();          // key `pw x ph | color` → tinted canvas
+  const CACHE_CAP = 24;
+
+  function rasterize(pw, ph, color) {
+    const tint = (!color || color === '#111' || color === '#111111') ? '#111' : color;
+    const key = pw + 'x' + ph + '|' + tint;
+    const hit = cache.get(key);
+    if (hit) return hit;
+    const c = document.createElement('canvas');
+    c.width = pw; c.height = ph;
+    const cx = c.getContext('2d');
+    cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+    cx.drawImage(img, 0, 0, pw, ph);            // rasterize the VECTOR at output size
+    cx.globalCompositeOperation = 'source-in';  // tint the silhouette, keep its alpha
+    cx.fillStyle = tint;
+    cx.fillRect(0, 0, pw, ph);
+    if (cache.size >= CACHE_CAP) cache.delete(cache.keys().next().value);
+    cache.set(key, c);
+    return c;
+  }
+
+  function draw(ctx, x, y, size, color) {
+    if (!ready) return;
+    const w = size * 1.6, h = size * 1.25;
+    // Device-pixel size from the ctx transform, so HiDPI + supersampled exports
+    // rasterize the SVG at their true resolution (this is what keeps it crisp).
+    const t = ctx.getTransform ? ctx.getTransform() : null;
+    const sx = t ? Math.hypot(t.a, t.b) || 1 : 1;
+    const sy = t ? Math.hypot(t.c, t.d) || 1 : 1;
+    const pw = Math.max(1, Math.round(w * sx));
+    const ph = Math.max(1, Math.round(h * sy));
+    ctx.save();
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(rasterize(pw, ph, color), x - w / 2, y - h / 2, w, h);
+    ctx.restore();
+  }
+
+  img.onload = () => {
+    ready = true;
+    if (toolbarId) {
+      const c = document.getElementById(toolbarId);
+      if (c) {
+        const dpr = Math.max(1, window.devicePixelRatio || 1);
+        const cssW = c.width, cssH = c.height;
+        c.style.width = cssW + 'px';
+        c.style.height = cssH + 'px';
+        c.width = Math.round(cssW * dpr);
+        c.height = Math.round(cssH * dpr);
+        const cx = c.getContext('2d');
+        cx.scale(dpr, dpr);
+        draw(cx, cssW / 2, cssH / 2, cssW * 0.44);
+      }
+    }
+  };
+  img.src = svgSrc + ICON_BUST;
+  return draw;
+}
+
+const drawHorse        = _makeSvgStamp('icons/Horse.svg',          'icon-trade-horses');
+const drawAmphora      = _makeSvgStamp('icons/Olives.svg',          'icon-trade-oliveoil');
+const drawSilk         = _makeSvgStamp('icons/Silk.svg',            'icon-trade-silk');
+const drawWheat        = _makeSvgStamp('icons/Wheat.svg',           'icon-trade-wheat');
+const drawCamel        = _makeSvgStamp('icons/Camel.svg',           'icon-trade-camel');
 const drawMolasses     = _makeImageStamp('icons/Molasses.png',        'icon-trade-molasses');
-const drawRum          = _makeImageStamp('icons/Rum.png',             'icon-trade-rum');
-const drawTea          = _makeImageStamp('icons/Tea.png',             'icon-trade-tea');
-const drawCoal         = _makeImageStamp('icons/Coal.png',            'icon-trade-coal');
+const drawRum          = _makeSvgStamp('icons/Rum.svg',             'icon-trade-rum');
+const drawTea          = _makeSvgStamp('icons/Tea.svg',             'icon-trade-tea');
+const drawCoal         = _makeSvgStamp('icons/Coal.svg',            'icon-trade-coal');
 const drawCopper       = _makeImageStamp('icons/Copper.png',          'icon-trade-copper');
-const drawCotton       = _makeImageStamp('icons/Cotton.png',          'icon-trade-cotton');
-const drawDyes         = _makeImageStamp('icons/Dyes.png',            'icon-trade-dyes');
-const drawFish         = _makeImageStamp('icons/Fishing.png',         'icon-trade-fish');
-const drawFurs         = _makeImageStamp('icons/Furs.png',            'icon-trade-furs');
-const drawGold         = _makeImageStamp('icons/Gold.png',            'icon-trade-gold');
-const drawIncense      = _makeImageStamp('icons/Incense.png',         'icon-trade-incense');
-const drawIndigo       = _makeImageStamp('icons/Indigo.png',          'icon-trade-indigo');
-const drawIron         = _makeImageStamp('icons/Iron.png',            'icon-trade-iron');
-const drawLumber       = _makeImageStamp('icons/Lumber.png',          'icon-trade-lumber');
-const drawMillet       = _makeImageStamp('icons/Millet.png',          'icon-trade-millet');
-const drawNavalStores  = _makeImageStamp('icons/Naval Stores.png',    'icon-trade-navalstores');
-const drawPaper        = _makeImageStamp('icons/Paper.png',           'icon-trade-paper');
-const drawPerfume      = _makeImageStamp('icons/Perfume.png',      'icon-trade-perfume');
-const drawPorcelain    = _makeImageStamp('icons/Porcelain.png',     'icon-trade-porcelain');
-const drawRice         = _makeImageStamp('icons/Rice.png',            'icon-trade-rice');
-const drawSalt         = _makeImageStamp('icons/Salt.png',            'icon-trade-salt');
-const drawShipbuilding = _makeImageStamp('icons/Shipbuilding.png',    'icon-trade-shipbuilding');
-const drawSpices       = _makeImageStamp('icons/Spices.png',          'icon-trade-spices');
-const drawStone        = _makeImageStamp('icons/Stone.png',           'icon-trade-stone');
-const drawSugar        = _makeImageStamp('icons/Sugar.png',           'icon-trade-sugar');
-const drawTextiles     = _makeImageStamp('icons/Textiles.png',        'icon-trade-textiles');
-const drawTin          = _makeImageStamp('icons/Tin.png',             'icon-trade-tin');
-const drawTobacco      = _makeImageStamp('icons/Tobacco.png',         'icon-trade-tobacco');
-const drawWhaling      = _makeImageStamp('icons/Whaling.png',         'icon-trade-whaling');
-const drawGrapes       = _makeImageStamp('icons/Wine.png',            'icon-trade-wine');
-const drawWool         = _makeImageStamp('icons/Wool.png',            'icon-trade-wool');
-const drawGem          = _makeImageStamp('icons/Gems.png',            'icon-trade-gem');
-const drawOil          = _makeImageStamp('icons/Oil.png',             'icon-trade-oil');
-const drawCorn         = _makeImageStamp('icons/Corn.png',            'icon-trade-corn');
-const drawPotato       = _makeImageStamp('icons/Potato.png',          'icon-trade-potato');
-const drawLead         = _makeImageStamp('icons/Lead.png',            'icon-trade-lead');
-const drawMarble       = _makeImageStamp('icons/Marble.png',          'icon-trade-marble');
-const drawWildAnimals  = _makeImageStamp('icons/Wild Animals.png',    'icon-trade-wildanimals');
-const drawIvory        = _makeImageStamp('icons/Ivory.png',           'icon-trade-ivory');
-const drawObsidian     = _makeImageStamp('icons/Obsidian.png',        'icon-trade-obsidian');
-const drawCattle       = _makeImageStamp('icons/Cattle.png',          'icon-trade-cattle');
+const drawCotton       = _makeSvgStamp('icons/Cotton.svg',          'icon-trade-cotton');
+const drawDyes         = _makeSvgStamp('icons/Dyes.svg',            'icon-trade-dyes');
+const drawFish         = _makeSvgStamp('icons/Fishing.svg',         'icon-trade-fish');
+const drawFurs         = _makeSvgStamp('icons/Furs.svg',            'icon-trade-furs');
+const drawGold         = _makeSvgStamp('icons/Gold.svg',            'icon-trade-gold');
+const drawIncense      = _makeSvgStamp('icons/Incense.svg',         'icon-trade-incense');
+const drawIndigo       = _makeSvgStamp('icons/Indigo.svg',          'icon-trade-indigo');
+const drawIron         = _makeSvgStamp('icons/Iron.svg',            'icon-trade-iron');
+const drawLumber       = _makeSvgStamp('icons/Lumber.svg',          'icon-trade-lumber');
+const drawMillet       = _makeSvgStamp('icons/Millet.svg',          'icon-trade-millet');
+const drawNavalStores  = _makeSvgStamp('icons/Naval Stores.svg',    'icon-trade-navalstores');
+const drawPaper        = _makeSvgStamp('icons/Paper.svg',           'icon-trade-paper');
+const drawPerfume      = _makeSvgStamp('icons/Perfume.svg',      'icon-trade-perfume');
+const drawPorcelain    = _makeSvgStamp('icons/Porcelain.svg',     'icon-trade-porcelain');
+const drawRice         = _makeSvgStamp('icons/Rice.svg',            'icon-trade-rice');
+const drawSalt         = _makeSvgStamp('icons/Salt.svg',            'icon-trade-salt');
+const drawShipbuilding = _makeSvgStamp('icons/Shipbuilding.svg',    'icon-trade-shipbuilding');
+const drawSpices       = _makeSvgStamp('icons/Spices.svg',          'icon-trade-spices');
+const drawStone        = _makeSvgStamp('icons/Stone.svg',           'icon-trade-stone');
+const drawSugar        = _makeSvgStamp('icons/Sugar.svg',           'icon-trade-sugar');
+const drawTextiles     = _makeSvgStamp('icons/Textiles.svg',        'icon-trade-textiles');
+const drawTin          = _makeSvgStamp('icons/Tin.svg',             'icon-trade-tin');
+const drawTobacco      = _makeSvgStamp('icons/Tobacco.svg',         'icon-trade-tobacco');
+const drawWhaling      = _makeSvgStamp('icons/Whaling.svg',         'icon-trade-whaling');
+const drawGrapes       = _makeSvgStamp('icons/Wine.svg',            'icon-trade-wine');
+const drawWool         = _makeSvgStamp('icons/Wool.svg',            'icon-trade-wool');
+const drawGem          = _makeSvgStamp('icons/Gems.svg',            'icon-trade-gem');
+const drawOil          = _makeSvgStamp('icons/Oil.svg',             'icon-trade-oil');
+const drawCorn         = _makeSvgStamp('icons/Corn.svg',            'icon-trade-corn');
+const drawPotato       = _makeSvgStamp('icons/Potato.svg',          'icon-trade-potato');
+const drawLead         = _makeSvgStamp('icons/Lead.svg',            'icon-trade-lead');
+const drawMarble       = _makeSvgStamp('icons/Marble.svg',          'icon-trade-marble');
+const drawWildAnimals  = _makeSvgStamp('icons/Wild Animals.svg',    'icon-trade-wildanimals');
+const drawIvory        = _makeSvgStamp('icons/Ivory.svg',           'icon-trade-ivory');
+const drawObsidian     = _makeSvgStamp('icons/Obsidian.svg',        'icon-trade-obsidian');
+const drawCattle       = _makeSvgStamp('icons/Cattle.svg',          'icon-trade-cattle');
 const drawGoats        = _makeImageStamp('icons/Goats.png',           'icon-trade-goats');
-const drawPigs         = _makeImageStamp('icons/Pigs.png',            'icon-trade-pigs');
+const drawPigs         = _makeSvgStamp('icons/Pigs.svg',            'icon-trade-pigs');
 // Landmark icons — shown in the Features panel, behave as icon stamps
-const drawTemple       = _makeImageStamp('icons/Temple.png',                'icon-feat-temple');
-const drawMesoPyramid  = _makeImageStamp('icons/Mesoamerican Pyramid.png',  'icon-feat-mesopyramid');
-const drawPyramid      = _makeImageStamp('icons/Pyramid.png',               'icon-feat-pyramid');
-const drawFactory      = _makeImageStamp('icons/Factory.png',               'icon-feat-factory');
-const drawCataract     = _makeImageStamp('icons/Cataract.png',              'icon-feat-cataract');
+const drawTemple       = _makeSvgStamp('icons/Temple.svg',                'icon-feat-temple');
+const drawMesoPyramid  = _makeSvgStamp('icons/Mesoamerican Pyramid.svg',  'icon-feat-mesopyramid');
+const drawPyramid      = _makeSvgStamp('icons/Pyramid.svg',               'icon-feat-pyramid');
+const drawFactory      = _makeSvgStamp('icons/Factory.svg',               'icon-feat-factory');
+const drawCataract     = _makeSvgStamp('icons/Cataract.svg',              'icon-feat-cataract');
 const drawFortress     = _makeImageStamp('icons/Fortress.png',              'icon-feat-fortress');
-const drawZiggurat     = _makeImageStamp('icons/Ziggurat.png',              'icon-feat-ziggurat');
+const drawZiggurat     = _makeSvgStamp('icons/Ziggurat.svg',              'icon-feat-ziggurat');
 // New landmarks (Noun Project flat set, 2026-08-16)
-const drawCapitol      = _makeImageStamp('icons/Capitol.png',               'icon-feat-capitol');
-const drawCastle       = _makeImageStamp('icons/Castle.png',                'icon-feat-castle');
-const drawCathedral    = _makeImageStamp('icons/Cathedral.png',             'icon-feat-cathedral');
-const drawEgyptTemple  = _makeImageStamp('icons/Egyptian Temple.png',       'icon-feat-egyptiantemple');
-const drawLighthouse   = _makeImageStamp('icons/Lighthouse.png',            'icon-feat-lighthouse');
+const drawCapitol      = _makeSvgStamp('icons/Capitol.svg',               'icon-feat-capitol');
+const drawCastle       = _makeSvgStamp('icons/Castle.svg',                'icon-feat-castle');
+const drawCathedral    = _makeSvgStamp('icons/Cathedral.svg',             'icon-feat-cathedral');
+const drawEgyptTemple  = _makeSvgStamp('icons/Egyptian Temple.svg',       'icon-feat-egyptiantemple');
+const drawLighthouse   = _makeSvgStamp('icons/Lighthouse.svg',            'icon-feat-lighthouse');
 // New trade goods (Noun Project flat set, 2026-08-16)
-const drawBarley       = _makeImageStamp('icons/Barley.png',                'icon-trade-barley');
-const drawCarpet       = _makeImageStamp('icons/Carpet.png',                'icon-trade-carpet');
-const drawPottery      = _makeImageStamp('icons/Pottery.png',               'icon-trade-pottery');
-const drawSilver       = _makeImageStamp('icons/Silver.png',                'icon-trade-silver');
-const drawSorghum      = _makeImageStamp('icons/Sorghum.png',               'icon-trade-sorghum');
+const drawBarley       = _makeSvgStamp('icons/Barley.svg',                'icon-trade-barley');
+const drawCarpet       = _makeSvgStamp('icons/Carpet.svg',                'icon-trade-carpet');
+const drawPottery      = _makeSvgStamp('icons/Pottery.svg',               'icon-trade-pottery');
+const drawSilver       = _makeSvgStamp('icons/Silver.svg',                'icon-trade-silver');
+const drawSorghum      = _makeSvgStamp('icons/Sorghum.svg',               'icon-trade-sorghum');
 // New transport icons (Noun Project flat set, 2026-08-16)
-const drawShip         = _makeImageStamp('icons/Ship.png',                  'icon-trans-ship');
-const drawTrireme      = _makeImageStamp('icons/Trireme.png',               'icon-trans-trireme');
-const drawConestoga    = _makeImageStamp('icons/Conestoga Wagon.png',       'icon-trans-conestoga');
+const drawShip         = _makeSvgStamp('icons/Ship.svg',                  'icon-trans-ship');
+const drawTrireme      = _makeSvgStamp('icons/Trireme.svg',               'icon-trans-trireme');
+const drawConestoga    = _makeSvgStamp('icons/Conestoga Wagon.svg',       'icon-trans-conestoga');
 // New event/figure markers (Noun Project flat set, 2026-08-16)
-const drawPerson       = _makeImageStamp('icons/Person.png',                'icon-mark-person');
-const drawFire         = _makeImageStamp('icons/Fire.png',                  'icon-mark-fire');
-const drawVikings      = _makeImageStamp('icons/Vikings.png',               'icon-mark-vikings');
-const drawChristianity = _makeImageStamp('icons/Christianity.png',    'icon-religion-christianity');
-const drawIslam        = _makeImageStamp('icons/Islam.png',           'icon-religion-islam');
-const drawBuddhism     = _makeImageStamp('icons/Buddhism.png',        'icon-religion-buddhism');
-const drawHinduism     = _makeImageStamp('icons/Hinduism.png',        'icon-religion-hinduism');
-const drawJudaism      = _makeImageStamp('icons/Judaism.png',         'icon-religion-judaism');
+const drawPerson       = _makeSvgStamp('icons/Person.svg',                'icon-mark-person');
+const drawFire         = _makeSvgStamp('icons/Fire.svg',                  'icon-mark-fire');
+const drawVikings      = _makeSvgStamp('icons/Vikings.svg',               'icon-mark-vikings');
+const drawChristianity = _makeSvgStamp('icons/Christianity.svg',    'icon-religion-christianity');
+const drawIslam        = _makeSvgStamp('icons/Islam.svg',           'icon-religion-islam');
+const drawBuddhism     = _makeSvgStamp('icons/Buddhism.svg',        'icon-religion-buddhism');
+const drawHinduism     = _makeSvgStamp('icons/Hinduism.svg',        'icon-religion-hinduism');
+const drawJudaism      = _makeSvgStamp('icons/Judaism.svg',         'icon-religion-judaism');
 
 
 
@@ -846,13 +782,11 @@ function initReligionIcons() {
 
 // ── Toolbar icons ────────────────────────────────────────────────────────────
 
-_drawMountainToolbarIcon(document.getElementById('icon-mountain').getContext('2d'), 14, 11, 26, 20);
+// Mountain, Oasis, Danger, Battle draw their own toolbar buttons via
+// _makeSvgStamp on load (SVG, crisp). Peak stays PNG; City/Desert are programmatic.
 _peakStamp.toolbar(document.getElementById('icon-peak').getContext('2d'), 14, 11, 26, 20);
 drawCityIcon(document.getElementById('icon-city').getContext('2d'), 14, 12, 14, '#111');
 drawDesertIcon(document.getElementById('icon-desert').getContext('2d'), 14, 12, 0.28, '#111');
-_drawOasisToolbarIcon(document.getElementById('icon-oasis').getContext('2d'), 14, 11, 26, 20);
-_dangerStamp.toolbar(document.getElementById('icon-danger').getContext('2d'), 14, 11, 26, 20);
-_battleStamp.toolbar(document.getElementById('icon-battle').getContext('2d'), 14, 11, 26, 20);
 (function() {
   const ac = document.getElementById('icon-arrow-black').getContext('2d');
   const x1 = 4, x2 = 24, cy = 11, hs = 6;

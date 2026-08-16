@@ -7,7 +7,7 @@
 // Pinned version tag, NOT Date.now() (Eric, 2026-07-21): the old value
 // re-fetched all 41 icon PNGs on every load — invisible locally, slow on a
 // hosted site. Bump the tag when swapping icon art.
-const ICON_BUST = '?v=2026-08-14';
+const ICON_BUST = '?v=2026-08-16b';
 
 // Offscreen canvas holding the mountain with white removed (luminance → alpha)
 let _mountainCanvas = null;
@@ -400,6 +400,26 @@ const drawFactory      = _makeImageStamp('icons/Factory.png',               'ico
 const drawCataract     = _makeImageStamp('icons/Cataract.png',              'icon-feat-cataract');
 const drawFortress     = _makeImageStamp('icons/Fortress.png',              'icon-feat-fortress');
 const drawZiggurat     = _makeImageStamp('icons/Ziggurat.png',              'icon-feat-ziggurat');
+// New landmarks (Noun Project flat set, 2026-08-16)
+const drawCapitol      = _makeImageStamp('icons/Capitol.png',               'icon-feat-capitol');
+const drawCastle       = _makeImageStamp('icons/Castle.png',                'icon-feat-castle');
+const drawCathedral    = _makeImageStamp('icons/Cathedral.png',             'icon-feat-cathedral');
+const drawEgyptTemple  = _makeImageStamp('icons/Egyptian Temple.png',       'icon-feat-egyptiantemple');
+const drawLighthouse   = _makeImageStamp('icons/Lighthouse.png',            'icon-feat-lighthouse');
+// New trade goods (Noun Project flat set, 2026-08-16)
+const drawBarley       = _makeImageStamp('icons/Barley.png',                'icon-trade-barley');
+const drawCarpet       = _makeImageStamp('icons/Carpet.png',                'icon-trade-carpet');
+const drawPottery      = _makeImageStamp('icons/Pottery.png',               'icon-trade-pottery');
+const drawSilver       = _makeImageStamp('icons/Silver.png',                'icon-trade-silver');
+const drawSorghum      = _makeImageStamp('icons/Sorghum.png',               'icon-trade-sorghum');
+// New transport icons (Noun Project flat set, 2026-08-16)
+const drawShip         = _makeImageStamp('icons/Ship.png',                  'icon-trans-ship');
+const drawTrireme      = _makeImageStamp('icons/Trireme.png',               'icon-trans-trireme');
+const drawConestoga    = _makeImageStamp('icons/Conestoga Wagon.png',       'icon-trans-conestoga');
+// New event/figure markers (Noun Project flat set, 2026-08-16)
+const drawPerson       = _makeImageStamp('icons/Person.png',                'icon-mark-person');
+const drawFire         = _makeImageStamp('icons/Fire.png',                  'icon-mark-fire');
+const drawVikings      = _makeImageStamp('icons/Vikings.png',               'icon-mark-vikings');
 const drawChristianity = _makeImageStamp('icons/Christianity.png',    'icon-religion-christianity');
 const drawIslam        = _makeImageStamp('icons/Islam.png',           'icon-religion-islam');
 const drawBuddhism     = _makeImageStamp('icons/Buddhism.png',        'icon-religion-buddhism');
@@ -766,6 +786,12 @@ const TRADE_GOODS = {
   'trade-wildanimals': { label: 'Wild Animals',  draw: drawWildAnimals },
   'trade-wine':        { label: 'Wine',          draw: drawGrapes      },
   'trade-wool':        { label: 'Wool',          draw: drawWool        },
+  // ── New trade goods (Noun Project set, 2026-08-16) ──
+  'trade-barley':      { label: 'Barley',        draw: drawBarley      },
+  'trade-carpet':      { label: 'Carpet',        draw: drawCarpet      },
+  'trade-pottery':     { label: 'Pottery',       draw: drawPottery     },
+  'trade-silver':      { label: 'Silver',        draw: drawSilver      },
+  'trade-sorghum':     { label: 'Sorghum',       draw: drawSorghum     },
   // ── Landmark icons (shown in the Features panel; behave as icon stamps) ──
   'feat-temple':       { label: 'Temple',               draw: drawTemple      },
   'feat-mesopyramid':  { label: 'Mesoamerican Pyramid',  draw: drawMesoPyramid },
@@ -774,6 +800,20 @@ const TRADE_GOODS = {
   'feat-cataract':     { label: 'Cataract',             draw: drawCataract    },
   'feat-fortress':     { label: 'Fortress',             draw: drawFortress    },
   'feat-ziggurat':     { label: 'Ziggurat',             draw: drawZiggurat    },
+  // ── New landmarks (Noun Project set, 2026-08-16) ──
+  'feat-capitol':        { label: 'Capitol',         draw: drawCapitol     },
+  'feat-castle':         { label: 'Castle',          draw: drawCastle      },
+  'feat-cathedral':      { label: 'Cathedral',       draw: drawCathedral   },
+  'feat-egyptiantemple': { label: 'Egyptian Temple', draw: drawEgyptTemple },
+  'feat-lighthouse':     { label: 'Lighthouse',      draw: drawLighthouse  },
+  // ── Transport (Noun Project set, 2026-08-16) ──
+  'trans-ship':        { label: 'Ship',            draw: drawShip        },
+  'trans-trireme':     { label: 'Trireme',         draw: drawTrireme     },
+  'trans-conestoga':   { label: 'Conestoga Wagon', draw: drawConestoga   },
+  // ── Event / figure markers (shown in the War panel, 2026-08-16) ──
+  'mark-person':       { label: 'Person',          draw: drawPerson      },
+  'mark-fire':         { label: 'Fire',            draw: drawFire        },
+  'mark-vikings':      { label: 'Vikings',         draw: drawVikings     },
 };
 
 const RELIGIONS = {
@@ -790,7 +830,9 @@ function initTradeIcons() {
   Object.entries(TRADE_GOODS).forEach(([type, { draw }]) => {
     const c = document.getElementById('icon-' + type);
     if (!c) return;
-    draw(c.getContext('2d'), 18, 15, 16);
+    // Center dynamically so any button-canvas size renders centered (36×30
+    // trade/landmark buttons and 28×22 War-panel buttons both work).
+    draw(c.getContext('2d'), c.width / 2, c.height / 2, c.height * 0.53);
   });
 }
 

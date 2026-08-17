@@ -1335,6 +1335,16 @@ fallback (shows if homescreen-bg.png isn't present, so nothing breaks). */
   align-items: center;
   justify-content: center;
 }
+/* Homescreen card icons: solid SVG silhouettes recolored to the bronze accent
+   via CSS mask (same technique as the logo), so a black source SVG themes
+   correctly. Swap the file in the element's --icon var to change an icon. */
+.ss-choice-icon-img {
+  width: 44px;
+  height: 44px;
+  background-color: #a06810;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+          mask: var(--icon) center / contain no-repeat;
+}
 .ss-choice-title {
   color: #2a1f0e;
   font-family: 'Colus', Georgia, serif;

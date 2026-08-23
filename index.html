@@ -4,7 +4,7 @@
   <!-- Hosted builds should not be indexed (Eric, 2026-07-21) -->
   <meta name="robots" content="noindex, nofollow">
   <meta charset="UTF-8" />
-  <title>MapForge — InquiryForge</title>
+  <title>Maposaic</title>
   <!-- Brand fonts: Jost is self-hosted (OFL); Tiller/Tiller Bold/Rhau resolve
        from locally activated Adobe families, falling back through the stack. -->
   <style>
@@ -27,7 +27,7 @@
 
   <!-- ── Row 1: Tools ── -->
   <div class="toolbar-row" id="row1">
-    <span id="toolbar-logo"><span class="mf-logo" role="img" aria-label="MapForge"></span></span>
+    <span id="toolbar-logo"><span class="app-logo"></span></span>
     <div id="row1-doc">
         <button class="stamp-btn" onclick="openSavesModal()" title="Save this map"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M5 3h11l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 3v5h8V3"/><rect x="8" y="13" width="8" height="7"/></svg><span class="hdr-lbl">Save</span></button>
     <button class="stamp-btn" onclick="openExportModal()" title="Export / Print"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg><span class="hdr-lbl">Export</span></button>
@@ -87,10 +87,10 @@
       <button class="fill-tile" id="ssbtn-speckle" onclick="setShadeStyle('speckle')" title="Desert speckles"><canvas width="19" height="19"></canvas></button>
       <span class="sep">|</span>
       <span class="lbl" id="brush-size-lbl">Brush&nbsp;size:</span>
-      <input type="range" id="shade-size-slider" title="Brush size — drag to change" min="15" max="220" value="60" step="5"
+      <input type="range" id="shade-size-slider" title="Brush size — drag to change" min="7" max="220" value="60" step="1"
              oninput="shadeSize=+this.value; updateShadeCursor(lastShadeMouseE); renderToolPreview()">
-      <input type="number" id="shade-size-display" class="r2-num" min="15" max="220" value="60"
-             onchange="shadeSize=Math.max(15,Math.min(220,Math.round(+this.value)||60));this.value=shadeSize;document.getElementById('shade-size-slider').value=shadeSize;updateShadeCursor(lastShadeMouseE);if(typeof renderToolPreview==='function')renderToolPreview()">
+      <input type="number" id="shade-size-display" class="r2-num" min="7" max="220" value="60"
+             onchange="shadeSize=Math.max(7,Math.min(220,Math.round(+this.value)||60));this.value=shadeSize;document.getElementById('shade-size-slider').value=shadeSize;updateShadeCursor(lastShadeMouseE);if(typeof renderToolPreview==='function')renderToolPreview()">
       <span class="sep">|</span>
       <span class="sep">|</span>
       <span class="lbl" style="display:none">Engine:</span>
@@ -113,10 +113,10 @@
     <div id="stamp-size-ctrl" style="display:none;align-items:center;gap:6px;flex-shrink:0;">
       <span class="sep">|</span>
       <span class="lbl">Stamp&nbsp;size:</span>
-      <input type="range" id="stamp-size-slider" title="Stamp size — drag to change" min="8" max="80" value="16" step="2"
+      <input type="range" id="stamp-size-slider" title="Stamp size — drag to change" min="4" max="80" value="16" step="1"
              oninput="stampSize=+this.value; if(activeStamp==='city') citySize=stampSize; else mountainSize=stampSize; setDisplay('stamp-size-display', stampSize); renderToolPreview()">
-      <input type="number" id="stamp-size-display" class="r2-num" min="8" max="80" value="16"
-             onchange="stampSize=Math.max(8,Math.min(80,Math.round(+this.value)||16));this.value=stampSize;if(activeStamp==='city')citySize=stampSize;else mountainSize=stampSize;document.getElementById('stamp-size-slider').value=stampSize;if(typeof renderToolPreview==='function')renderToolPreview()">
+      <input type="number" id="stamp-size-display" class="r2-num" min="4" max="80" value="16"
+             onchange="stampSize=Math.max(4,Math.min(80,Math.round(+this.value)||16));this.value=stampSize;if(activeStamp==='city')citySize=stampSize;else mountainSize=stampSize;document.getElementById('stamp-size-slider').value=stampSize;if(typeof renderToolPreview==='function')renderToolPreview()">
     </div>
 
     <!-- Text options — shown for the Text tool / a selected label -->
@@ -578,9 +578,17 @@
   <div id="trade-panel">
     <div class="trade-panel-title" title="Goods traded along routes: crops, animals, resources">Trade Goods</div>
     <div class="trade-grid">
+      <button class="trade-btn" id="tbtn-trade-apples" onclick="selectStamp('trade-apples')">
+        <canvas id="icon-trade-apples" width="36" height="30"></canvas>
+        Apples
+      </button>
       <button class="trade-btn" id="tbtn-trade-barley" onclick="selectStamp('trade-barley')">
         <canvas id="icon-trade-barley" width="36" height="30"></canvas>
         Barley
+      </button>
+      <button class="trade-btn" id="tbtn-trade-beans" onclick="selectStamp('trade-beans')">
+        <canvas id="icon-trade-beans" width="36" height="30"></canvas>
+        Beans
       </button>
       <button class="trade-btn" id="tbtn-trade-camel" onclick="selectStamp('trade-camel')">
         <canvas id="icon-trade-camel" width="36" height="30"></canvas>
@@ -594,9 +602,17 @@
         <canvas id="icon-trade-cattle" width="36" height="30"></canvas>
         Cattle
       </button>
+      <button class="trade-btn" id="tbtn-trade-citrus" onclick="selectStamp('trade-citrus')">
+        <canvas id="icon-trade-citrus" width="36" height="30"></canvas>
+        Citrus Fruit
+      </button>
       <button class="trade-btn" id="tbtn-trade-coal" onclick="selectStamp('trade-coal')">
         <canvas id="icon-trade-coal" width="36" height="30"></canvas>
         Coal
+      </button>
+      <button class="trade-btn" id="tbtn-trade-coffee" onclick="selectStamp('trade-coffee')">
+        <canvas id="icon-trade-coffee" width="36" height="30"></canvas>
+        Coffee
       </button>
       <button class="trade-btn" id="tbtn-trade-copper" onclick="selectStamp('trade-copper')">
         <canvas id="icon-trade-copper" width="36" height="30"></canvas>
@@ -633,6 +649,10 @@
       <button class="trade-btn" id="tbtn-trade-gold" onclick="selectStamp('trade-gold')">
         <canvas id="icon-trade-gold" width="36" height="30"></canvas>
         Gold
+      </button>
+      <button class="trade-btn" id="tbtn-trade-honeybees" onclick="selectStamp('trade-honeybees')">
+        <canvas id="icon-trade-honeybees" width="36" height="30"></canvas>
+        Honeybees
       </button>
       <button class="trade-btn" id="tbtn-trade-horses" onclick="selectStamp('trade-horses')">
         <canvas id="icon-trade-horses" width="36" height="30"></canvas>
@@ -690,9 +710,25 @@
         <canvas id="icon-trade-oliveoil" width="36" height="30"></canvas>
         Olive Oil
       </button>
+      <button class="trade-btn" id="tbtn-trade-palmoil" onclick="selectStamp('trade-palmoil')">
+        <canvas id="icon-trade-palmoil" width="36" height="30"></canvas>
+        Palm Oil
+      </button>
       <button class="trade-btn" id="tbtn-trade-paper" onclick="selectStamp('trade-paper')">
         <canvas id="icon-trade-paper" width="36" height="30"></canvas>
         Paper
+      </button>
+      <button class="trade-btn" id="tbtn-trade-peanuts" onclick="selectStamp('trade-peanuts')">
+        <canvas id="icon-trade-peanuts" width="36" height="30"></canvas>
+        Peanuts
+      </button>
+      <button class="trade-btn" id="tbtn-trade-pears" onclick="selectStamp('trade-pears')">
+        <canvas id="icon-trade-pears" width="36" height="30"></canvas>
+        Pears
+      </button>
+      <button class="trade-btn" id="tbtn-trade-peppers" onclick="selectStamp('trade-peppers')">
+        <canvas id="icon-trade-peppers" width="36" height="30"></canvas>
+        Peppers
       </button>
       <button class="trade-btn" id="tbtn-trade-perfume" onclick="selectStamp('trade-perfume')">
         <canvas id="icon-trade-perfume" width="36" height="30"></canvas>
@@ -717,6 +753,10 @@
       <button class="trade-btn" id="tbtn-trade-rice" onclick="selectStamp('trade-rice')">
         <canvas id="icon-trade-rice" width="36" height="30"></canvas>
         Rice
+      </button>
+      <button class="trade-btn" id="tbtn-trade-rubber" onclick="selectStamp('trade-rubber')">
+        <canvas id="icon-trade-rubber" width="36" height="30"></canvas>
+        Rubber
       </button>
       <button class="trade-btn" id="tbtn-trade-rum" onclick="selectStamp('trade-rum')">
         <canvas id="icon-trade-rum" width="36" height="30"></canvas>
@@ -746,6 +786,10 @@
         <canvas id="icon-trade-spices" width="36" height="30"></canvas>
         Spices
       </button>
+      <button class="trade-btn" id="tbtn-trade-squash" onclick="selectStamp('trade-squash')">
+        <canvas id="icon-trade-squash" width="36" height="30"></canvas>
+        Squash
+      </button>
       <button class="trade-btn" id="tbtn-trade-stone" onclick="selectStamp('trade-stone')">
         <canvas id="icon-trade-stone" width="36" height="30"></canvas>
         Stone
@@ -753,6 +797,10 @@
       <button class="trade-btn" id="tbtn-trade-sugar" onclick="selectStamp('trade-sugar')">
         <canvas id="icon-trade-sugar" width="36" height="30"></canvas>
         Sugar
+      </button>
+      <button class="trade-btn" id="tbtn-trade-sweetpotato" onclick="selectStamp('trade-sweetpotato')">
+        <canvas id="icon-trade-sweetpotato" width="36" height="30"></canvas>
+        Sweet Potato
       </button>
       <button class="trade-btn" id="tbtn-trade-tea" onclick="selectStamp('trade-tea')">
         <canvas id="icon-trade-tea" width="36" height="30"></canvas>
@@ -769,6 +817,10 @@
       <button class="trade-btn" id="tbtn-trade-tobacco" onclick="selectStamp('trade-tobacco')">
         <canvas id="icon-trade-tobacco" width="36" height="30"></canvas>
         Tobacco
+      </button>
+      <button class="trade-btn" id="tbtn-trade-tomato" onclick="selectStamp('trade-tomato')">
+        <canvas id="icon-trade-tomato" width="36" height="30"></canvas>
+        Tomato
       </button>
       <button class="trade-btn" id="tbtn-trade-whaling" onclick="selectStamp('trade-whaling')">
         <canvas id="icon-trade-whaling" width="36" height="30"></canvas>
@@ -805,7 +857,7 @@
 <!-- Start Screen -->
 <div id="start-screen">
   <div id="ss-header">
-    <h1><span class="mf-logo mf-logo-home" role="img" aria-label="MapForge"></span></h1>
+    <h1><span class="app-logo app-logo-home"></span></h1>
     <p id="ss-tagline">Annotate. Label. Teach.</p>
     <p>Create annotated historical maps for your classroom</p>
     <div id="ss-header-rule">
@@ -828,7 +880,7 @@
         <span class="ss-choice-icon-img" style="--icon:url('icons/Map.svg')"></span>
       </div>
       <div class="ss-choice-title">Map Library</div>
-      <div class="ss-choice-desc">Choose from 55 ready-to-annotate historical base maps</div>
+      <div class="ss-choice-desc">Ready-to-annotate historical maps &mdash; live world regions and US base maps</div>
     </div>
 
     <label class="ss-choice" for="ss-upload-input">
@@ -1065,6 +1117,25 @@
   </div>
 </div>
 
+<!-- ── Overwrite warning: a name clash is the one way saving can destroy work ── -->
+<div id="overwrite-modal-overlay" onclick="if(event.target===this)closeOverwriteWarning()">
+  <div id="overwrite-modal">
+    <div class="modal-x" onclick="closeOverwriteWarning()">✕</div>
+    <h3>That name is already used</h3>
+    <div class="ow-body">
+      <img id="ow-thumb" alt="" />
+      <p class="ow-text">You already have a saved map called <b id="ow-name"></b>, from <span id="ow-when"></span>. Saving over it replaces that map for good.</p>
+    </div>
+    <div class="km-actions" style="margin-top:14px;">
+      <button class="km-btn primary" onclick="overwriteSaveAsCopy()">Keep both &mdash; save as &ldquo;<span id="ow-copy-name"></span>&rdquo;</button>
+    </div>
+    <div class="km-actions" style="margin-top:8px;">
+      <button class="km-btn ow-danger" onclick="overwriteConfirm()">Replace the old map</button>
+      <button class="km-btn secondary" onclick="closeOverwriteWarning()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Saved Maps modal ── -->
 <div id="saves-modal-overlay" onclick="if(event.target===this)closeSavesModal()">
   <div id="saves-modal">
@@ -1262,16 +1333,30 @@ function refreshViewClip() {
     let v = 0; for (const p of newLand) for (const ring of p.poly) v += ring.length;
     sig = newLand.length + ':' + v + ':' + Math.round(mlMap.getZoom() * 4);
   }
+  const hadView = !!_geoClip.viewLand;
   _geoClip.viewLand = newLand; _geoClip.viewLakes = newLakes;
   if (newLand && sig !== _geoClip.sig) {
     _geoClip.sig = sig;
     window._mfShadeSig = null;
     redraw();
+  } else if (!newLand && hadView) {
+    // The harvest came back empty -- the query failed, or the tiles it reads
+    // had not rendered yet. The clip source has just changed back to the base
+    // coastline, so the shade geometry must be rebuilt against it; without
+    // this the cached signature holds and whatever the last (possibly wrong)
+    // clip produced stays on the map.
+    _geoClip.sig = null;
+    window._mfShadeSig = null;
+    redraw();
   }
 }
 function _lngLatToM(lng, lat) {
-  const x = (lng + 180) / 360;
-  const s = Math.sin(lat * Math.PI / 180);
+  // Clamp to the Mercator limit. unproject() near or past the top/bottom edge
+  // of the map can hand back |lat| >= 90, where log((1+s)/(1-s)) is infinite --
+  // one infinite coordinate poisons the whole polygon set (Eric, 2026-08-23).
+  const la = Math.max(-85.051129, Math.min(85.051129, +lat || 0));
+  const x = ((+lng || 0) + 180) / 360;
+  const s = Math.sin(la * Math.PI / 180);
   const y = 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
   return [x, y];
 }
@@ -1439,9 +1524,13 @@ function buildShadePolygonFeatures() {
   // clipping, so they must never erase each other (an ocean stroke was
   // deleting overlapping land shading — Maddy 2026-08-14).
   const occupied = { land: null, ocean: null };
-  try {
-    for (let i = shades.length - 1; i >= 0; i--) {
-      const s = shades[i];
+  // PER STROKE, not one try around the lot: a single stroke with unusable
+  // geometry used to throw here and return [] for EVERY stroke, which cleared
+  // the whole shade layer and never recovered — pans and zooms just re-threw
+  // (Eric, 2026-08-23). Now a bad stroke is skipped and the rest still draw.
+  for (let i = shades.length - 1; i >= 0; i--) {
+    const s = shades[i];
+    try {
       const mp = _strokePolyM(s);
       if (!mp || !mp.length) continue;
       const dom = (s.clip === 'ocean') ? 'ocean' : 'land';
@@ -1451,8 +1540,13 @@ function buildShadePolygonFeatures() {
       const k = s.color + '\u0000' + (s.shadeStyle || 'solid') + '\u0000' + (s.clip || 'land');
       if (!groups.has(k)) groups.set(k, []);
       groups.get(k).push(visible);
+    } catch (e) {
+      console.warn('[shade-geo] stroke skipped', e);
+      // Unusable in the map layer — hand it back to the canvas renderer so it
+      // stays visible instead of silently disappearing.
+      delete s.geoPoints; delete s._gpM;
     }
-  } catch (e) { console.warn('[shade-geo] flatten failed', e); return []; }
+  }
   const feats = [];
   for (const [k, parts] of groups) {
     const [color, style, clip] = k.split('\u0000');
@@ -1476,24 +1570,47 @@ function buildShadePolygonFeatures() {
                        : (_geoClip.viewLand || _geoClip.land);
         const lakesSrc = use110 ? (_geoClip.lakes110 || [])
                        : (_geoClip.viewLand ? (_geoClip.viewLakes || []) : _geoClip.lakes);
-        const landNear = hit(landSrc);
-        const lakesNear = hit(lakesSrc);
-        const landU  = landNear.length  ? (landNear.length === 1  ? landNear[0]  : polygonClipping.union(...landNear))  : null;
-        const lakesU = lakesNear.length ? (lakesNear.length === 1 ? lakesNear[0] : polygonClipping.union(...lakesNear)) : null;
-        if (clip === 'ocean') {
-          // Water = everything NOT land, plus lakes (lakes are holes in land).
-          const sea = landU ? polygonClipping.difference(geom, landU) : geom;
-          const inLakes = lakesU ? polygonClipping.intersection(geom, lakesU) : [];
-          geom = (sea.length && inLakes.length) ? polygonClipping.union(sea, inLakes)
-               : (sea.length ? sea : inLakes);
-        } else {
-          geom = landU ? polygonClipping.intersection(geom, landU) : [];
-          if (geom.length && lakesU)
-            geom = polygonClipping.difference(geom, lakesU);
-        }
+        const raw = geom;
+        // Clip `raw` against one coastline source.
+        const clipAgainst = (lSrc, kSrc) => {
+          const landNear  = hit(lSrc || []);
+          const lakesNear = hit(kSrc || []);
+          const landU  = landNear.length  ? (landNear.length === 1  ? landNear[0]  : polygonClipping.union(...landNear))  : null;
+          const lakesU = lakesNear.length ? (lakesNear.length === 1 ? lakesNear[0] : polygonClipping.union(...lakesNear)) : null;
+          if (clip === 'ocean') {
+            // Water = everything NOT land, plus lakes (lakes are holes in land).
+            const sea = landU ? polygonClipping.difference(raw, landU) : raw;
+            const inLakes = lakesU ? polygonClipping.intersection(raw, lakesU) : [];
+            return (sea.length && inLakes.length) ? polygonClipping.union(sea, inLakes)
+                 : (sea.length ? sea : inLakes);
+          }
+          let g = landU ? polygonClipping.intersection(raw, landU) : [];
+          if (g.length && lakesU) g = polygonClipping.difference(g, lakesU);
+          return g;
+        };
+        geom = clipAgainst(landSrc, lakesSrc);
+        // The view clip is harvested from whatever the map had actually
+        // RENDERED when the view last settled, so it can be partial or stale --
+        // after a pan, a relock, or while tiles are still arriving. When it
+        // erases a stroke completely, check the base coastline before believing
+        // it: the canvas has already handed committed strokes to the map layer,
+        // so a wrongly-empty clip makes the shading vanish the instant the brush
+        // is released, and nothing re-pushes it (Eric, 2026-08-23).
+        // Open water still clips to nothing correctly -- the base tier has no
+        // land there either -- so this only rescues strokes over real land.
+        if (!geom.length && landSrc !== _geoClip.land && _geoClip.land)
+          geom = clipAgainst(_geoClip.land, _geoClip.lakes || []);
       } catch (e) { console.warn('[shade-geo] clip failed', e); }
     }
-    if (!geom || !geom.length) continue;
+    if (!geom || !geom.length) {
+      // Silent normally (a stroke painted on open water under a land clip is
+      // SUPPOSED to vanish). Open the app with ?clipdebug to find out why a
+      // stroke disappeared -- this names the clip source that erased it.
+      if (/[?&]clipdebug/.test(location.search))
+        console.warn('[shade-geo] stroke dropped by clip', { color, style, clip,
+          usingViewClip: !!_geoClip.viewLand, zoom: mlMap && mlMap.getZoom() });
+      continue;
+    }
     feats.push({ type: 'Feature', properties: { color, style, clip },
       geometry: { type: 'MultiPolygon',
         coordinates: geom.map(poly => poly.map(ring => ring.map(([x, y]) => _mToLngLat(x, y)))) } });
@@ -3192,7 +3309,21 @@ function geoSyncStamp(s) {
   if (baseMode !== 'live' || !mlMap) return;
   const g = (x, y) => MLB.toGeo(mlMap, x, y, canvas);
   if (Array.isArray(s.points)) {
-    s.geoPoints = s.points.map(p => g(p.x, p.y));
+    const geo = s.points.map(p => g(p.x, p.y));
+    // A committed shade stops being drawn by the canvas the moment it HAS
+    // geoPoints — the map layer takes over. So geo coords that the map layer
+    // cannot use would make the stroke invisible everywhere. Rather than
+    // hand over something unusable, leave the stroke on the canvas: it stays
+    // visible and still saves (Eric, 2026-08-23).
+    const usable = geo.every(ll => Array.isArray(ll) && ll.length === 2 &&
+                                   Number.isFinite(ll[0]) && Number.isFinite(ll[1]) &&
+                                   Math.abs(ll[1]) < 89.5);
+    if (!usable) {
+      if (/[?&]clipdebug/.test(location.search))
+        console.warn('[shade-geo] geo sync produced unusable coords; keeping the stroke on canvas', geo);
+      return;
+    }
+    s.geoPoints = geo;
     if (s.type === 'shade' && typeof s.radius === 'number') {
       // Store the TRUE Mercator radius per point: sample the map's local
       // projection scale (globe-aware — px per Mercator unit varies with
@@ -3361,6 +3492,11 @@ function exitLiveMode() {
 
 // ── Start screen ─────────────────────────────────────────────────────────────
 
+// The picker's PNG base maps. The US History set stays in PNG form because
+// these maps ARE their boundaries -- state and territory lines, and the
+// click-a-state fill that goes with them -- and the live world map has no
+// political boundary data. Everything else moved to the live map: see
+// RETIRED_PNG_MAPS below.
 const MAP_LIBRARY = [
   // ── US History — Base Maps (fillable: state-click fill enabled) ─────────────
   { file: 'US Base Map - State Lines - Blank.png',                     label: 'US Base Map (State Lines)',          fillable: true, section: 'US History' },
@@ -3378,6 +3514,14 @@ const MAP_LIBRARY = [
   { file: 'Oregon Treaty.png',                                          label: 'Oregon Treaty (1846)',               fillable: true },
   { file: 'Mexican Session and Gadsden Purchase.png',                   label: 'Mexican Cession & Gadsden Purchase', fillable: true },
   { file: 'Compromise of 1850.png',                                     label: 'Compromise of 1850',                fillable: true },
+];
+
+// Retired from the picker on 2026-08-22, replaced by live map regions. The
+// image files are deliberately KEPT in Base Maps/ -- saved maps and shared
+// .mapforge files reference them by filename, and deleting them would stop
+// those maps opening. To bring one back, move its line up into MAP_LIBRARY.
+// Nothing renders this list.
+const RETIRED_PNG_MAPS = [
   // ── World / Ancient History ──────────────────────────────────────────────────
   { file: 'Africa - Blank.png',                                        label: 'Africa', section: 'World & Ancient History' },
   { file: 'Africa - Middle Ages - Blank.png',                          label: 'Africa - Middle Ages' },
@@ -3425,6 +3569,8 @@ const MAP_LIBRARY = [
 
 function buildMapLibrary() {
   const grid = document.getElementById('ss-library-grid');
+  // Live-map regions head the library (mapforge-library.js).
+  if (typeof buildLiveLibrary === 'function') buildLiveLibrary(grid);
   MAP_LIBRARY.forEach(m => {
     if (m.section) {
       const hdr = document.createElement('div');
@@ -3493,16 +3639,39 @@ function resetAnnotations() {
   if (typeof refreshOnmapKeyBody === 'function') refreshOnmapKeyBody();
 }
 
+// ── The app's name lives here and nowhere else ──────────────────────────────
+// Changing this one line renames the app everywhere: the wordmark on the home
+// screen and in the toolbar, the browser tab, and every message that mentions
+// it by name. The CSS classes and the file names are deliberately neutral so a
+// rename never touches them.
+const APP_NAME = 'Maposaic';
+document.title = APP_NAME;
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.app-logo').forEach(el => { el.textContent = APP_NAME; });
+});
+
 let currentMapFillable = false;
 let currentMapSrc      = null;   // raw src last loaded (path or data:/blob: URL) — for save/resume
+// When an uploaded/cropped picture is held in the image store, this is its id.
+// Browser saves reference it instead of carrying the picture. Library maps
+// (loaded by path) leave it null. See mapforge-blobstore.js.
+let currentMapBlobId   = null;
+let currentMapBlobMime = null;
 let pendingRestore     = null;   // project data to apply once the base map finishes loading
 let restoring          = false;  // true while applying a restored project (suppresses autosave)
 
 function loadMap(src, fillable = false) {
   exitLiveMode();
   if (typeof resetDocZoom === 'function') resetDocZoom();   // fresh paper: no stale page zoom/pan
+  // Release the previous map's object URL — uploads and stored images each
+  // mint one, and they are held until revoked.
+  const prevObjectURL = /^blob:/.test(currentMapSrc || '') ? currentMapSrc : null;
   currentMapFillable = fillable;
   currentMapSrc      = src;
+  // Library maps are loaded by path and have no stored picture. Callers that
+  // DO have one (upload, crop, restore) set the id just before calling here,
+  // so only clear it for path sources.
+  if (!/^(data:|blob:)/.test(src)) { currentMapBlobId = null; currentMapBlobMime = null; }
   // Show/hide fill button based on whether this map supports fill
   const fillBtn = document.getElementById('btn-fill');
   if (fillBtn) {
@@ -3515,6 +3684,7 @@ function loadMap(src, fillable = false) {
   // Cache-bust file paths, but never mangle data:/blob: URLs (a query string
   // appended to a base64 data URL corrupts it).
   img.src = /^(data:|blob:)/.test(src) ? src : src + '?v=' + Date.now();
+  if (prevObjectURL && prevObjectURL !== src) URL.revokeObjectURL(prevObjectURL);
 }
 
 function showStartScreen(goToLibrary) {
@@ -3558,7 +3728,7 @@ function navChangeMap() {
   document.getElementById('changemap-modal-overlay').classList.add('open');
 }
 // Shared saved-maps row builder (home panel look): thumbnails, click to open.
-function buildSaveRows(ul, beforeOpen) {
+function buildSaveRows(ul, beforeOpen, refresh) {
   const saves = loadSavesIndex()
     .map((s, i) => ({ s, i }))
     .sort((a, b) => (b.s.savedAt || 0) - (a.s.savedAt || 0));
@@ -3582,6 +3752,7 @@ function buildSaveRows(ul, beforeOpen) {
     const dt = document.createElement('span');
     dt.className = 'ss-save-date'; dt.textContent = fmtSavedAt(s.savedAt);
     li.appendChild(nm); li.appendChild(dt);
+    li.appendChild(saveRowDeleteButton(i, refresh || (() => buildSaveRows(ul, beforeOpen, refresh))));
     ul.appendChild(li);
   });
   return saves.length;
@@ -3592,15 +3763,22 @@ function cmRenderSaves() {
   const ul = document.getElementById('cm-saves-list');
   const title = document.getElementById('cm-saves-title');
   if (!ul) return;
-  const n = buildSaveRows(ul, closeChangeMapModal);
+  const n = buildSaveRows(ul, closeChangeMapModal, cmRenderSaves);
   title.style.display = n ? '' : 'none';
 }
 
 // Import popup: saved browser maps + open-from-file.
-function openImportModal() {
-  const n = buildSaveRows(document.getElementById('im-saves-list'), closeImportModal);
+// Rows plus the heading/empty-state — re-run whole after a delete, so an
+// emptied list explains itself instead of just going blank.
+function imRenderSaves() {
+  const n = buildSaveRows(document.getElementById('im-saves-list'), closeImportModal, imRenderSaves);
   document.getElementById('im-saves-title').style.display = n ? '' : 'none';
   document.getElementById('im-saves-empty').style.display = n ? 'none' : '';
+  return n;
+}
+
+function openImportModal() {
+  imRenderSaves();
   document.getElementById('import-modal-overlay').classList.add('open');
 }
 function closeImportModal() {
@@ -3624,16 +3802,42 @@ function navHome() {
   if (hasUnsavedWork()) promptLeaveMap('Go Home', go); else go();
 }
 
+// Uploading must feel instant. The map is shown straight from the chosen file;
+// re-encoding it for storage (mapforge-blobstore.js) happens afterwards, in the
+// background, because on a photo-sized JPEG that encode takes seconds and there
+// is no reason to stare at nothing while it runs. A save before it lands simply
+// carries the picture inline, which is the old behaviour and still correct.
+let _uploadSeq = 0;
+
 function handleMapUpload(event) {
   const file = event.target.files[0];
-  // localStorage holds ~5MB total; a base image bigger than that can never
-  // autosave. Warn up front instead of failing quietly later.
-  if (file && file.size > 4 * 1024 * 1024) {
-    alert('This image is large (' + (file.size/1024/1024).toFixed(1) + ' MB). ' +
-          'It will work, but auto-save to the browser may fail — use "Save to File…" to keep your work safe.');
-  }
   if (!file) return;
-  loadMap(URL.createObjectURL(file));
+  const seq = ++_uploadSeq;
+  currentMapBlobId = null; currentMapBlobMime = null;   // not this map's picture yet
+  // Showing the map must not depend on ANY of the storage machinery. If the
+  // image store is missing or broken, the map still opens and the picture
+  // simply rides inside the save, exactly as it did before that existed.
+  try {
+    loadMap(URL.createObjectURL(file));
+  } catch (err) {
+    alert('That file could not be opened as an image.\n\n' + (err && err.message || err));
+    return;
+  }
+  event.target.value = '';        // let the same file be chosen again next time
+  if (typeof adoptBaseImage !== 'function') return;
+  adoptBaseImage(file).then(a => {
+    if (!a) {
+      // No image store: the picture has to ride inside the save as base64.
+      if (file.size > 4 * 1024 * 1024) {
+        flashSaveStatus && flashSaveStatus('Large image — use “Save to File…” to be safe.');
+      }
+      return;
+    }
+    URL.revokeObjectURL(a.url);            // display already has its own URL
+    if (seq !== _uploadSeq) return;        // a newer upload won the race
+    currentMapBlobId   = a.id;
+    currentMapBlobMime = a.mime;
+  }).catch(() => { /* saves fall back to inlining the picture */ });
 }
 
 const HANDLE_R = 10;
@@ -4267,6 +4471,48 @@ document.addEventListener('mousedown', e => {
 
 const ERASER_RADIUS = 25;
 
+// Is (x,y) inside this fill? Two representations to handle: a vector fill
+// carries geoRings and can be tested as a path, while a legacy flood fill
+// (PNG maps, and saves made before vectorisation) has to be re-run from its
+// seed point and sampled. Only reached when nothing else is under the cursor,
+// so the flood-fill cost is paid at most once per eraser click.
+const _fillHitCtx = document.createElement('canvas').getContext('2d');
+
+function fillStampHit(s, x, y) {
+  if (s.geoRings) {
+    const path = new Path2D();
+    for (const ring of s.geoRings) {
+      let pen = false;
+      for (const ll of ring) {
+        const p = (baseMode === 'live' && mlMap)
+          ? MLB.toScreen(mlMap, ll, canvas) : { x: ll[0], y: ll[1] };
+        if (pen) path.lineTo(p.x, p.y); else { path.moveTo(p.x, p.y); pen = true; }
+      }
+      path.closePath();
+    }
+    // Own context: an identity transform, so this can't be thrown off by
+    // whatever state the main canvas happens to be in.
+    return _fillHitCtx.isPointInPath(path, x, y, 'evenodd');
+  }
+  const W = canvas.width, H = canvas.height;
+  const px = Math.round(x), py = Math.round(y);
+  if (px < 0 || py < 0 || px >= W || py >= H) return false;
+  const [r, g, b] = hexToRgbArr(s.color);
+  const buf = floodFill(buildFillSourceCanvas(), W, H, Math.round(s.x), Math.round(s.y), r, g, b);
+  return buf[(py * W + px) * 4 + 3] > 0;
+}
+
+function removeStampAt(i) {
+  const [removed] = stamps.splice(i, 1);
+  markLiveRasterDirty();
+  undoLog.push({ kind: 'stamp-erase', stamp: removed, idx: i });
+  redoStack.length = 0;
+  if (selectedArrowIdx === i) selectedArrowIdx = null;
+  else if (selectedArrowIdx > i) selectedArrowIdx--;
+  selectedStampIdx = null;
+  redraw();
+}
+
 function eraseAt(x, y) {
   // Walk stamps in reverse, remove the first one hit
   for (let i = stamps.length - 1; i >= 0; i--) {
@@ -4282,17 +4528,16 @@ function eraseAt(x, y) {
             Math.hypot(x - s.x1, y - s.y1) <= ERASER_RADIUS ||
             Math.hypot(x - s.x2, y - s.y2) <= ERASER_RADIUS;
     }
-    if (hit) {
-      const [removed] = stamps.splice(i, 1);
-      markLiveRasterDirty();
-      undoLog.push({ kind: 'stamp-erase', stamp: removed, idx: i });
-      redoStack.length = 0;
-      if (selectedArrowIdx === i) selectedArrowIdx = null;
-      else if (selectedArrowIdx > i) selectedArrowIdx--;
-      selectedStampIdx = null;
-      redraw();
-      return;
-    }
+    if (hit) { removeStampAt(i); return; }
+  }
+  // Fills last: they render beneath every other mark, so the eraser should
+  // only reach one when there is nothing on top of it — matching what the
+  // teacher sees. Without this pass a fill could never be removed at all, and
+  // after a save (which clears undo history) it was permanent.
+  for (let i = stamps.length - 1; i >= 0; i--) {
+    const s = stamps[i];
+    if (s.type !== 'fill' || s._hidden) continue;
+    if (fillStampHit(s, x, y)) { removeStampAt(i); return; }
   }
 }
 
@@ -4600,7 +4845,9 @@ canvas.addEventListener('mousemove', e => {
     const s = stamps[selectedStampIdx];
     const dW = Math.abs(x - s.x) / STAMP_W_FACTOR;   // implied drawSize from the two axes
     const dH = Math.abs(y - s.y) / STAMP_H_FACTOR;
-    const newDraw = Math.max(14, Math.min(240, Math.max(dW, dH)));
+    // Floor is backing px and must stay below the smallest the size slider
+    // allows (4 document px), or resizing would jump a small stamp back up.
+    const newDraw = Math.max(7, Math.min(240, Math.max(dW, dH)));
     s[stampSizeField(s)] = newDraw / stampTypeFactor(s);
     redraw(); return;
   }
@@ -5902,6 +6149,8 @@ function renderKeyBoxAt(ec, ox, oy, entries, maxRows) {
 }
 
 </script>
+<script src="mapforge-blobstore.js"></script>
+<script src="mapforge-library.js"></script>
 <script src="mapforge-persist.js"></script>
 <script>
 // ── Label Panel ─────────────────────────────────────────────────────────────

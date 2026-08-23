@@ -448,7 +448,7 @@ async function exportPaperImage() {
   flashExportStatus('Downloaded PNG.');
 }
 
-// Print via a hidden same-page iframe: the user never leaves MapForge — the
+// Print via a hidden same-page iframe: the user never leaves the app — the
 // progress overlay runs here, then the browser's print dialog appears over
 // the app when the page is ready. No popup, no blank tab, no popup blockers.
 async function printExport() {

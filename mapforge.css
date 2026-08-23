@@ -2613,8 +2613,33 @@ like the export preview — fixed height, natural width, no crop */
 /* search bar: no outline (Maddy) */
 #global-search { border: none !important; }
 #global-search:focus { outline: none; }
-/* ── MapForge logo: the SVG wordmark, recolorable via mask (Maddy).
-Source: design/map_forge_logo.svg → mapforge-logo.svg. ── */
+/* ── App wordmark (class names deliberately name-neutral) ─────────────
+Set in Colus, which is the fallback Maddy's own #toolbar-logo rule names
+after Rhau ('Rhau','Colus',Georgia,serif) and the display face already used
+for every popup title and section header, so the name sits in the app's own
+typography. Colus has no lowercase, so it sets as small caps by nature.
+The old MapForge mark was drawn artwork (mapforge-logo.svg, outlined paths,
+no font data) and could not be re-lettered for a new name — that file is left
+in place for Maddy should she want to draw a real wordmark, at which point
+this reverts to the mask approach.
+── */
+.app-logo {
+  font-family: 'Colus', 'Rhau', Georgia, serif;
+  font-weight: 400;
+  color: #FAF5EA;
+  white-space: nowrap;
+  vertical-align: middle;
+  /* Sized so the wordmark measures 107px wide -- the exact footprint the old
+     MapForge mask occupied (22px tall at 216/44.22), so the toolbar's spacing
+     is unchanged. Re-check this if APP_NAME changes length. */
+  font-size: 19px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+#ss-header .app-logo-home { font-size: 44px; color: #2a1f0e; letter-spacing: 0.05em; }
+
+/* ── previous MapForge logo: the SVG wordmark, recolorable via mask (Maddy).
+Source: design/map_forge_logo.svg → mapforge-logo.svg. Retained for reference. ── */
 /* toolbar: cream on dark ink */
 .mf-logo {
   display: inline-block;
@@ -2643,3 +2668,111 @@ Source: design/map_forge_logo.svg → mapforge-logo.svg. ── */
        "ABC" button + the preview input tracking the picked family). */
     #row2 #r2fs-cn { font-family: 'Colus', Georgia, serif !important; }
     #row2 #r2fs-jn, #row2 #r2fs-ji { font-family: 'Jost', Georgia, serif !important; }
+
+    /* ── Live map library: entry cards + the author's publish popup ────────
+       A live card is an ss-map-card whose face is the thumbnail baked into
+       the entry file; the gold pill marks it as the live map rather than a
+       flat base map. */
+    .ss-map-card.ss-live-card { position: relative; }
+    .ss-live-pill {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: #A06810;
+      color: #FAF5EA;
+      font: 600 9px/1 'Jost', Georgia, serif;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      padding: 4px 7px;
+      border-radius: 8px;
+      pointer-events: none;
+    }
+    .ss-map-card.ss-live-loading { opacity: 0.55; pointer-events: none; }
+    .ss-map-card.ss-live-missing { opacity: 0.5; }
+    .ss-map-card.ss-live-missing .ss-live-pill { background: #cc503e; }
+
+
+
+    /* ── Overwrite warning ────────────────────────────────────────────────
+       Same chrome as the other popups. "Keep both" is the primary action;
+       replacing is possible but never the easy accident. */
+    #overwrite-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(40,20,5,0.55);
+      z-index: 520;
+      align-items: center;
+      justify-content: center;
+    }
+    #overwrite-modal-overlay.open { display: flex; }
+    #overwrite-modal {
+      position: relative;
+      background: #FAF5EA;
+      border: none;
+      border-radius: 14px;
+      padding: 0 24px 20px;
+      width: 400px;
+      max-width: 92vw;
+      max-height: 92vh;
+      overflow: hidden auto;
+      box-shadow: 0 14px 44px rgba(20,12,4,0.62);
+      font-family: 'Jost', Georgia, serif;
+    }
+    #overwrite-modal h3 {
+      background: #4C6472;
+      color: #FAF5EA;
+      font: 400 15px/1 'Colus', Georgia, serif;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      text-align: left;
+      margin: 0 -24px 14px;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 0;
+    }
+    #overwrite-modal .modal-x { color: #FAF5EA; z-index: 2; }
+    #overwrite-modal .ow-body { display: flex; gap: 12px; align-items: flex-start; }
+    #overwrite-modal #ow-thumb {
+      width: 88px;
+      flex: 0 0 88px;
+      border-radius: 8px;
+      display: block;
+    }
+    #overwrite-modal .ow-text {
+      font: 400 12px/1.55 'Jost', Georgia, serif;
+      color: #2A1F0E;
+      margin: 0;
+    }
+    #overwrite-modal .km-btn.ow-danger {
+      background: #cc503e !important;
+      border: none !important;
+      color: #FAF5EA !important;
+    }
+    #overwrite-modal .km-btn.ow-danger:hover { background: #b0402f !important; }
+
+    /* ── Saved-map rows: delete control ───────────────────────────────────
+       Always visible, not hover-only — Chromebooks and tablets have no hover,
+       and a control a student cannot reveal may as well not be there. Quiet
+       until pointed at, then the palette's warning red. */
+    .ss-save-del {
+      /* The row orders its parts explicitly (name 1, date 2, thumb 3) and the
+         thumb carries the margin-left:auto, so the delete sits last at 4. */
+      order: 4;
+      margin-left: 10px;
+      flex: 0 0 auto;
+      width: 26px;
+      height: 26px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      color: #b3a68c;
+      font: 600 13px/1 'Jost', Georgia, serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .ss-save-del:hover { background: #cc503e; color: #FAF5EA; }
+    .ss-save-del:focus-visible { outline: 2px solid #A06810; outline-offset: 1px; }

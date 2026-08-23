@@ -25,9 +25,17 @@ function baseMapDescriptor() {
     };
   }
   const src = currentMapSrc || '';
+  // Uploaded/cropped map already in the image store: reference it by id. The
+  // picture stays out of localStorage entirely (see mapforge-blobstore.js).
+  // Files re-inline it later -- serializeProjectForFile().
+  if (currentMapBlobId) {
+    return { kind: 'blob', id: currentMapBlobId, mime: currentMapBlobMime,
+             fillable: currentMapFillable };
+  }
   if (/^data:/.test(src)) return { kind: 'data', data: src, fillable: currentMapFillable };
   if (/^blob:/.test(src)) {
-    // A blob: URL won't survive a reload — bake the loaded image into a data URL.
+    // No image store (private browsing, old browser): fall back to baking the
+    // picture in, exactly as before.
     const c = document.createElement('canvas');
     c.width = img.naturalWidth; c.height = img.naturalHeight;
     c.getContext('2d').drawImage(img, 0, 0);
@@ -40,7 +48,7 @@ const SIZE_FIELDS = ['size', 'iconSize', 'radius', 'width'];   // backing px at 
 
 function serializeProject() {
   const project = {
-    app: PROJECT_TAG, version: 3, savedAt: Date.now(),   // v3 = document-unit sizes
+    app: PROJECT_TAG, version: 4, savedAt: Date.now(),   // v4 = images may be stored by reference
     docUnits: true,
     map: baseMapDescriptor(),
     stamps,                              // plain serializable objects
@@ -143,12 +151,20 @@ function applyRestoredState(data) {
 function migrateProject(data) {
   if (!data) return data;
   const v = data.version || 1;
+  if (v === 3) {
+    // v3 -> v4: browser saves may now carry `map.kind:'blob'` (the picture
+    // lives in the image store). Nothing to convert -- a v3 project always
+    // carries its picture inline, which v4 still reads. Files written by v4
+    // are inlined too, so a .mapforge file is unchanged in shape.
+    data.version = 4;
+  }
   if (v === 2) {
     // v2 -> v3: sizes gain document units, but a v2 file's sizes are backing
     // px of an UNKNOWN device — pass them through numerically (docUnits stays
     // false) so old projects render exactly as they always did here.
     data.version = 3;
     data.docUnits = false;
+    data = migrateProject(data);   // chain v2->v3->v4
   }
   if (v === 1) {
     // v1 -> v2: live-map annotations moved from pixel space to geo space.
@@ -165,11 +181,45 @@ function migrateProject(data) {
 
 function restoreProject(data) {
   data = migrateProject(data);
-  if (!data || !data.map) { alert('That file is not a valid MapForge map.'); return; }
+  if (!data || !data.map) { alert('That file is not a valid ' + APP_NAME + ' map.'); return; }
   pendingRestore = data;
   const m = data.map;
   if (m.kind === 'maplibre') { restoreLiveMap(m); return; }
-  loadMap(m.kind === 'data' ? m.data : m.src, !!m.fillable);
+  if (m.kind === 'blob') { restoreStoredImageMap(m); return; }
+  // An inlined picture (a .mapforge file, or a save made without the image
+  // store): adopt it into the store so this machine gets the smaller form from
+  // here on, then load it. Falls back to loading the data URL directly.
+  if (m.kind === 'data') {
+    // Show it immediately; adopt it into the image store afterwards so this
+    // machine gets the smaller form from here on. Never block opening on an
+    // encode -- see handleMapUpload().
+    currentMapBlobId = null; currentMapBlobMime = null;
+    loadMap(m.data, !!m.fillable);
+    adoptBaseImage(m.data).then(a => {
+      if (!a) return;
+      URL.revokeObjectURL(a.url);
+      if (currentMapSrc === m.data) { currentMapBlobId = a.id; currentMapBlobMime = a.mime; }
+    }).catch(() => {});
+    return;
+  }
+  currentMapBlobId = null;
+  loadMap(m.src, !!m.fillable);
+}
+
+// A browser save whose picture lives in the image store.
+async function restoreStoredImageMap(m) {
+  let blob = null;
+  try { blob = await MFBlobs.get(m.id); } catch (e) {}
+  if (!blob) {
+    pendingRestore = null;
+    alert('That saved map\u2019s base image is missing from this browser.\n\n' +
+          'It was saved on a different computer or browser, or the browser cleared its ' +
+          'storage. Maps saved to a file keep their picture inside the file.');
+    return;
+  }
+  currentMapBlobId = m.id;
+  currentMapBlobMime = m.mime || blob.type;
+  loadMap(URL.createObjectURL(blob), !!m.fillable);
 }
 
 // Rebuild a saved live-map base: recreate the frozen frame, jump to the saved
@@ -277,6 +327,23 @@ function doAutosave() {
   }
 }
 
+// Every image id any save still points at, plus the one in use right now.
+function referencedImageIds() {
+  const ids = [];
+  const pick = d => { if (d && d.map && d.map.kind === 'blob') ids.push(d.map.id); };
+  loadSavesIndex().forEach(s => pick(s.data));
+  try { pick(JSON.parse(localStorage.getItem(AUTOSAVE_KEY))); } catch (e) {}
+  if (typeof currentMapBlobId !== 'undefined' && currentMapBlobId) ids.push(currentMapBlobId);
+  return ids;
+}
+
+// Called after anything that can orphan a picture (overwrite, delete). Best
+// effort -- a missed sweep costs disk space, never correctness.
+function sweepUnusedImages() {
+  if (!MFBlobs.ready) return;
+  MFBlobs.sweep(referencedImageIds()).catch(() => {});
+}
+
 // ── Named browser saves ──
 function loadSavesIndex() {
   try { return JSON.parse(localStorage.getItem(SAVES_KEY)) || []; }
@@ -318,19 +385,24 @@ function saveCurrentProject() {
   }
   const input = document.getElementById('save-name-input');
   const name  = (input.value || '').trim() || mapTitle || 'Untitled map';
-  const data  = serializeProject();
   const saves = loadSavesIndex();
   const i     = saves.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
-  const entry = { name, savedAt: data.savedAt, thumb: makeSaveThumb(), data };
+  // A name clash is the one way a save can destroy earlier work, so it gets a
+  // real warning showing WHAT would be replaced -- and an equally easy way not
+  // to. (Browser saves only; the map library has its own flow.)
   if (i !== -1) {
-    if (!confirm(`A saved map named "${name}" already exists. Overwrite it?`)) {
-      if (typeof _expProgress === 'function') _expProgress(null);
-      return;
-    }
-    saves[i] = entry;
-  } else {
-    saves.push(entry);
+    if (typeof _expProgress === 'function') _expProgress(null);
+    openOverwriteWarning(name, saves[i]);
+    return;
   }
+  writeNamedSave(name, saves, -1);
+}
+
+// The actual write, once the name question is settled.
+function writeNamedSave(name, saves, i) {
+  const data  = serializeProject();
+  const entry = { name, savedAt: data.savedAt, thumb: makeSaveThumb(), data };
+  if (i !== -1) saves[i] = entry; else saves.push(entry);
   try { writeSavesIndex(saves); }
   catch (e) {
     if (typeof _expProgress === 'function') _expProgress(null);
@@ -342,7 +414,59 @@ function saveCurrentProject() {
   _currentSaveName = name;
   refreshCurrentSaveThumb();     // live maps: redo the thumb from a fresh GL frame
   markProjectSaved();
+  sweepUnusedImages();           // an overwrite can orphan the old picture
+  // The user just said they want to keep this: a good moment to ask the browser
+  // not to throw their maps away (see mapforge-blobstore.js).
+  if (typeof requestPersistentStorage === 'function') requestPersistentStorage();
   flashSaveStatus(`Saved “${name}.”`);
+}
+
+// ── Overwrite warning ──
+// "Save a new copy" is the primary action: the cheap path is the one that
+// cannot lose work.
+let _owName = null;
+
+function suggestCopyName(name) {
+  const taken = new Set(loadSavesIndex().map(s => s.name.toLowerCase()));
+  const stem  = name.replace(/\s+\d+$/, '');          // "Egypt 2" -> "Egypt"
+  for (let n = 2; n < 500; n++) {
+    const candidate = stem + ' ' + n;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+  return name + ' copy';
+}
+
+function openOverwriteWarning(name, existing) {
+  _owName = name;
+  document.getElementById('ow-name').textContent = name;
+  document.getElementById('ow-when').textContent = fmtSavedAt(existing.savedAt);
+  const thumb = document.getElementById('ow-thumb');
+  if (existing.thumb) { thumb.src = existing.thumb; thumb.style.display = ''; }
+  else thumb.style.display = 'none';
+  document.getElementById('ow-copy-name').textContent = suggestCopyName(name);
+  document.getElementById('overwrite-modal-overlay').classList.add('open');
+}
+
+function closeOverwriteWarning() {
+  document.getElementById('overwrite-modal-overlay').classList.remove('open');
+  _owName = null;
+}
+
+// Keep both: the existing save is untouched, this one is saved beside it.
+function overwriteSaveAsCopy() {
+  const name = suggestCopyName(_owName);
+  closeOverwriteWarning();
+  const input = document.getElementById('save-name-input');
+  if (input) input.value = name;
+  writeNamedSave(name, loadSavesIndex(), -1);
+}
+
+// Replace it, deliberately.
+function overwriteConfirm() {
+  const name  = _owName;
+  closeOverwriteWarning();
+  const saves = loadSavesIndex();
+  writeNamedSave(name, saves, saves.findIndex(s => s.name.toLowerCase() === name.toLowerCase()));
 }
 
 function loadSavedProject(idx) {
@@ -358,11 +482,17 @@ function loadSavedProject(idx) {
 function deleteSavedProject(idx) {
   const saves = loadSavesIndex();
   const entry = saves[idx];
-  if (!entry) return;
-  if (!confirm(`Delete saved map “${entry.name}”? This cannot be undone.`)) return;
+  if (!entry) return false;
+  if (!confirm(`Delete saved map “${entry.name}”? This cannot be undone.`)) return false;
   saves.splice(idx, 1);
   writeSavesIndex(saves);
+  // The session was working on this save: it is no longer a save to update.
+  if (_currentSaveName && _currentSaveName.toLowerCase() === entry.name.toLowerCase())
+    _currentSaveName = null;
   renderSavesList();
+  if (typeof renderHomeSavesPanel === 'function') renderHomeSavesPanel();
+  sweepUnusedImages();          // its base image may now be unreferenced
+  return true;
 }
 
 // Dirty tracking: a map counts as "unsaved work" only if it has annotations
@@ -427,9 +557,22 @@ function renderSavesList() {
 }
 
 // ── File download / open (no storage limit; best for custom base maps) ──
-function downloadProjectFile() {
-  if (!hasBase()) { flashSaveStatus('Load a map first.'); return; }
+// A .mapforge file has to open on someone else's computer, so it always
+// carries its picture inline even though browser saves reference the store.
+async function serializeProjectForFile() {
   const data = serializeProject();
+  if (data.map && data.map.kind === 'blob') {
+    const blob = await MFBlobs.get(data.map.id);
+    data.map = blob
+      ? { kind: 'data', data: await blobToDataURL(blob), fillable: data.map.fillable }
+      : { kind: 'data', data: '', fillable: data.map.fillable };
+  }
+  return data;
+}
+
+async function downloadProjectFile() {
+  if (!hasBase()) { flashSaveStatus('Load a map first.'); return; }
+  const data = await serializeProjectForFile();
   const base = (mapTitle || 'My Map').replace(/[^\w\- ]+/g, '').trim() || 'My Map';
   const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
   const a    = document.createElement('a');
@@ -448,9 +591,9 @@ function openProjectFile(input) {
   reader.onload = () => {
     let data;
     try { data = JSON.parse(reader.result); }
-    catch (e) { alert('Could not read that file — it is not a valid MapForge map.'); return; }
+    catch (e) { alert('Could not read that file — it is not a valid ' + APP_NAME + ' map.'); return; }
     if (data.app !== PROJECT_TAG &&
-        !confirm('This file may not be a MapForge map. Try to open it anyway?')) return;
+        !confirm('This file may not be a ' + APP_NAME + ' map. Try to open it anyway?')) return;
     if (hasUnsavedWork() && !confirm('Open this map? Your current annotations will be replaced.')) return;
     closeSavesModal();
     restoreProject(data);
@@ -460,6 +603,23 @@ function openProjectFile(input) {
 }
 
 // Home-page saved-maps panel: same index as the Save/Open modal, click to open.
+// A quiet ✕ on each saved-map row. Always visible rather than hover-only:
+// Chromebooks and tablets have no hover, and a control students can't reveal
+// may as well not exist. `after` re-renders whichever list it was clicked in.
+function saveRowDeleteButton(idx, after) {
+  const b = document.createElement('button');
+  b.className = 'ss-save-del';
+  b.type = 'button';
+  b.textContent = '✕';
+  b.title = 'Delete this saved map';
+  b.setAttribute('aria-label', 'Delete this saved map');
+  b.onclick = e => {
+    e.stopPropagation();                 // never open the map we are deleting
+    if (deleteSavedProject(idx) && after) after();
+  };
+  return b;
+}
+
 function renderHomeSavesPanel() {
   const wrap = document.getElementById('ss-saves');
   const ul   = document.getElementById('ss-saves-list');
@@ -488,6 +648,7 @@ function renderHomeSavesPanel() {
     const dt = document.createElement('span');
     dt.className = 'ss-save-date'; dt.textContent = fmtSavedAt(s.savedAt);
     li.appendChild(nm); li.appendChild(dt);
+    li.appendChild(saveRowDeleteButton(i, renderHomeSavesPanel));
     ul.appendChild(li);
   });
   wrap.style.display = '';
@@ -549,7 +710,14 @@ offerRecovery();
   try { dataUrl = sessionStorage.getItem(HANDOFF_KEY); } catch (e) { return; }
   if (!dataUrl) return;
   sessionStorage.removeItem(HANDOFF_KEY);   // one-shot; don't reload on refresh
+  // Same treatment as an upload: compact it into the image store so saves
+  // reference the picture instead of carrying it.
   loadMap(dataUrl, false);                  // img.onload sizes canvas + dismisses start screen
+  adoptBaseImage(dataUrl).then(a => {
+    if (!a) return;
+    URL.revokeObjectURL(a.url);
+    if (currentMapSrc === dataUrl) { currentMapBlobId = a.id; currentMapBlobMime = a.mime; }
+  }).catch(() => {});
 })();
 
 

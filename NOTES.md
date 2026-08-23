@@ -22,11 +22,15 @@ that are already there. The launcher's server disables caching.
 | `mapforge.css` | All styling. Every rule in it is live (dead rules were cleaned out Aug 2026) — if you change a value, it takes effect. |
 | `mapforge-icons.js` | Canvas drawing functions for every stamp, line style, and toolbar icon. |
 | `mapforge-registry.js` | The stamp catalog: every stamp type's name, group, default size, and which draw function it uses. Add a stamp here + an icon function, and the UI picks it up. |
-| `mapforge-persist.js` | Saving and loading: browser saves, `.mapforge` files, autosave, the recovery popup, saved-map thumbnails. |
+| `mapforge-persist.js` | Saving and loading: browser saves, `.mapforge` files, autosave, the recovery popup, saved-map thumbnails, the overwrite warning. |
+| `mapforge-blobstore.js` | Where uploaded/cropped base-map pictures live: re-encoded losslessly to WebP and kept in IndexedDB, so saves reference a picture instead of carrying it. |
+| `mapforge-library.js` | The live map library: reads `live-library/index.json` and builds the cards for the ready-made live-map regions. Read-only — entries are made by a local-only tool that is not in this repo. |
+| `live-library/` | The live map library's entries — one `.mapforge` file each, listed in `index.json`. The app writes both. See its README. |
+| `mapforge-server.py` | The local server the launcher runs: no-cache, byte-serving for the live map, and the two requests that add/remove library entries on the maintainer's machine. |
 | `mapforge-export.js` | PNG / PDF / print export, the export preview, and save thumbnails. |
 | `maplibre-basemap.js` | Everything about the live world map: map style, layers, the globe/flat toggle, and the dynamic label engine. |
 | `maplibre-map/` | The live map's data: vector tiles (`.pmtiles`), GeoJSON (coastlines, rivers, lakes, label data), fonts, icons. |
-| `Base Maps/` | The PNG map library. |
+| `Base Maps/` | The PNG base maps. Only the US History set is still in the picker; the world/ancient ones were retired in favour of live map regions but the FILES stay, because saved maps reference them by filename. |
 
 ## Ideas the code is built on
 
@@ -56,6 +60,42 @@ a straight line through the widest open water → a stacked two-line label at
 the visual center of the visible water. On the globe, text never warps onto
 the sphere: curves are rebuilt with even screen spacing, and anything too
 close to the globe's edge renders flat instead.
+
+**A library entry is just a saved map.** The ready-made live-map regions in
+the Map Library are ordinary `.mapforge` project files kept in `live-library/`.
+Choosing one runs the same restore path as opening a file, so the student lands
+on the real live map, framed as the author framed it, with the author's marks already there —
+as ordinary annotations they can edit, not a locked layer. Nothing about the
+library is a separate code path, which is why it costs so little.
+
+`live-library/index.json` lists the entries. Reading it is all this app does;
+entries are MADE by a separate local-only file on the maintainer's machine,
+through the launcher's server — the only part of MapForge that writes to disk.
+The published site has neither the file nor the server, so the library is
+read-only everywhere it is deployed. If you are wondering why the server has
+POST routes that nothing here calls, that is why.
+
+**Uploaded pictures are stored once, by reference.** A library map is saved as
+a filename, and a live map as a frame — both tiny. Only an uploaded or cropped
+map has a picture to keep, and that picture is re-encoded losslessly to WebP
+(35-45% smaller, pixel-identical) and put in IndexedDB. The save then holds its
+id, which is derived from the bytes, so two saves of the same map share one
+copy. This keeps localStorage — capped near 5MB — holding only text: an
+uploaded-map save went from about 1MB to 15KB.
+
+**The app asks to keep its storage.** After the first successful save it calls
+`requestPersistentStorage()`, which exempts the app's data from the browser's
+"clear this when space is tight" policy and from Safari's habit of discarding
+site data after about a week idle. It fires after a save, not at load, because
+Firefox shows the user a permission prompt and it should arrive when the answer
+is obviously yes. Chrome and Safari decide silently, largely on whether the user
+looks invested in the site — bookmarking it is the single best signal. A refusal
+changes nothing functionally; the data is simply evictable again.
+
+A `.mapforge` FILE is the exception: it has to open on someone else's computer,
+so `serializeProjectForFile()` puts the picture back inside it. If IndexedDB is
+unavailable (private browsing, a locked-down profile), everything falls back to
+the old inline-base64 behaviour.
 
 **Saves carry a version number.** `migrateProject()` in `mapforge-persist.js`
 upgrades old save files when the format changes. If you change what's saved,

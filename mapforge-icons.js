@@ -348,6 +348,21 @@ const drawCarpet       = _makeSvgStamp('icons/Carpet.svg',                'icon-
 const drawPottery      = _makeSvgStamp('icons/Pottery.svg',               'icon-trade-pottery');
 const drawSilver       = _makeSvgStamp('icons/Silver.svg',                'icon-trade-silver');
 const drawSorghum      = _makeSvgStamp('icons/Sorghum.svg',               'icon-trade-sorghum');
+
+// Foods & crops (Noun Project set, 2026-08-23)
+const drawApples      = _makeSvgStamp('icons/Apples.svg',                 'icon-trade-apples');
+const drawBeans       = _makeSvgStamp('icons/Beans.svg',                  'icon-trade-beans');
+const drawCitrus      = _makeSvgStamp('icons/Citrus Fruit.svg',           'icon-trade-citrus');
+const drawCoffee      = _makeSvgStamp('icons/Coffee.svg',                 'icon-trade-coffee');
+const drawHoneybees   = _makeSvgStamp('icons/Honeybees.svg',              'icon-trade-honeybees');
+const drawPears       = _makeSvgStamp('icons/Pears.svg',                  'icon-trade-pears');
+const drawSquash      = _makeSvgStamp('icons/Squash.svg',                 'icon-trade-squash');
+const drawSweetPotato = _makeSvgStamp('icons/Sweet Potato.svg',           'icon-trade-sweetpotato');
+const drawTomato      = _makeSvgStamp('icons/Tomato.svg',                 'icon-trade-tomato');
+const drawPalmOil     = _makeSvgStamp('icons/Palm Oil.svg',               'icon-trade-palmoil');
+const drawPeanuts     = _makeSvgStamp('icons/Peanuts.svg',                'icon-trade-peanuts');
+const drawPeppers     = _makeSvgStamp('icons/Peppers.svg',                'icon-trade-peppers');
+const drawRubber      = _makeSvgStamp('icons/Rubber.svg',                 'icon-trade-rubber');
 // New transport icons (Noun Project flat set, 2026-08-16)
 const drawShip         = _makeSvgStamp('icons/Ship.svg',                  'icon-trans-ship');
 const drawTrireme      = _makeSvgStamp('icons/Trireme.svg',               'icon-trans-trireme');
@@ -750,6 +765,20 @@ const TRADE_GOODS = {
   'mark-person':       { label: 'Person',          draw: drawPerson      },
   'mark-fire':         { label: 'Fire',            draw: drawFire        },
   'mark-vikings':      { label: 'Vikings',         draw: drawVikings     },
+  // ── Foods & crops (2026-08-23) ──
+  'trade-apples':        { label: 'Apples',         draw: drawApples      },
+  'trade-beans':         { label: 'Beans',          draw: drawBeans       },
+  'trade-citrus':        { label: 'Citrus Fruit',   draw: drawCitrus      },
+  'trade-coffee':        { label: 'Coffee',         draw: drawCoffee      },
+  'trade-honeybees':     { label: 'Honeybees',      draw: drawHoneybees   },
+  'trade-pears':         { label: 'Pears',          draw: drawPears       },
+  'trade-squash':        { label: 'Squash',         draw: drawSquash      },
+  'trade-sweetpotato':   { label: 'Sweet Potato',   draw: drawSweetPotato },
+  'trade-tomato':        { label: 'Tomato',         draw: drawTomato      },
+  'trade-palmoil':       { label: 'Palm Oil',       draw: drawPalmOil     },
+  'trade-peanuts':       { label: 'Peanuts',        draw: drawPeanuts     },
+  'trade-peppers':       { label: 'Peppers',        draw: drawPeppers     },
+  'trade-rubber':        { label: 'Rubber',         draw: drawRubber      },
 };
 
 const RELIGIONS = {

@@ -1,0 +1,126 @@
+[
+  {
+    "file": "fertile-crescent-blank.mapforge",
+    "label": "Fertile Crescent - Blank"
+  },
+  {
+    "file": "fertile-crescent-border.mapforge",
+    "label": "Fertile Crescent - Border"
+  },
+  {
+    "file": "fertile-crescent-cities.mapforge",
+    "label": "Fertile Crescent - Cities"
+  },
+  {
+    "file": "akkadian-emipire.mapforge",
+    "label": "Akkadian Emipire"
+  },
+  {
+    "file": "ancient-egypt.mapforge",
+    "label": "Ancient Egypt"
+  },
+  {
+    "file": "india.mapforge",
+    "label": "India"
+  },
+  {
+    "file": "the-maurya-empire.mapforge",
+    "label": "The Maurya Empire"
+  },
+  {
+    "file": "babylonian-empire.mapforge",
+    "label": "Babylonian Empire"
+  },
+  {
+    "file": "assyrian-empire.mapforge",
+    "label": "Assyrian Empire"
+  },
+  {
+    "file": "china.mapforge",
+    "label": "China"
+  },
+  {
+    "file": "greece.mapforge",
+    "label": "Greece"
+  },
+  {
+    "file": "the-mediterranean-world.mapforge",
+    "label": "The Mediterranean World"
+  },
+  {
+    "file": "africa.mapforge",
+    "label": "Africa"
+  },
+  {
+    "file": "the-persian-empire.mapforge",
+    "label": "The Persian Empire"
+  },
+  {
+    "file": "alexander-the-great.mapforge",
+    "label": "Alexander the Great"
+  },
+  {
+    "file": "qin-dynasty.mapforge",
+    "label": "Qin Dynasty"
+  },
+  {
+    "file": "the-roman-republic.mapforge",
+    "label": "The Roman Republic"
+  },
+  {
+    "file": "the-punic-wars.mapforge",
+    "label": "The Punic Wars"
+  },
+  {
+    "file": "carolingian-empire.mapforge",
+    "label": "Carolingian Empire"
+  },
+  {
+    "file": "holy-roman-empire-middle-ages.mapforge",
+    "label": "Holy Roman Empire - Middle Ages"
+  },
+  {
+    "file": "the-crusades.mapforge",
+    "label": "The Crusades"
+  },
+  {
+    "file": "europe.mapforge",
+    "label": "Europe"
+  },
+  {
+    "file": "china-middle-ages.mapforge",
+    "label": "China - Middle Ages"
+  },
+  {
+    "file": "the-mongol-empire-1279.mapforge",
+    "label": "The Mongol Empire - 1279"
+  },
+  {
+    "file": "islamic-conquests-through-1250.mapforge",
+    "label": "Islamic Conquests through 1250"
+  },
+  {
+    "file": "voyages-of-columbus.mapforge",
+    "label": "Voyages of Columbus"
+  },
+  {
+    "file": "roman-empire.mapforge",
+    "label": "Roman Empire"
+  },
+  {
+    "file": "south-america.mapforge",
+    "label": "South America"
+  },
+  {
+    "file": "mesoamerica.mapforge",
+    "label": "Mesoamerica"
+  },
+  {
+    "file": "viking-exploration.mapforge",
+    "label": "Viking Exploration"
+  },
+  {
+    "file": "spain.mapforge",
+    "label": "Spain"
+  }
+]

@@ -414,8 +414,12 @@
         </button>
         <button class="trade-btn terrain-btn" id="btn-city" onclick="selectStamp('city')" title="City">
       <canvas id="icon-city" width="28" height="22"></canvas>
-    
+
           City
+        </button>
+        <button class="trade-btn terrain-btn" id="btn-find-city" onclick="openCityFinder()" title="Find a city by name and stamp it at its true location">
+      <svg width="28" height="22" viewBox="0 0 28 22" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" style="display:block;margin:0 auto;"><circle cx="12" cy="9" r="6"/><path d="M16.5 13.5 L22 19"/></svg>
+          Find City
         </button>
         <!-- Desert retired from the palette (speckle fill covers it) — kept
              mounted for icon init + old saves, hidden from students. -->
@@ -6217,6 +6221,7 @@ function renderKeyBoxAt(ec, ox, oy, entries, maxRows) {
 
 </script>
 <script src="mapforge-blobstore.js"></script>
+<script src="mapforge-cities.js"></script>
 <script src="mapforge-library.js"></script>
 <script src="mapforge-persist.js"></script>
 <script>

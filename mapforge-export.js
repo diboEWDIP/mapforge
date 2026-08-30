@@ -667,22 +667,26 @@ function renderExportPreviewDraw() {
 // Live maps: the GL canvas only has pixels right after a render — draw the
 // thumb inside a fresh render callback (exactly how the export preview does)
 // and hand it to cb. Image maps are synchronous.
-function makeSaveThumbAsync(cb) {
+// `w` is the thumbnail width in pixels. The default suits the saved-maps list
+// (kept small — those live in localStorage, where quota is real). Library
+// entries pass a larger width: their thumbs are baked into static files and
+// drawn on cards that stretch past 220 CSS px on Retina screens.
+function makeSaveThumbAsync(cb, w) {
   if (baseMode === 'live' && mlMap) {
     let done = false;
-    const go = () => { if (!done) { done = true; cb(makeSaveThumb()); } };
+    const go = () => { if (!done) { done = true; cb(makeSaveThumb(w)); } };
     mlMap.once('render', go);
     mlMap.triggerRepaint();
     setTimeout(go, 1500);          // bounded: hidden tabs may never render
   } else {
-    cb(makeSaveThumb());
+    cb(makeSaveThumb(w));
   }
 }
-function makeSaveThumb() {
+function makeSaveThumb(w) {
   try {
     const mapW = canvas.width, mapH = canvas.height;
     const entries = [...collectAutoKeyEntries(), ...keyManualEntries];
-    const W = 220;
+    const W = w || 220;
     const t = document.createElement('canvas');
     t.width = W; t.height = Math.max(1, Math.round(W * mapH / mapW));
     const pc = t.getContext('2d');

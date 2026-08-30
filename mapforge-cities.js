@@ -143,6 +143,11 @@
     return scored.slice(0, 30).map(x => x[2]);
   }
 
+  // Pleiades titles can be slash-joined variant lists ("Uruk/Orchoe/Erech");
+  // one name goes on the map — the first, which Pleiades leads with as the
+  // conventional form. The full list still matches in search.
+  function cfDisplayName(e) { return e[0].split('/')[0].trim(); }
+
   function cfRender() {
     const q = cfSearch.value.trim();
     cfList.innerHTML = '';
@@ -150,10 +155,12 @@
     for (const e of cfMatches(q)) {
       const li = document.createElement('li');
       const nm = document.createElement('span');
-      nm.textContent = e[0];
+      nm.textContent = cfDisplayName(e);
       const meta = document.createElement('span');
       meta.className = 'cf-meta';
-      meta.textContent = (e[3] ? e[3] + ' · ' : '') + ERA[e[4]];
+      const variants = e[0].includes('/') ? e[0].split('/').slice(1, 3).join(', ') : '';
+      meta.textContent = (variants ? variants + ' · ' : '') +
+                         (e[3] ? e[3] + ' · ' : '') + ERA[e[4]];
       li.appendChild(nm); li.appendChild(meta);
       li.addEventListener('click', () => cfPlace(e));
       cfList.appendChild(li);
@@ -167,25 +174,29 @@
   }
 
   function cfPlace(e) {
-    const [name, lat, lng] = e;
+    const [, lat, lng] = e;
+    const name = cfDisplayName(e);
     const p = MLB.toScreen(mlMap, [lng, lat], canvas);
-    // The stamp is an ordinary city stamp: same fields the click handler
-    // writes, plus its geo truth set directly from the gazetteer.
+    // Half the hand-stamp size: a located city is a reference dot, not a
+    // drawn feature — and the name below needs the room.
+    const cityCss = (typeof citySize === 'number' ? citySize : 16) * 0.5;
     const s = { type: 'city', x: p.x, y: p.y, color: activeColor,
-                size: (typeof citySize === 'number' ? citySize : 16) * devicePixelRatio,
-                lng, lat };
+                size: cityCss * devicePixelRatio, lng, lat };
     stamps.push(s);
     undoLog.push({ kind: 'stamp', stamp: s });
     redoStack.length = 0;
     if (cfLabel.checked) {
-      // Label sits just right of the dot; createTextBox anchors geo-carried
-      // labels itself and pushes its own undo entry.
-      const cw = mlMap.getContainer().clientWidth, ch = mlMap.getContainer().clientHeight;
+      // Name centered BELOW the dot, per map convention. Labels anchor at
+      // their center (translate(-50%,-50%)), so only a vertical drop is
+      // needed: half the dot plus half the text line.
+      const fontSize = typeof lpFontSize === 'number' ? lpFontSize : 18;
       const lp = mlMap.project([lng, lat]);
-      const ll = mlMap.unproject([Math.min(cw - 4, lp.x + 14), lp.y - 8]);
-      createTextBox(0, 0, { text: name, lng: ll.lng, lat: ll.lat,
-                            fontSize: typeof lpFontSize === 'number' ? lpFontSize : 18,
+      const drop = cityCss * 1.05 + fontSize * 0.62 + 2;
+      const ll = mlMap.unproject([lp.x, lp.y + drop]);
+      const tb = createTextBox(0, 0, { text: name, lng: ll.lng, lat: ll.lat,
+                            fontSize,
                             color: typeof lpColor === 'string' ? lpColor : '#111111' });
+      if (tb && tb.id !== undefined) s.pair = tb.id;   // dot + name move as one (Select tool)
       const ae = document.activeElement;
       if (ae && ae.blur) ae.blur();     // don't trap the teacher in label editing
       deselectTB();

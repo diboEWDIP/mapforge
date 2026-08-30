@@ -4379,7 +4379,19 @@ function applyModifyAction(action, which) {
     redraw();
   } else if (action.kind === 'modify-stamp') {
     const s = (action.id !== undefined && stamps.find(t => t.id === action.id)) || stamps[action.idx];
-    if (s) applyStampGeom(s, action[which]);
+    if (s) {
+      const g = action[which];
+      // Undo/redo of a move carries the paired name label too. Live-map
+      // snapshots store lng/lat (not x/y) — derive the pixel delta either way.
+      if (s.pair !== undefined) {
+        let nx, ny;
+        if (g.lng !== undefined && baseMode === 'live' && mlMap) {
+          const p = MLB.toScreen(mlMap, [g.lng, g.lat], canvas); nx = p.x; ny = p.y;
+        } else if (typeof g.x === 'number') { nx = g.x; ny = g.y; }
+        if (nx !== undefined) movePairedLabel(s, nx - s.x, ny - s.y);
+      }
+      applyStampGeom(s, g);
+    }
     redraw();
   }
 }
@@ -4703,6 +4715,19 @@ function selectToolMouseDown(x, y) {
 }
 
 // Commit a finished move/resize as one undoable step.
+// A stamp placed with a paired name label (Find a City) carries pair:<tbId>.
+// Moving the stamp moves the label by the same amount, so dot + name travel
+// as one unit; dragging the label alone still fine-tunes its offset.
+function movePairedLabel(s, dxCanvas, dyCanvas) {
+  if (!s || s.pair === undefined || (!dxCanvas && !dyCanvas)) return;
+  const tb = textBoxes.find(t => t.id === s.pair);
+  if (!tb) return;                       // label was deleted: the pair is over
+  tb.xPct += dxCanvas / canvas.width * 100;
+  tb.yPct += dyCanvas / canvas.height * 100;
+  geoSyncTextBox(tb);
+  positionTB(tb);
+}
+
 function commitStampDrag() {
   if (!stampDragBefore) return;
   const s = stamps[stampDragBefore.idx];
@@ -4909,7 +4934,9 @@ canvas.addEventListener('mousemove', e => {
   // Select tool: drag-move, corner-resize, or hover-cursor feedback
   if (mode === 'moving-stamp' && selectedStampIdx != null) {
     const s = stamps[selectedStampIdx];
-    s.x = x - stampDragBefore.grabDx; s.y = y - stampDragBefore.grabDy;
+    const nx = x - stampDragBefore.grabDx, ny = y - stampDragBefore.grabDy;
+    movePairedLabel(s, nx - s.x, ny - s.y);   // dot + name travel together
+    s.x = nx; s.y = ny;
     redraw(); return;
   }
   if (mode === 'resizing-stamp' && selectedStampIdx != null) {

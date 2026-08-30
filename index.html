@@ -29,7 +29,7 @@
   <div class="toolbar-row" id="row1">
     <span id="toolbar-logo"><span class="app-logo"></span></span>
     <div id="row1-doc">
-        <button class="stamp-btn" onclick="openSavesModal()" title="Save this map"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M5 3h11l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 3v5h8V3"/><rect x="8" y="13" width="8" height="7"/></svg><span class="hdr-lbl">Save</span></button>
+        <button class="stamp-btn" onclick="openSavesModal()" title="Save this map (Ctrl+S / ⌘S)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M5 3h11l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 3v5h8V3"/><rect x="8" y="13" width="8" height="7"/></svg><span class="hdr-lbl">Save</span></button>
     <button class="stamp-btn" onclick="openExportModal()" title="Export / Print"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg><span class="hdr-lbl">Export</span></button>
     <button class="stamp-btn" onclick="openImportModal()" title="Import — open a saved map or a .mapforge file"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M4 21h16"/></svg><span class="hdr-lbl">Import</span></button>
     <button class="stamp-btn" onclick="openKeyModal()" title="Map Key"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></svg><span class="hdr-lbl">Key</span></button>
@@ -1441,9 +1441,17 @@ function _mercPerCssPx(ll) {
 }
 // Exact brush outline: union of a 24-gon circle per point + a quad per
 // segment (the analytic union-of-circles, as geometry). Cached per stroke.
+// Vertex snap for the brush-outline booleans. polygon-clipping's sweep line
+// throws "Unable to find segment" on nearly-degenerate slivers (vertices a
+// few 1e-7 Mercator units apart — reproduced 2026-08-28 with long strokes);
+// quantizing every vertex to a 1e-9 grid removes the trigger. 1e-9 Mercator
+// units is far below a pixel at any reachable zoom, so the snap is invisible.
+const _SNAP_M = 1e9;
+function _snapM(v) { return Math.round(v * _SNAP_M) / _SNAP_M; }
+
 function _strokePolyM(s) {
   const n = (s.geoPoints || []).length;
-  if (s._gpM && s._gpMn === n) return s._gpM;
+  if (s._gpMn === n) return s._gpM;   // caches failures (null) too — a throw is deterministic, don't re-throw every rebuild
   if (!n) return null;
   const dpr = window.devicePixelRatio || 1;
   const zRef = s.zRef !== undefined ? s.zRef : (mlMap ? mlMap.getZoom() : 3);
@@ -1464,8 +1472,13 @@ function _strokePolyM(s) {
     const ring = [];
     for (let i = 0; i < CIRC; i++) {
       const a = i * 2 * Math.PI / CIRC;
-      ring.push([x + rx * Math.cos(a), y + ry * Math.sin(a)]);
+      const vx = _snapM(x + rx * Math.cos(a)), vy = _snapM(y + ry * Math.sin(a));
+      // The snap can land two adjacent vertices on the same grid point —
+      // drop the duplicate rather than hand the sweep a zero-length edge.
+      const prev = ring[ring.length - 1];
+      if (!prev || prev[0] !== vx || prev[1] !== vy) ring.push([vx, vy]);
     }
+    if (ring.length < 3) continue;         // fully collapsed by the snap (unreachably tiny radius)
     ring.push(ring[0]);
     pieces.push([ring]);
   }
@@ -1474,14 +1487,35 @@ function _strokePolyM(s) {
     const [rax, ray] = rAt(i - 1), [rbx, rby] = rAt(i);
     const ra = (rax + ray) / 2, rb = (rbx + rby) / 2;
     const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy);
-    if (len < 1e-12) continue;
+    if (len < 1e-9) continue;              // sub-snap segment: the two circles already cover it
     const ux = -dy / len, uy = dx / len;
-    pieces.push([[[ax + ux * ra, ay + uy * ra], [bx + ux * rb, by + uy * rb],
-                  [bx - ux * rb, by - uy * rb], [ax - ux * ra, ay - uy * ra],
-                  [ax + ux * ra, ay + uy * ra]]]);
+    const quad = [[_snapM(ax + ux * ra), _snapM(ay + uy * ra)],
+                  [_snapM(bx + ux * rb), _snapM(by + uy * rb)],
+                  [_snapM(bx - ux * rb), _snapM(by - uy * rb)],
+                  [_snapM(ax - ux * ra), _snapM(ay - uy * ra)]];
+    if (new Set(quad.map(p => p.join())).size < 4) continue;   // snap collapsed it
+    quad.push(quad[0]);
+    pieces.push([quad]);
   }
-  try { s._gpM = polygonClipping.union(...pieces); s._gpMn = n; }
-  catch (e) { console.warn('[shade-geo] stroke union failed', e); s._gpM = null; }
+  // Fast path: one union over every piece. On the library's sweep-line
+  // failure, fold the pieces in one at a time instead — a piece that still
+  // throws is skipped, losing one dab of one stroke rather than the whole
+  // stroke (which used to become invisible everywhere, since committed
+  // strokes are only drawn by the map layer — Eric, 2026-08-28).
+  s._gpMn = n;
+  try { s._gpM = polygonClipping.union(...pieces); }
+  catch (e) {
+    let acc = null, dropped = 0;
+    for (const p of pieces) {
+      // Seed as [p]: a piece is a Polygon ([ring]) but _gpM must be a
+      // MultiPolygon ([[ring]]) even if every union below throws.
+      try { acc = acc ? polygonClipping.union(acc, p) : [p]; }
+      catch (e2) { dropped++; }
+    }
+    s._gpM = acc && acc.length ? acc : null;
+    console.warn('[shade-geo] stroke union recovered incrementally' +
+      (dropped ? ' (' + dropped + '/' + pieces.length + ' dabs dropped)' : ''), e.message);
+  }
   return s._gpM;
 }
 function _bboxOfMP(mp) {
@@ -1532,7 +1566,15 @@ function buildShadePolygonFeatures() {
     const s = shades[i];
     try {
       const mp = _strokePolyM(s);
-      if (!mp || !mp.length) continue;
+      if (!mp || !mp.length) {
+        // The stroke's outline could not be built at all: hand it to the
+        // canvas renderer (geoPoints kept, so it stays geo-anchored) instead
+        // of letting it exist in neither layer. It draws without the land
+        // clip — visible-but-unclipped beats invisible.
+        s._vecFailed = true;
+        continue;
+      }
+      if (s._vecFailed) delete s._vecFailed;
       const dom = (s.clip === 'ocean') ? 'ocean' : 'land';
       const visible = occupied[dom] ? polygonClipping.difference(mp, occupied[dom]) : mp;
       occupied[dom] = occupied[dom] ? polygonClipping.union(occupied[dom], mp) : mp;
@@ -1551,21 +1593,30 @@ function buildShadePolygonFeatures() {
   for (const [k, parts] of groups) {
     const [color, style, clip] = k.split('\u0000');
     let geom;
+    // The parts are mutually disjoint by construction (each is what the
+    // latest-wins difference left of one stroke), so if the cosmetic
+    // merge throws, concatenating them renders identically — never drop
+    // the whole color group over a failed union.
     try { geom = parts.length === 1 ? parts[0] : polygonClipping.union(...parts); }
-    catch (e) { continue; }
+    catch (e) {
+      console.warn('[shade-geo] group union failed — concatenating', e.message);
+      geom = [].concat(...parts);
+    }
     // Clip to land, minus lakes — against the VECTOR coastline, so the edge
     // is exact at every zoom. bbox prefilter keeps the booleans local.
     if (_geoClip.land) {
-      const bb = _bboxOfMP(geom);
-      const hit = arr => arr.filter(p =>
-        p.bbox[0] < bb[2] && p.bbox[2] > bb[0] && p.bbox[1] < bb[3] && p.bbox[3] > bb[1])
-        .map(p => p.poly);
       // Tier: z<2 → 110m (matches the world-zoom render; islands absent by
       // design there), z≥5 → harvested 10m when available, else 50m base.
       const zc = mlMap ? mlMap.getZoom() : 3;
       const use110 = zc < 2 && _geoClip.land110;
       if (zc < 2 && !_geoClip.land110) ensureClipData110();
       try {
+        // Inside the try: a malformed geometry must degrade to "unclipped",
+        // not crash the whole rebuild (and with it every redraw).
+        const bb = _bboxOfMP(geom);
+        const hit = arr => arr.filter(p =>
+          p.bbox[0] < bb[2] && p.bbox[2] > bb[0] && p.bbox[1] < bb[3] && p.bbox[3] > bb[1])
+          .map(p => p.poly);
         const landSrc  = use110 ? _geoClip.land110
                        : (_geoClip.viewLand || _geoClip.land);
         const lakesSrc = use110 ? (_geoClip.lakes110 || [])
@@ -2114,7 +2165,10 @@ function renderShadeStamps() {
     // Geometry features are view-independent: push only when the stroke set
     // changes; MapLibre reprojects them through every pan/zoom/relock free.
     const shades = stamps.filter(s => s.type === 'shade' && s.geoPoints && s.geoPoints.length && !s._hidden);
-    const sig = shades.map(s => s.id + s.color + (s.shadeStyle || '') + (s.clip || 'land') + s.geoPoints.length).join('|');
+    // First geo point identifies the stroke — shade stamps carry no id, so the
+    // old `s.id` here was always "undefined" and two same-color strokes with
+    // equal point counts were indistinguishable.
+    const sig = shades.map(s => s.geoPoints[0] + '' + s.color + (s.shadeStyle || '') + (s.clip || 'land') + s.geoPoints.length).join('|');
     if (sig !== window._mfShadeSig) {
       window._mfShadeSig = sig;
       MLB.setShadeFeatures(mlMap, buildShadePolygonFeatures());
@@ -2122,6 +2176,10 @@ function renderShadeStamps() {
   }
   stamps.forEach(s => {
     if (s.type !== 'shade' || s._hidden) return;
+    // A committed stroke whose outline the map layer could not build renders
+    // here analytically (geo-anchored) — otherwise it would be invisible in
+    // BOTH layers, which was the vanishing-shade bug (2026-08-28).
+    if (SHADE_MODE === 'ml' && s.geoPoints && s._vecFailed) { drawAnalyticShade(stc, s); return; }
     if (SHADE_MODE === 'ml' && s.geoPoints &&
         !(_mlPainting && s === stamps[stamps.length - 1])) return;  // committed = native; live stroke previews
     if ((SHADE_MODE === 'analytic' || (SHADE_MODE === 'ml' && _mlPainting)) && (s.geoPoints || s.points) &&
@@ -3335,7 +3393,7 @@ function geoSyncStamp(s) {
         const [sx, sy] = _mercPerCssPx(ll);
         return [rCss * sx, rCss * sy];
       });
-      s._gpM = null;                             // radii changed: drop cached outline
+      s._gpM = null; s._gpMn = -1;               // radii changed: drop cached outline (both fields — _gpMn alone would serve the stale null)
     }
   } else if (s.x1 !== undefined) {
     s.geo = { p1: g(s.x1, s.y1), p2: g(s.x2, s.y2), c: g(s.cx, s.cy) };
@@ -4441,6 +4499,15 @@ document.addEventListener('keydown', e => {
     if (selectedTB)                                                { deselectTB(); e.preventDefault(); return; }
     if (selectedStampIdx != null || selectedArrowIdx != null)     { selectedStampIdx = null; selectedArrowIdx = null; redraw(); e.preventDefault(); return; }
     if (activeStamp)                                              { deselectStamp(); e.preventDefault(); }
+    return;
+  }
+
+  // Ctrl/⌘+S saves the project. Handled before the label guard (saving while
+  // typing a label is fine) and always swallowed so the browser's own
+  // save-page dialog never appears.
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's' && !e.shiftKey && !e.altKey) {
+    e.preventDefault();
+    quickSave();
     return;
   }
 

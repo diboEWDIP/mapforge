@@ -74,6 +74,9 @@ function serializeProject() {
   clone.stamps.forEach(s => {
     delete s._hidden;      // transient render flags, not document state
     delete s._vecRetried;
+    delete s._vecFailed;
+    delete s._gpM;         // per-session Mercator outline cache — large, and
+    delete s._gpMn;        // was silently bloating every autosave/named save
     // Runtime sizes are backing px of THIS device; the file stores document
     // px (1/96 inch) so a save prints identically on any machine.
     SIZE_FIELDS.forEach(f => { if (typeof s[f] === 'number') s[f] = s[f] / devicePixelRatio; });
@@ -414,11 +417,48 @@ function writeNamedSave(name, saves, i) {
   _currentSaveName = name;
   refreshCurrentSaveThumb();     // live maps: redo the thumb from a fresh GL frame
   markProjectSaved();
+  // The named save now holds this exact state, so the autosave slot is
+  // redundant — clearing it stops the recovery banner from offering a map
+  // that is already in the saved list. The next edit recreates it.
+  try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
   sweepUnusedImages();           // an overwrite can orphan the old picture
   // The user just said they want to keep this: a good moment to ask the browser
   // not to throw their maps away (see mapforge-blobstore.js).
   if (typeof requestPersistentStorage === 'function') requestPersistentStorage();
   flashSaveStatus(`Saved “${name}.”`);
+}
+
+// Ctrl/⌘+S. Resaves the save this session is working on without any dialog;
+// with no current save yet, it opens the Save modal with the name ready to
+// edit so Enter finishes the job.
+function quickSave() {
+  if (!hasBase()) return;
+  // Save modal already open: behave exactly like its Save button (uses the
+  // typed name, keeps the overwrite warning).
+  if (document.getElementById('saves-modal-overlay').classList.contains('open')) {
+    saveCurrentProject();
+    return;
+  }
+  if (_currentSaveName) {
+    const saves = loadSavesIndex();
+    const i = saves.findIndex(s => s.name.toLowerCase() === _currentSaveName.toLowerCase());
+    if (i !== -1) {
+      // Same progress treatment as the modal's Save button (live maps render
+      // their thumbnail asynchronously).
+      if (typeof _expProgress === 'function') {
+        _expProgress('Saving map…');
+        clearTimeout(quickSave._pt);
+        quickSave._pt = setTimeout(() => _expProgress(null), 4000);
+      }
+      writeNamedSave(saves[i].name, saves, i);
+      flashSaved();               // the modal's status line isn't visible here
+      return;
+    }
+    _currentSaveName = null;      // that save was deleted — fall through to the modal
+  }
+  openSavesModal();
+  const input = document.getElementById('save-name-input');
+  if (input) { input.focus(); input.select(); }
 }
 
 // ── Overwrite warning ──
@@ -501,6 +541,12 @@ function deleteSavedProject(idx) {
 let _savedSig = null;
 function _projSig() {
   try { const d = serializeProject(); delete d.savedAt; return JSON.stringify(d); }
+  catch (e) { return null; }
+}
+// Same signature for an already-serialized project (autosave vs named saves).
+// Key order matches because every project comes out of serializeProject().
+function _dataSig(d) {
+  try { const c = { ...d }; delete c.savedAt; return JSON.stringify(c); }
   catch (e) { return null; }
 }
 function markProjectSaved() { _savedSig = _projSig(); }
@@ -678,6 +724,14 @@ function offerRecovery() {
   const n = (data && data.stamps ? data.stamps.length : 0) +
             (data && data.textBoxes ? data.textBoxes.length : 0);
   if (!data || !data.map || n === 0) return;
+  // Autosave identical to an existing named save (e.g. a saved map was opened
+  // and autosaved, then the session ended with no edits): nothing to recover —
+  // it is already in the saved list. Clear the slot so it stops asking.
+  const sig = _dataSig(data);
+  if (sig !== null && loadSavesIndex().some(s => _dataSig(s.data) === sig)) {
+    try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
+    return;
+  }
   _recoveryData = data;
   const banner = document.getElementById('recovery-banner');
   document.getElementById('recovery-text').textContent =

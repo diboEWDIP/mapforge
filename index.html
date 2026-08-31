@@ -2574,6 +2574,7 @@ function deselectStamp() {
   document.querySelectorAll('.stamp-btn, .trade-btn, .feature-btn, .religion-btn')
           .forEach(b => b.classList.remove('active'));
   canvas.classList.remove('shade-active', 'eraser-active');
+  document.body.classList.remove('eraser-active');
   canvas.style.cursor = 'default';
   const sc = document.getElementById('shade-cursor');
   if (sc) sc.style.display = 'none';
@@ -2624,6 +2625,7 @@ function selectStamp(type) {
   if (!isShade) document.getElementById('shade-cursor').style.display = 'none';
 
   canvas.classList.toggle('eraser-active', type === 'eraser');
+  document.body.classList.toggle('eraser-active', type === 'eraser');   // labels show the eraser cursor too
   canvas.style.cursor = '';   // fall back to CSS (crosshair / shade / eraser)
   if (type === 'select') canvas.style.cursor = 'default';   // refined to move/resize on hover
 
@@ -4224,21 +4226,32 @@ function removeTB(tb) {
   scheduleAutosave();
 }
 
+function eraseTB(tb) {
+  if (!textBoxes.includes(tb)) return;    // already gone (double event mid-removal)
+  undoLog.push({ kind: 'textbox-erase', snapshot: snapshotTB(tb) });
+  redoStack.length = 0;
+  removeTB(tb);
+}
+
 function bindTBEvents(tb, rotateHandle, content) {
   let dragging = false, dragStartX, dragStartY, origXPct, origYPct;
   let gestureBefore = null;   // label snapshot captured at the start of a move/rotate
   let textBefore    = null;   // label snapshot captured when text editing begins
 
+  // Eraser, on the WHOLE box (capture phase, so padding/edge clicks and the
+  // rotate handle count too — the old content-only handler made edge clicks
+  // feel like the eraser ignored text). Swiping the held eraser across a
+  // label erases it as well, matching how it scrubs over stamps.
+  tb.el.addEventListener('mousedown', e => {
+    if (activeStamp !== 'eraser') return;
+    e.stopPropagation(); e.preventDefault();
+    eraseTB(tb);
+  }, true);
+  tb.el.addEventListener('mouseenter', e => {
+    if (activeStamp === 'eraser' && (e.buttons & 1)) eraseTB(tb);
+  });
+
   content.addEventListener('mousedown', e => {
-    // Eraser: remove this text box
-    if (activeStamp === 'eraser') {
-      const snapshot = snapshotTB(tb);
-      undoLog.push({ kind: 'textbox-erase', snapshot });
-      redoStack.length = 0;
-      removeTB(tb);
-      e.stopPropagation();
-      return;
-    }
     selectTB(tb);
     dragging = true; dragStartX = e.clientX; dragStartY = e.clientY;
     origXPct = tb.xPct; origYPct = tb.yPct;
@@ -4525,6 +4538,21 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
     quickSave();
     return;
+  }
+
+  // ⌘Z while typing in a label used to fall through to the browser's NATIVE
+  // text undo, which silently un-types the text one chunk per press — the
+  // label only vanished after the text ran out (read as "undo is broken/slow",
+  // Eric 2026-08-30). Make keyboard undo match the toolbar button: leave the
+  // label, then undo the last map action.
+  if ((e.metaKey || e.ctrlKey) && (e.key.toLowerCase() === 'z' || e.key.toLowerCase() === 'y')) {
+    const ae = document.activeElement;
+    if (ae && ae.classList && ae.classList.contains('tb-content')) {
+      e.preventDefault();
+      ae.blur();
+      ((e.key.toLowerCase() === 'y' || e.shiftKey) ? redo : undo)();
+      return;
+    }
   }
 
   // While typing in a label, let the browser handle the keys (incl. Backspace).

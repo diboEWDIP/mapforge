@@ -755,6 +755,9 @@ body.map-nav #map-canvas { pointer-events: none; }
 body.map-nav #ml-map { cursor: grab; }
 #map-canvas.shade-active { cursor: none; }
 #map-canvas.eraser-active { cursor: cell; }
+/* Eraser applies to text labels too — advertise it on hover. */
+body.eraser-active .text-box,
+body.eraser-active .text-box .tb-content { cursor: cell; }
 /* Shade brush cursor preview */
 #shade-cursor {
   position: absolute;

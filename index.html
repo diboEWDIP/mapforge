@@ -3256,7 +3256,14 @@ async function refreshLiveSnapshot() {
   // their hide/restore of layer visibility and corrupt the map. Coalesce.
   if (_clsRefreshing) { _clsQueued = true; return; }
   _clsRefreshing = true;
-  try { await _refreshLiveSnapshotInner(); }
+  try {
+    // Hidden-tab restores can arrive before the style has loaded (awaitIdle's
+    // bounded timeouts beat style.load when rendering is throttled) — the
+    // snapshot needs a real style, so wait for it here. After the latch, so
+    // overlapping calls still coalesce.
+    await MLB.awaitStyleLoaded(mlMap);
+    await _refreshLiveSnapshotInner();
+  }
   finally {
     _clsRefreshing = false;
     if (_clsQueued) { _clsQueued = false; refreshLiveSnapshot(); }

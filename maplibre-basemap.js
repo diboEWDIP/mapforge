@@ -1193,6 +1193,32 @@ const MLB = {
     }));
   },
 
+  // Resolves when the style itself is loaded — getStyle()/isStyleLoaded()
+  // usable. awaitIdle is NOT enough: in a hidden/backgrounded tab the render
+  // loop is throttled, so its bounded timeouts can resolve before the style
+  // arrives and getStyle() is still undefined (restore crash, 2026-08-28).
+  // 'styledata' can fire before isStyleLoaded() flips true, so a slow poll
+  // backs up the listener; bounded like awaitIdle so a dead style fetch can't
+  // hang the caller.
+  awaitStyleLoaded(map, maxMs = 15000) {
+    if (map.isStyleLoaded()) return Promise.resolve();
+    return new Promise(res => {
+      const t0 = Date.now();
+      let timer = null;
+      const check = () => {
+        clearTimeout(timer);
+        if (map.isStyleLoaded() || Date.now() - t0 >= maxMs) {
+          map.off('styledata', check);
+          res();
+        } else {
+          timer = setTimeout(check, 250);
+        }
+      };
+      map.on('styledata', check);
+      timer = setTimeout(check, 250);
+    });
+  },
+
   // High-resolution snapshot for PRINT/EXPORT: temporarily raises the map's
   // pixel ratio so the vector linework, halos, and labels re-render truly
   // sharp (the data is vector — this is a re-render, not an upscale), then
@@ -1249,7 +1275,11 @@ const MLB = {
       'position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none;';
     container.appendChild(freeze);
     try {
-      const symbolIds = map.getStyle().layers
+      // getStyle() is undefined until the style loads (hidden-tab restores
+      // can get here that early) — wait, then tolerate an empty style.
+      await MLB.awaitStyleLoaded(map);
+      const style = map.getStyle();
+      const symbolIds = ((style && style.layers) || [])
         .filter(l => l.type === 'symbol').map(l => l.id);
       // VIGNETTES must hide too: their soft water-glow radiates past the true
       // coastline and classifies as water, standing the fill/shade masks off

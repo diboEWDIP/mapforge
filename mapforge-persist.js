@@ -240,6 +240,10 @@ async function restoreLiveMap(m) {
   if (!mlMap._geoWired) { wireGeoRenderLoop(); mlMap._geoWired = true; }
   const v = m.view || {};
   mlMap.jumpTo({ center: v.center || [-98.5, 39.8], zoom: v.zoom || 3 });
+  // Hidden-tab restores: the throttled render loop lets awaitIdle's bounded
+  // timeouts win before the style has loaded — wait for the style explicitly
+  // or refreshLiveSnapshot below reads an undefined getStyle() (2026-08-28).
+  await MLB.awaitStyleLoaded(mlMap);
   await MLB.awaitIdle(mlMap);              // style + tiles ready
   if (m.toggles) MLB.applyToggleState(mlMap, m.toggles);
   await MLB.awaitIdle(mlMap);              // toggles repainted

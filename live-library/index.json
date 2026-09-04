@@ -122,5 +122,97 @@
   {
     "file": "spain.mapforge",
     "label": "Spain"
+  },
+  {
+    "file": "roman-empire-200-ad.mapforge",
+    "label": "Roman Empire - 200 AD"
+  },
+  {
+    "file": "roman-empire-100-ad.mapforge",
+    "label": "Roman Empire - 100 AD"
+  },
+  {
+    "file": "roman-empire-1-ad.mapforge",
+    "label": "Roman Empire - 1 AD"
+  },
+  {
+    "file": "inca-empire-1530-ad.mapforge",
+    "label": "Inca Empire -1530 AD"
+  },
+  {
+    "file": "aztec-empire-1500-ad.mapforge",
+    "label": "Aztec Empire - 1500 AD"
+  },
+  {
+    "file": "maya-800-ad.mapforge",
+    "label": "Maya - 800 AD"
+  },
+  {
+    "file": "caliphate-of-cordoba-1000-ad.mapforge",
+    "label": "Caliphate of Cordoba - 1000 AD"
+  },
+  {
+    "file": "indus-valley-civilization-2000-bc.mapforge",
+    "label": "Indus Valley Civilization - 2000 BC"
+  },
+  {
+    "file": "mughal-empire-1700-ad.mapforge",
+    "label": "Mughal Empire - 1700 AD"
+  },
+  {
+    "file": "empire-of-alexander-323-bc.mapforge",
+    "label": "Empire of Alexander - 323 BC"
+  },
+  {
+    "file": "mali-1300-ad.mapforge",
+    "label": "Mali - 1300 AD"
+  },
+  {
+    "file": "empire-of-ghana-700-ad.mapforge",
+    "label": "Empire of Ghana - 700 AD"
+  },
+  {
+    "file": "songhai-1500-ad.mapforge",
+    "label": "Songhai - 1500 AD"
+  },
+  {
+    "file": "song-dynasty-1000-ad.mapforge",
+    "label": "Song Dynasty - 1000 AD"
+  },
+  {
+    "file": "tang-dynasty-900-ad.mapforge",
+    "label": "Tang Dynasty - 900 AD"
+  },
+  {
+    "file": "zhou-dynasty-500-bc.mapforge",
+    "label": "Zhou Dynasty - 500 BC"
+  },
+  {
+    "file": "han-dynasty.mapforge",
+    "label": "Han Dynasty"
+  },
+  {
+    "file": "holy-roman-empire-1000-ad.mapforge",
+    "label": "Holy Roman Empire - 1000 AD"
+  },
+  {
+    "file": "england-and-france-1000-ad.mapforge",
+    "label": "England and France - 1000 AD"
+  },
+  {
+    "file": "ottoman-empire-1700-ad.mapforge",
+    "label": "Ottoman Empire - 1700 AD"
+  },
+  {
+    "file": "egypt-1500-bc.mapforge",
+    "label": "Egypt - 1500 BC"
+  },
+  {
+    "file": "ancient-greece-major-cities.mapforge",
+    "label": "Ancient Greece - Major Cities"
+  },
+  {
+    "file": "crete.mapforge",
+    "label": "Crete"
   }
 ]

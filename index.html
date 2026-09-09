@@ -29,7 +29,7 @@
   <div class="toolbar-row" id="row1">
     <span id="toolbar-logo"><span class="app-logo"></span></span>
     <div id="row1-doc">
-        <button class="stamp-btn" onclick="openSavesModal()" title="Save this map (Ctrl+S / ⌘S)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M5 3h11l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 3v5h8V3"/><rect x="8" y="13" width="8" height="7"/></svg><span class="hdr-lbl">Save</span></button>
+        <button class="stamp-btn" id="hdr-save-btn" onclick="openSavesModal()" title="Save this map (Ctrl+S / ⌘S)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M5 3h11l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 3v5h8V3"/><rect x="8" y="13" width="8" height="7"/></svg><span class="hdr-lbl">Save</span></button>
     <button class="stamp-btn" onclick="openExportModal()" title="Export / Print"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg><span class="hdr-lbl">Export</span></button>
     <button class="stamp-btn" onclick="openImportModal()" title="Import — open a saved map or a .mapforge file"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M4 21h16"/></svg><span class="hdr-lbl">Import</span></button>
     <button class="stamp-btn" onclick="openKeyModal()" title="Map Key"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></svg><span class="hdr-lbl">Key</span></button>
@@ -897,7 +897,7 @@
     </label>
     <input type="file" id="ss-upload-input" accept="image/*" style="display:none" onchange="handleMapUpload(event)">
 
-    <div class="ss-choice" onclick="startLiveMap()">
+    <div class="ss-choice" onclick="beginFreshMap(null);startLiveMap()">
       <div class="ss-choice-icon">
         <span class="ss-choice-icon-img" style="--icon:url('icons/Select.svg')"></span>
       </div>
@@ -1057,12 +1057,12 @@
     <div class="modal-x" onclick="closeLeaveModal()">✕</div>
     <h3>Unsaved Work</h3>
     <p style="margin:10px 0 4px;font:400 13px/1.5 'Jost',Georgia,serif;color:#2a1f0e;">
-      Your map has unsaved annotations. If you leave now they will be lost.
+      <span id="leave-text">Your map has unsaved annotations. If you leave now they will be lost.</span>
     </p>
     <div class="km-actions">
       <button class="km-btn secondary" onclick="closeLeaveModal()">Cancel</button>
       <button class="km-btn secondary" id="leave-continue-btn" onclick="leaveContinue()">Continue</button>
-      <button class="km-btn primary"   onclick="leaveSaveFirst()" style="display:inline-flex;align-items:center;gap:6px;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 3v5h8V3"/><rect x="8" y="13" width="8" height="7"/></svg>Save First</button>
+      <button class="km-btn primary"   onclick="leaveSaveFirst()" style="display:inline-flex;align-items:center;gap:6px;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 3v5h8V3"/><rect x="8" y="13" width="8" height="7"/></svg><span id="leave-save-lbl">Save First</span></button>
     </div>
   </div>
 </div>
@@ -1075,9 +1075,9 @@
     <div id="cm-warn" style="margin:8px 0 2px;background:#A06810;border-radius:8px;padding:10px 12px;">
       <p style="margin:0 0 8px;display:flex;align-items:flex-start;gap:8px;font:400 13px/1.5 'Jost',Georgia,serif;color:#FAF5EA;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-        Your map has unsaved annotations — they will be lost when you switch maps.
+        <span id="cm-warn-text">Your map has unsaved annotations — they will be lost when you switch maps.</span>
       </p>
-      <button class="km-btn" onclick="cmSaveFirst()" style="display:inline-flex;align-items:center;gap:6px;background:#FAF5EA;color:#A06810;border:none;font-weight:600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 3v5h8V3"/><rect x="8" y="13" width="8" height="7"/></svg>Save First</button>
+      <button class="km-btn" onclick="cmSaveFirst()" style="display:inline-flex;align-items:center;gap:6px;background:#FAF5EA;color:#A06810;border:none;font-weight:600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 3v5h8V3"/><rect x="8" y="13" width="8" height="7"/></svg><span id="cm-save-lbl">Save First</span></button>
     </div>
     <p style="margin:12px 0 6px;font:400 13px/1.4 'Jost',Georgia,serif;color:#2a1f0e;">Where to next?</p>
     <div class="cm-options">
@@ -1115,7 +1115,8 @@
       <label class="km-btn primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;justify-content:center;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a1.5 1.5 0 0 0-1.5 1.5v15A1.5 1.5 0 0 0 6 21h12a1.5 1.5 0 0 0 1.5-1.5V8.5z"/><path d="M14 3v5.5h5.5"/></svg>
         Open from File…
-        <input type="file" accept=".mapforge,.json,application/json" onchange="closeImportModal();openProjectFile(this)" style="display:none;" />
+        <input type="file" accept=".mapforge,.json,application/json" onchange="closeImportModal();openProjectFile(this)" style="display:none;"
+               onclick="if(window.showOpenFilePicker){event.preventDefault();openFileViaPicker(null);}" />
       </label>
     </div>
   </div>
@@ -1144,17 +1145,21 @@
 <div id="saves-modal-overlay" onclick="if(event.target===this)closeSavesModal()">
   <div id="saves-modal">
     <div class="modal-x" onclick="closeSavesModal()">✕</div>
-    <h3>Save Map</h3>
-
+    <h3>Save Map <span class="save-help" onclick="syncSaveTips(true)" title="How saving works">?</span></h3>
+    <div id="save-tips" style="display:none">
+      <div class="save-tip"><b>1</b><span>Name your map.</span></div>
+      <div class="save-tip"><b>2</b><span>Save keeps a file of it on your computer.</span></div>
+      <div class="save-tip"><b>3</b><span>To reopen it later, use Import.</span></div>
+    </div>
     <div class="km-row">
       <input class="km-input" id="save-name-input" type="text" placeholder="Name this map…"
-             onkeydown="if(event.key==='Enter')saveCurrentProject()" style="width:100%;box-sizing:border-box;" />
+             onkeydown="if(event.key==='Enter')saveMap()" style="width:100%;box-sizing:border-box;" />
     </div>
     <div class="km-actions" style="margin-top:8px;">
-      <button class="km-btn primary"   onclick="saveCurrentProject()">Save to Browser</button>
-      <button class="km-btn secondary" onclick="downloadProjectFile()">Save to File…</button>
+      <button class="km-btn primary" onclick="saveMap()"><span id="save-btn-lbl">Save Map</span></button>
+      <button class="km-btn secondary" id="save-as-btn" onclick="saveMapAs()" title="Save a copy under a new name" style="display:none">Save As…</button>
     </div>
-    <p class="saves-hint"><b>Save to File…</b> downloads a reopenable map (a <code>.mapforge</code> file) you can keep or share &mdash; open saved maps with Import&nbsp;⬆. To save a picture for slides or printing, use Export&nbsp;⬇ instead.</p>
+    <p class="saves-hint" id="save-file-state"></p>
     <div id="save-status"></div>
     <!-- Opening lives in the Import popup now; the hidden saves-list keeps
          renderSavesList() callers harmless, and the file input stays mounted. -->
@@ -3652,7 +3657,7 @@ function buildMapLibrary() {
     const safePath = 'Base Maps/' + m.file.replace(/#/g, '%23');
     const card  = document.createElement('div');
     card.className = 'ss-map-card';
-    card.onclick   = () => loadMap(safePath, !!m.fillable);
+    card.onclick   = () => { beginFreshMap(m.label); loadMap(safePath, !!m.fillable); };
 
     const thumb    = document.createElement('img');
     thumb.src      = safePath;
@@ -3772,6 +3777,12 @@ let _leavePending = null;
 function promptLeaveMap(actionLabel, proceed) {
   _leavePending = proceed;
   document.getElementById('leave-continue-btn').textContent = actionLabel;
+  // Browser mode: the ask is a downloaded copy, not a browser save.
+  const dl = typeof needsFileCopy === 'function' && needsFileCopy() && !hasUnsavedWork();
+  document.getElementById('leave-text').textContent = dl
+    ? 'This map is backed up in the browser, but you haven’t downloaded a copy. Download one now so you can open it again on any computer.'
+    : 'Your map has unsaved annotations. If you leave now they will be lost.';
+  document.getElementById('leave-save-lbl').textContent = dl ? 'Download a copy' : 'Save First';
   document.getElementById('leave-modal-overlay').classList.add('open');
 }
 function closeLeaveModal() {
@@ -3779,8 +3790,13 @@ function closeLeaveModal() {
   document.getElementById('leave-modal-overlay').classList.remove('open');
 }
 function leaveSaveFirst() {
+  const go = _leavePending;
   document.getElementById('leave-modal-overlay').classList.remove('open');
   _leavePending = null;
+  if (typeof needsFileCopy === 'function' && needsFileCopy() && !hasUnsavedWork()) {
+    saveFile().then(ok => { if (ok && go) go(); });   // download, then carry on leaving
+    return;
+  }
   openSavesModal();
 }
 function leaveContinue() {
@@ -3793,8 +3809,13 @@ function leaveContinue() {
 // Saved Maps, right in the popup. The unsaved-work warning + Save First row
 // shows only while the map is dirty (saving clears it — see hasUnsavedWork).
 function navChangeMap() {
-  const dirty = hasUnsavedWork();
+  const dirty = hasUnsavedWork() || (typeof needsFileCopy === 'function' && needsFileCopy());
   document.getElementById('cm-warn').style.display = dirty ? '' : 'none';
+  const dl = !hasUnsavedWork() && dirty;
+  document.getElementById('cm-warn-text').textContent = dl
+    ? 'This map is backed up in the browser, but you haven’t downloaded a copy — download one before switching maps.'
+    : 'Your map has unsaved annotations — they will be lost when you switch maps.';
+  document.getElementById('cm-save-lbl').textContent = dl ? 'Download a copy' : 'Save First';
   cmRenderSaves();
   document.getElementById('changemap-modal-overlay').classList.add('open');
 }
@@ -3826,6 +3847,7 @@ function buildSaveRows(ul, beforeOpen, refresh) {
     li.appendChild(saveRowDeleteButton(i, refresh || (() => buildSaveRows(ul, beforeOpen, refresh))));
     ul.appendChild(li);
   });
+  if (typeof fsAugmentSaveRows === 'function') fsAugmentSaveRows(ul, beforeOpen);   // folder: newer-file badges + folder-only maps
   return saves.length;
 }
 
@@ -3858,19 +3880,23 @@ function closeImportModal() {
 function closeChangeMapModal() {
   document.getElementById('changemap-modal-overlay').classList.remove('open');
 }
-function cmSaveFirst() { closeChangeMapModal(); openSavesModal(); }
+function cmSaveFirst() {
+  closeChangeMapModal();
+  if (typeof needsFileCopy === 'function' && needsFileCopy() && !hasUnsavedWork()) { saveFile(); return; }
+  openSavesModal();
+}
 function cmGo(dest) {
   closeChangeMapModal();
   if (dest === 'saves') { openSavesModal(); return; }   // pick from saved maps
   resetAnnotations(); exitLiveMode();
   if (dest === 'library') showStartScreen(true);
   else if (dest === 'upload') { showStartScreen(false); document.getElementById('ss-upload-input').click(); }
-  else if (dest === 'region') { showStartScreen(false); startLiveMap(); }
+  else if (dest === 'region') { showStartScreen(false); beginFreshMap(null); startLiveMap(); }
 }
 
 function navHome() {
   const go = () => { resetAnnotations(); exitLiveMode(); showStartScreen(false); };
-  if (hasUnsavedWork()) promptLeaveMap('Go Home', go); else go();
+  if (hasUnsavedWork() || (typeof needsFileCopy === 'function' && needsFileCopy())) promptLeaveMap('Go Home', go); else go();
 }
 
 // Uploading must feel instant. The map is shown straight from the chosen file;
@@ -3883,6 +3909,7 @@ let _uploadSeq = 0;
 function handleMapUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
+  beginFreshMap(file.name.replace(/\.[^.]+$/, ''));   // default save name = the picture's name
   const seq = ++_uploadSeq;
   currentMapBlobId = null; currentMapBlobMime = null;   // not this map's picture yet
   // Showing the map must not depend on ANY of the storage machinery. If the

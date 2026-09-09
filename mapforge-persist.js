@@ -311,11 +311,21 @@ function scheduleAutosave() {
 function doAutosave() {
   if (!hasBase()) return;
   try {
+    // Once the map has a name, autosave keeps THAT save current (Maddy
+    // 2026-09-09: "save should always write to the named save once there is
+    // one"). The recovery slot is only for never-named work.
+    if (_currentSaveName) {
+      const saves = loadSavesIndex();
+      const i = saves.findIndex(sv => sv.name.toLowerCase() === _currentSaveName.toLowerCase());
+      if (i !== -1) { writeNamedSave(saves[i].name, saves, i, { quiet: true }); flashSaved(); updateSaveIndicator(); fsAutosaveFile(); scheduleFileReminder(); return; }
+      _currentSaveName = null;             // that save was deleted
+    }
     localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(serializeProject()));
     refreshCurrentSaveThumb();             // keep the saved-map card's face live
     const warn = document.getElementById('autosave-warn');
     if (warn) warn.remove();               // storage recovered — clear the alert
     flashSaved();
+    updateSaveIndicator();
   }
   catch (e) {
     // Quota exceeded (usually a large uploaded base map): tell the student
@@ -364,6 +374,17 @@ function writeSavesIndex(arr) { localStorage.setItem(SAVES_KEY, JSON.stringify(a
 // The named save this session is working on (last saved or opened) — its
 // thumbnail is refreshed on every autosave so the saved-maps cards stay live.
 let _currentSaveName = null;
+// Name of the library / base map the student started from — the DEFAULT save
+// name (editable) until the map is saved under a name (Maddy 2026-09-09).
+let baseMapLabel = null;
+// A fresh start from the library, an upload, or Custom Region: forget the
+// previous session's save identity so Save/Ctrl+S can't write the new map
+// over the old named save or file.
+function beginFreshMap(label) {
+  baseMapLabel = label || null;
+  _currentSaveName = null; _fileName = null; _fileSig = null; _fileAt = null;
+  updateSaveIndicator();
+}
 function refreshCurrentSaveThumb() {
   if (!_currentSaveName || typeof makeSaveThumbAsync !== 'function') return;
   const name = _currentSaveName;
@@ -406,7 +427,8 @@ function saveCurrentProject() {
 }
 
 // The actual write, once the name question is settled.
-function writeNamedSave(name, saves, i) {
+function writeNamedSave(name, saves, i, opts) {
+  opts = opts || {};
   const data  = serializeProject();
   const entry = { name, savedAt: data.savedAt, thumb: makeSaveThumb(), data };
   if (i !== -1) saves[i] = entry; else saves.push(entry);
@@ -429,7 +451,269 @@ function writeNamedSave(name, saves, i) {
   // The user just said they want to keep this: a good moment to ask the browser
   // not to throw their maps away (see mapforge-blobstore.js).
   if (typeof requestPersistentStorage === 'function') requestPersistentStorage();
-  flashSaveStatus(`Saved “${name}.”`);
+  if (!opts.quiet) flashSaveStatus(`Saved “${name}”`, true);
+  updateSaveIndicator();
+  // Save Map's primary action = file; the overwrite dialog interrupted it.
+  if (_fileAfterNamed) { _fileAfterNamed = false; saveFile(); }
+}
+
+// ── The saving workflow (Maddy 2026-09-09) ──
+// The FILE is the real save; the browser copy is the backup autosave keeps
+// current. Where the browser has the File System Access API (Chrome /
+// Chromebook), the student picks ONE "Maposaic Maps" folder the first time
+// they save; every map is a .mapforge in that folder, rewritten in place by
+// Save, Ctrl+S and (throttled) autosave; the folder link is remembered across
+// sessions. Elsewhere, files are downloads (timestamped so the newest is
+// obvious) and the app asks for a downloaded copy at the end of a session.
+let _fileName = null;      // base name of the file last saved / opened
+let _fileSig  = null;      // project signature at the last file write
+let _fileAt   = null;
+let _fileAfterNamed = false;
+
+const FS = { supported: !!(window.showDirectoryPicker && window.isSecureContext), dir: null, perm: 'none', busy: false };
+const FS_DB = 'mapforge-fs';
+const FS_FOLDER = 'Maposaic';   // created inside whatever folder the student picks
+function fsIDB() {
+  return new Promise((res, rej) => {
+    let r; try { r = indexedDB.open(FS_DB, 1); } catch (e) { return rej(e); }
+    r.onupgradeneeded = () => r.result.createObjectStore('handles');
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function fsStoreDir(h) {
+  try { const db = await fsIDB(); await new Promise((res, rej) => {
+    const t = db.transaction('handles', 'readwrite'); t.objectStore('handles').put(h, 'dir');
+    t.oncomplete = res; t.onerror = () => rej(t.error); }); } catch (e) {}
+}
+async function fsLoadDir() {
+  if (!FS.supported) return;
+  try {
+    const db = await fsIDB();
+    const h = await new Promise((res, rej) => { const t = db.transaction('handles');
+      const q = t.objectStore('handles').get('dir'); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+    if (h) { FS.dir = h; FS.perm = await h.queryPermission({ mode: 'readwrite' }); }
+  } catch (e) {}
+  fsSyncReconnectBanner(); updateSaveIndicator();
+}
+function fsActive() { return FS.supported && FS.dir && FS.perm === 'granted'; }
+// Needs a user gesture: re-grants the remembered folder, or asks for one.
+async function fsConnect() {
+  if (!FS.supported) return null;
+  if (FS.dir) {
+    try { FS.perm = await FS.dir.requestPermission({ mode: 'readwrite' }); } catch (e) { FS.perm = 'denied'; }
+    if (FS.perm === 'granted') { fsSyncReconnectBanner(); updateSaveIndicator(); return FS.dir; }
+  }
+  try {
+    // The student picks WHERE (Documents, Drive…); the app creates a
+    // "Maposaic" folder there and saves into it — unless they picked a folder
+    // already called Maposaic, which is used as is (no nesting).
+    const parent = await window.showDirectoryPicker({ id: 'maposaic-maps', mode: 'readwrite', startIn: 'documents' });
+    const h = /^maposaic/i.test(parent.name) ? parent
+            : await parent.getDirectoryHandle(FS_FOLDER, { create: true });
+    FS.dir = h; FS.perm = 'granted'; await fsStoreDir(h);
+    fsSyncReconnectBanner(); updateSaveIndicator();
+    return h;
+  } catch (e) { return null; }     // cancelled or blocked by policy
+}
+async function fsWrite(base, json) {
+  const fh = await FS.dir.getFileHandle(base + '.mapforge', { create: true });
+  const w = await fh.createWritable(); await w.write(json); await w.close();
+}
+// "Reconnect your folder" — permission needs a click, so it is a banner.
+function fsSyncReconnectBanner() {
+  let el = document.getElementById('fs-reconnect');
+  const show = FS.supported && FS.dir && FS.perm !== 'granted' && hasBase();
+  if (!show) { if (el) el.remove(); return; }
+  if (el) return;
+  el = document.createElement('div'); el.id = 'fs-reconnect';
+  el.innerHTML = '<span>Your Maposaic folder needs reconnecting so this map can save to it.</span>' +
+    '<button class="km-btn primary" onclick="fsConnect().then(d=>{ if(d && _currentSaveName) saveFile(); })">Reconnect folder</button>';
+  document.body.appendChild(el);
+}
+
+function fileBaseName() {
+  return (_fileName || _currentSaveName || mapTitle || 'My Map')
+    .replace(/\.mapforge$/i, '').replace(/[^\w\- ]+/g, '').trim() || 'My Map';
+}
+function fmtStamp(ts) {
+  const d = new Date(ts); const hh = d.getHours() % 12 || 12, ap = d.getHours() < 12 ? 'am' : 'pm';
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${hh}.${String(d.getMinutes()).padStart(2,'0')}${ap}`;
+}
+function noteFileSaved(base, how, fileLabel) {
+  _fileName = base; _fileSig = _projSig(); _fileAt = Date.now();
+  markProjectSaved(); _reminderShown = false;
+  updateSaveIndicator();
+  flashSaveStatus(how === 'download' ? `Downloaded “${fileLabel}”` : `Saved “${base}.mapforge”`, true);
+}
+// Write the project to a .mapforge file. Folder in place when connected;
+// otherwise a timestamped download. Returns true on success.
+async function saveFile(opts) {
+  opts = opts || {};
+  if (!hasBase()) { flashSaveStatus('Load a map first.'); return false; }
+  if (FS.busy) return false;
+  FS.busy = true;
+  try {
+    const data = await serializeProjectForFile();
+    const json = JSON.stringify(data);
+    const base = fileBaseName();
+    if (FS.supported && !opts.noPicker) {
+      const dir = fsActive() ? FS.dir : await fsConnect();
+      if (dir) {
+        try { await fsWrite(base, json); noteFileSaved(base, 'folder'); return true; }
+        catch (e) { FS.perm = 'denied'; fsSyncReconnectBanner(); }   // fall through to download
+      }
+    } else if (FS.supported && opts.noPicker && fsActive()) {
+      try { await fsWrite(base, json); noteFileSaved(base, 'folder'); return true; } catch (e) { return false; }
+    } else if (opts.noPicker) { return false; }
+    const label = `${base} ${fmtStamp(Date.now())}.mapforge`;
+    const blob = new Blob([json], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = label; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    noteFileSaved(base, 'download', label); return true;
+  } finally { FS.busy = false; }
+}
+// Autosave's file follow-up: folder mode only, at most every 10 s, no dialogs.
+function fsAutosaveFile() {
+  if (!fsActive() || !_currentSaveName) return;
+  if (_fileAt && Date.now() - _fileAt < 10000) return;
+  saveFile({ noPicker: true });
+}
+// Browser mode: has the student got a downloaded copy of the current state?
+function needsFileCopy() {
+  if (!hasBase() || (stamps.length === 0 && textBoxes.length === 0)) return false;
+  if (fsActive()) return false;
+  return _fileSig === null || _fileSig !== _projSig();
+}
+// End-of-session prompts (browser mode): the native leave prompt, plus a
+// gentle reminder after ten minutes of work with no downloaded copy.
+window.addEventListener('beforeunload', e => {
+  if (needsFileCopy()) { e.preventDefault(); e.returnValue = ''; }
+});
+let _reminderShown = false, _reminderT = null;
+function scheduleFileReminder() {
+  clearTimeout(_reminderT);
+  if (fsActive()) return;
+  _reminderT = setTimeout(() => {
+    if (!needsFileCopy() || _reminderShown) return;
+    _reminderShown = true;
+    let el = document.getElementById('file-reminder');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'file-reminder';
+      el.innerHTML = '<span>You’ve been working a while — download a copy of this map so you can open it again later.</span>' +
+        '<button class="km-btn primary" onclick="saveFile().then(()=>document.getElementById(\'file-reminder\')?.remove())">Download a copy</button>' +
+        '<button class="km-btn secondary" onclick="document.getElementById(\'file-reminder\').remove()">Later</button>';
+      document.body.appendChild(el);
+    }
+  }, 10 * 60 * 1000);
+}
+
+// Save (modal primary, Enter): the current name if the map has one, else the
+// typed name. Browser copy first, then the file.
+async function saveMap() { return saveMapNamed(_currentSaveName || null); }
+// Save As…: the TYPED name becomes a new map (new file / download); the old
+// save is left untouched and this session moves to the new name.
+async function saveMapAs() {
+  const input = document.getElementById('save-name-input');
+  const typed = (input.value || '').trim();
+  if (!typed || (_currentSaveName && typed.toLowerCase() === _currentSaveName.toLowerCase())) {
+    input.value = _currentSaveName ? _currentSaveName + ' copy' : (mapTitle || '');
+    input.focus(); input.select();
+    flashSaveStatus('Type a new name, then Save As.');
+    return;
+  }
+  return saveMapNamed(typed);
+}
+async function saveMapNamed(forced) {
+  if (!hasBase()) { flashSaveStatus('Load a map first.'); return; }
+  const input = document.getElementById('save-name-input');
+  const name  = forced || (input.value || '').trim() || mapTitle || 'Untitled map';
+  const saves = loadSavesIndex();
+  const i     = saves.findIndex(sv => sv.name.toLowerCase() === name.toLowerCase());
+  const isCurrent = _currentSaveName && _currentSaveName.toLowerCase() === name.toLowerCase();
+  if (i !== -1 && !isCurrent) {         // renaming onto another map: warn first
+    _fileAfterNamed = true;
+    openOverwriteWarning(name, saves[i]);
+    return;
+  }
+  _fileName = name;                     // the file follows the map's name
+  writeNamedSave(name, saves, i, { quiet: true });
+  const ok = await saveFile();
+  markSaveTipsSeen();
+  // Show the check, then get out of the way (the dialog closes itself).
+  if (ok) setTimeout(closeSavesModal, 1400);
+}
+// Browser-only save (secondary action).
+function saveToBrowserOnly() { saveCurrentProject(); scheduleFileReminder(); }
+// Open a .mapforge through the picker when available, so Ctrl+S can write back
+// to the SAME file; falls back to the plain file input elsewhere.
+async function openFileViaPicker(fallbackInput) {
+  if (!window.showOpenFilePicker) { if (fallbackInput) fallbackInput.click(); return; }
+  let h;
+  try { [h] = await window.showOpenFilePicker({ multiple: false,
+    types: [{ description: APP_NAME + ' map', accept: { 'application/json': ['.mapforge', '.json'] } }] }); }
+  catch (e) { return; }
+  const file = await h.getFile();
+  const text = await file.text();
+  let data; try { data = JSON.parse(text); } catch (e) { alert('Could not read that file — it is not a valid ' + APP_NAME + ' map.'); return; }
+  if (hasUnsavedWork() && !confirm('Open this map? Your current annotations will be replaced.')) return;
+  if (typeof closeImportModal === 'function') closeImportModal();
+  closeSavesModal();
+  adoptOpenedFile(file.name, data);
+}
+// After opening a file: the map is named after it, the browser copy is
+// created/updated under that name, and the file counts as freshly saved.
+function adoptOpenedFile(fileName, data) {
+  // strip a download timestamp suffix ("Name 2026-09-09 2.14pm") back to the name
+  const base = fileName.replace(/\.mapforge$/i, '').replace(/\.json$/i, '')
+    .replace(/ \d{4}-\d{2}-\d{2} \d{1,2}\.\d{2}(am|pm)$/i, '');
+  restoreProject(data);
+  _fileName = base;
+  const settle = () => {
+    if (typeof pendingRestore !== 'undefined' && pendingRestore) { setTimeout(settle, 200); return; }
+    const saves = loadSavesIndex();
+    const i = saves.findIndex(sv => sv.name.toLowerCase() === base.toLowerCase());
+    if (hasBase()) writeNamedSave(base, saves, i, { quiet: true });
+    _fileSig = _projSig(); _fileAt = Date.now(); markProjectSaved(); updateSaveIndicator();
+    scheduleFileReminder();
+  };
+  setTimeout(settle, 300);
+}
+// Toolbar Save button: a dot while the FILE is behind the map (browser backup
+// is always current; the dot says "your real save needs updating").
+function updateSaveIndicator() {
+  const b = document.getElementById('hdr-save-btn'); if (!b) return;
+  const behind = hasBase() && (stamps.length || textBoxes.length) && (_fileSig === null || _fileSig !== _projSig());
+  // Folder mode: autosave keeps the file current on its own, so the dot only
+  // means "the folder can't be written right now" (needs reconnecting / a
+  // failed write) — never the 10 s autosave window.
+  const hasWork = hasBase() && (stamps.length || textBoxes.length);
+  // The dot = "you need to do something": folder mode → the map has never
+  // been saved (no file yet) or the folder can't be written; download mode →
+  // the downloaded file is behind the map.
+  const stale = fsActive() ? (hasWork && !_currentSaveName)
+              : (FS.supported && FS.dir) ? behind        // remembered folder, not yet re-granted
+              : behind;                                   // download mode: file is behind
+  b.classList.toggle('file-stale', !!stale);
+  b.title = !stale ? 'Save this map (Ctrl+S / ⌘S)'
+          : fsActive() ? 'Save this map — it has no file yet'
+          : (FS.supported && FS.dir) ? 'Reconnect your Maposaic folder to keep saving'
+          : 'Save this map to a file (Ctrl+S / ⌘S) — your file is behind';
+  const st = document.getElementById('save-file-state');
+  if (!st) return;
+  // ONE short line for students (Maddy 2026-09-09)
+  if (fsActive()) st.textContent = 'Saves to your Maposaic folder.';
+  else if (FS.supported && FS.dir) st.textContent = 'Reconnect your Maposaic folder when you save.';
+  else if (FS.supported) st.textContent = 'You’ll pick where to keep your maps.';
+  else st.textContent = behind ? 'Downloads a file — save again before you leave.' : 'Downloads a file you keep.';
+}
+// First-save walkthrough, shown until the student has saved once.
+const SAVE_TIPS_KEY = 'mapforge:save-tips-seen';
+function saveTipsSeen() { try { return localStorage.getItem(SAVE_TIPS_KEY) === '1'; } catch (e) { return true; } }
+function markSaveTipsSeen() { try { localStorage.setItem(SAVE_TIPS_KEY, '1'); } catch (e) {} syncSaveTips(); }
+function syncSaveTips(force) {
+  const el = document.getElementById('save-tips'); if (!el) return;
+  el.style.display = (force || !saveTipsSeen()) ? '' : 'none';
 }
 
 // Ctrl/⌘+S. Resaves the save this session is working on without any dialog;
@@ -454,8 +738,9 @@ function quickSave() {
         clearTimeout(quickSave._pt);
         quickSave._pt = setTimeout(() => _expProgress(null), 4000);
       }
-      writeNamedSave(saves[i].name, saves, i);
+      writeNamedSave(saves[i].name, saves, i, { quiet: true });
       flashSaved();               // the modal's status line isn't visible here
+      if (fsActive()) saveFile({ noPicker: true });   // folder: rewrite the file, no dialog
       return;
     }
     _currentSaveName = null;      // that save was deleted — fall through to the modal
@@ -517,10 +802,77 @@ function loadSavedProject(idx) {
   const saves = loadSavesIndex();
   const entry = saves[idx];
   if (!entry) return;
+  openNamedMap(entry.name, entry);
+}
+// Open a map by name, taking the NEWEST of the browser copy and the folder
+// file (folder mode). A newer file refreshes the browser copy on the way in.
+async function openNamedMap(name, entry) {
   if (hasUnsavedWork() && !confirm('Open this saved map? Your current annotations will be replaced.')) return;
   closeSavesModal();
+  let fileData = null, fileAt = 0;
+  if (fsActive()) {
+    try {
+      const fh = await FS.dir.getFileHandle(name + '.mapforge');
+      const f = await fh.getFile(); fileAt = f.lastModified;
+      fileData = JSON.parse(await f.text());
+    } catch (e) { fileData = null; }
+  }
+  const browserAt = entry ? (entry.savedAt || 0) : 0;
+  if (fileData && (!entry || fileAt > browserAt + 1500)) {   // file newer (1.5 s slack for the write itself)
+    adoptOpenedFile(name + '.mapforge', fileData);            // restores + refreshes the browser copy
+    flashSaved();
+    return;
+  }
+  if (!entry) return;
   _currentSaveName = entry.name;
   restoreProject(entry.data);
+  _fileName = entry.name;
+  const settle = () => {
+    if (typeof pendingRestore !== 'undefined' && pendingRestore) { setTimeout(settle, 200); return; }
+    // browser copy is the truth here; the folder file (if any) may be behind
+    _fileSig = fileData ? _dataSig(fileData) : null; _fileAt = fileData ? fileAt : null;
+    updateSaveIndicator(); scheduleFileReminder();
+    if (fsActive() && (!fileData || _fileSig !== _projSig())) saveFile({ noPicker: true });   // bring the file up to date
+  };
+  setTimeout(settle, 300);
+}
+// Folder listing: name -> { at } for every .mapforge in the Maposaic folder.
+async function fsListMaps() {
+  const out = new Map();
+  if (!fsActive()) return out;
+  try {
+    for await (const [nm, h] of FS.dir.entries()) {
+      if (h.kind !== 'file' || !/\.mapforge$/i.test(nm)) continue;
+      const f = await h.getFile();
+      out.set(nm.replace(/\.mapforge$/i, ''), { at: f.lastModified });
+    }
+  } catch (e) {}
+  return out;
+}
+// After a saved-maps list renders: badge rows whose folder file is newer and
+// append folder-only maps (saved on another day / browser) as openable rows.
+async function fsAugmentSaveRows(ul, beforeOpen) {
+  if (!fsActive() || !ul) return;
+  const files = await fsListMaps();
+  if (!files.size) return;
+  const saves = loadSavesIndex();
+  ul.querySelectorAll('li.ss-save-item').forEach(li => {
+    const nm = li.querySelector('.ss-save-name'); if (!nm) return;
+    const entry = saves.find(sv => sv.name === nm.textContent); const f = files.get(nm.textContent);
+    if (entry && f && f.at > (entry.savedAt || 0) + 1500) {
+      const dt = li.querySelector('.ss-save-date'); if (dt) dt.textContent = 'newer file · ' + fmtSavedAt(f.at);
+      li.title = 'Open this map (the file in your Maposaic folder is newer and will be used)';
+    }
+    files.delete(nm.textContent);
+  });
+  for (const [name, f] of files) {
+    const li = document.createElement('li'); li.className = 'ss-save-item ss-save-file'; li.title = 'Open from your Maposaic folder';
+    li.onclick = () => { if (beforeOpen) beforeOpen(); openNamedMap(name, null); };
+    const ph = document.createElement('div'); ph.className = 'ss-save-thumb ss-save-thumb-empty'; li.appendChild(ph);
+    const nm = document.createElement('span'); nm.className = 'ss-save-name'; nm.textContent = name;
+    const dt = document.createElement('span'); dt.className = 'ss-save-date'; dt.textContent = 'in folder · ' + fmtSavedAt(f.at);
+    li.appendChild(nm); li.appendChild(dt); ul.appendChild(li);
+  }
 }
 
 function deleteSavedProject(idx) {
@@ -559,10 +911,13 @@ function hasUnsavedWork() {
   return _savedSig === null || _savedSig !== _projSig();
 }
 
-function flashSaveStatus(msg) {
+function flashSaveStatus(msg, ok) {
   const el = document.getElementById('save-status');
   if (!el) return;
-  el.textContent = msg;
+  // ok = a completed save: green circle + cream check to the left (Maddy)
+  el.innerHTML = (ok ? '<span class="save-ok"></span>' : '') + '<span></span>';
+  el.lastChild.textContent = msg;
+  el.classList.toggle('ok', !!ok);
   clearTimeout(flashSaveStatus._t);
   flashSaveStatus._t = setTimeout(() => { el.textContent = ''; }, 3500);
 }
@@ -646,7 +1001,7 @@ function openProjectFile(input) {
         !confirm('This file may not be a ' + APP_NAME + ' map. Try to open it anyway?')) return;
     if (hasUnsavedWork() && !confirm('Open this map? Your current annotations will be replaced.')) return;
     closeSavesModal();
-    restoreProject(data);
+    adoptOpenedFile(file.name, data);
   };
   reader.readAsText(file);
   input.value = '';
@@ -706,8 +1061,12 @@ function renderHomeSavesPanel() {
 
 // ── Modal open/close ──
 function openSavesModal() {
-  document.getElementById('save-name-input').value = mapTitle || '';
+  document.getElementById('save-name-input').value = _currentSaveName || mapTitle || baseMapLabel || '';
+  const sa = document.getElementById('save-as-btn'); if (sa) sa.style.display = _currentSaveName ? '' : 'none';
+  const sv = document.getElementById('save-btn-lbl'); if (sv) sv.textContent = _currentSaveName ? 'Save' : 'Save Map';
   document.getElementById('save-status').textContent = '';
+  syncSaveTips();
+  updateSaveIndicator();
   renderSavesList();
   document.getElementById('saves-modal-overlay').classList.add('open');
 }
@@ -756,6 +1115,7 @@ function dismissRecovery() {
 // Initialise map library thumbnails now that MAP_LIBRARY is defined
 buildMapLibrary();
 offerRecovery();
+fsLoadDir();
 
 // ── Custom-region hand-off ───────────────────────────────────────────────────
 // The crop tool (crop-region-v1.html) stashes a cropped base map in

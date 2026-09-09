@@ -2779,3 +2779,27 @@ Source: design/map_forge_logo.svg → mapforge-logo.svg. Retained for reference.
     }
     .ss-save-del:hover { background: #cc503e; color: #FAF5EA; }
     .ss-save-del:focus-visible { outline: 2px solid #A06810; outline-offset: 1px; }
+
+/* Saving workflow (2026-09-09) */
+#hdr-save-btn { position: relative; }
+#hdr-save-btn.file-stale::after { content: ''; position: absolute; top: 4px; right: 6px; width: 7px; height: 7px;
+  border-radius: 50%; background: #c8402a; box-shadow: 0 0 0 1.5px #FAF5EA; }
+.save-help { display: inline-block; margin-left: 8px; width: 18px; height: 18px; line-height: 18px; text-align: center;
+  border-radius: 50%; background: #e8d8a0; color: #5a4020; font: 600 12px 'Jost', Georgia, serif; cursor: pointer; vertical-align: middle; }
+#save-tips { background: #FAF5EA; border: 1px solid #e4dcc8; border-radius: 8px; padding: 8px 10px; margin: 6px 0 10px; }
+.save-tip { display: flex; gap: 9px; align-items: flex-start; font: 400 12px/1.45 'Jost', Georgia, serif; color: #2a1f0e; padding: 4px 0; }
+.save-tip > b { flex: 0 0 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 50%; background: #A06810; color: #FAF5EA; font-weight: 600; font-size: 11px; }
+#save-file-state { color: #2a1f0e; }
+#fs-reconnect, #file-reminder { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 70;
+  display: flex; align-items: center; gap: 10px; background: rgba(42,31,14,.94); color: #FAF5EA; padding: 10px 14px;
+  border-radius: 10px; font: 400 12px/1.4 'Jost', Georgia, serif; max-width: 560px; box-shadow: 0 6px 24px rgba(0,0,0,.3); }
+#fs-reconnect .km-btn, #file-reminder .km-btn { padding: 6px 12px; font-size: 12px; }
+#save-status { display: flex; align-items: center; justify-content: center; gap: 8px; }
+#save-status .save-ok { width: 18px; height: 18px; border-radius: 50%; background: #3E8E5A; flex: 0 0 18px; position: relative; }
+#save-status .save-ok::after { content: ''; position: absolute; left: 5px; top: 3px; width: 5px; height: 9px;
+  border: solid #FAF5EA; border-width: 0 2.2px 2.2px 0; transform: rotate(45deg); }
+/* Save dialog: no reserved space under the buttons until there is a message */
+#save-status:empty { display: none; }
+#save-status { min-height: 0; }
+#saves-modal .saves-hint { margin-bottom: 0; }
+

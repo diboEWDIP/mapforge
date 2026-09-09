@@ -113,6 +113,7 @@ async function openLiveLibraryEntry(m, card) {
   // Restoring adopts the objects it is handed — stamps are pushed into the live
   // `stamps` array and edited from there. Hand over a fresh copy every time so
   // the cached entry stays pristine for the next open.
+  if (typeof beginFreshMap === 'function') beginFreshMap(m.label);   // default save name = this map's
   restoreProject(JSON.parse(JSON.stringify(data)));
   if (card) card.classList.remove('ss-live-loading');
 }

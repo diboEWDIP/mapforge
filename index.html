@@ -27,16 +27,19 @@
 
   <!-- ── Row 1: Tools ── -->
   <div class="toolbar-row" id="row1">
-    <span id="toolbar-logo"><span class="app-logo"></span></span>
+    <!-- Wordmark = Home (Maddy 2026-09-15): same action as the Home button. -->
+    <span id="toolbar-logo" role="button" tabindex="0" title="Home" aria-label="Home"
+          onclick="navHome()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navHome();}"><span class="app-logo"></span></span>
     <div id="row1-doc">
+        <!-- Home FIRST, before Save (Maddy 2026-09-15). -->
+        <button class="stamp-btn" id="hdr-home-btn" onclick="navHome()" title="Home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="m3 11 9-8 9 8"/><path d="M5 9v11h14V9"/><path d="M10 20v-6h4v6"/></svg><span class="hdr-lbl">Home</span></button>
         <button class="stamp-btn" id="hdr-save-btn" onclick="openSavesModal()" title="Save this map (Ctrl+S / ⌘S)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M5 3h11l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 3v5h8V3"/><rect x="8" y="13" width="8" height="7"/></svg><span class="hdr-lbl">Save</span></button>
-    <button class="stamp-btn" onclick="openExportModal()" title="Export / Print"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg><span class="hdr-lbl">Export</span></button>
+    <button class="stamp-btn" id="hdr-export-btn" onclick="openExportModal()" title="Export / Print"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg><span class="hdr-lbl">Export</span></button>
     <button class="stamp-btn" onclick="openImportModal()" title="Import — open a saved map or a .mapforge file"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M4 21h16"/></svg><span class="hdr-lbl">Import</span></button>
     <button class="stamp-btn" onclick="openKeyModal()" title="Map Key"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></svg><span class="hdr-lbl">Key</span></button>
     <button class="stamp-btn" onclick="openTitleModal()" title="Map Title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/></svg><span class="hdr-lbl">Title</span></button>
     <button class="stamp-btn hdr-low" id="lm-adjust" style="display:none;" onclick="unlockFrameView()" title="Adjust view — unlock the page and move the map"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><rect x="6.5" y="6.5" width="11" height="11" stroke-dasharray="3 2.4"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/><path d="m10.2 3.3 1.8-1.8 1.8 1.8M10.2 20.7l1.8 1.8 1.8-1.8M3.3 10.2 1.5 12l1.8 1.8M20.7 10.2 22.5 12l-1.8 1.8"/></svg><span class="hdr-lbl">Adjust View</span></button>
     <button class="stamp-btn hdr-low" onclick="navChangeMap()" title="Change Map"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg><span class="hdr-lbl">Change Map</span></button>
-    <button class="stamp-btn hdr-low" onclick="navHome()" title="Home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="m3 11 9-8 9 8"/><path d="M5 9v11h14V9"/><path d="M10 20v-6h4v6"/></svg><span class="hdr-lbl">Home</span></button>
     <button class="stamp-btn" onclick="undo()" title="Undo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
     <button class="stamp-btn" id="btn-redo" onclick="redo()" title="Redo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
   </div><!-- /row1-doc -->
@@ -125,9 +128,9 @@
       <button class="r2-style-btn" id="r2fs-ji" onclick="lpSetFontStyle('Jost','italic')" style="font-family:'Jost';font-style:italic;">Abc</button>
       <button class="r2-style-btn" id="r2fs-cn" onclick="lpSetFontStyle('Tiller','normal')" style="font-family:'Colus';">ABC</button>
       <span class="lbl">Size</span>
-      <input type="range" id="r2-size-slider" min="8" max="96" step="1"
+      <input type="range" id="r2-size-slider" min="11" max="96" step="1"
              oninput="setTextSize(+this.value)">
-      <input type="number" id="r2-size-num" min="8" max="200"
+      <input type="number" id="r2-size-num" min="11" max="200"
              onchange="setTextSize(+this.value)">
       <input id="r2-label-input" type="text" placeholder="Type label…" autocomplete="off"
              oninput="r2LabelSync(this.value)">
@@ -340,6 +343,8 @@
       <div id="text-overlay">
         <!-- Draggable title box -->
         <div id="title-box"></div>
+        <!-- Credit (live maps): same box the export draws, lower-right of the page -->
+        <div id="credit-box" aria-hidden="true">Made in Maposaic with Natural Earth</div>
 
         <!-- On-map key overlay -->
         <div id="onmap-key">
@@ -362,16 +367,36 @@
     <!-- Map Layers (live map only): the seed of the future layers panel.
          Key-styled rows — sample, name, toggle switch. -->
     <div id="ml-layers-panel" style="display:none;">
-      <div class="palette-group-head" id="ml-layers-head" onclick="toggleLayersPanel()" title="Base-map layers — click to collapse or expand">Map Layers <span class="pg-caret" id="ml-layers-caret">▾</span></div>
-      <div class="ml-layer-row" onclick="lmToggle('riversOn')" title="Show or hide rivers">
-        <svg class="ml-layer-sample" width="26" height="12" viewBox="0 0 26 12"><path d="M1 8 C 7 2, 12 11, 25 4" stroke="#2E8CC2" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <div class="palette-group-head" id="ml-layers-head" onclick="toggleLayersPanel()" title="Base-map layers — click to collapse or expand">Map Layers <span class="pg-caret" id="ml-layers-caret">▾</span><span id="mlsw-all-layers" class="ml-switch on ml-switch-head" onclick="event.stopPropagation(); lmToggleAllLayers()" title="Show or hide ALL map layers"></span></div>
+      <div class="ml-layer-row" title="Rivers">
+        <svg class="ml-layer-sample" width="26" height="12" viewBox="0 0 26 12"><path d="M1 6 H25" stroke="#236992" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
         <span class="ml-layer-name">Rivers</span>
-        <span id="mlsw-rivers" class="ml-switch on"></span>
+        <span id="mlsw-rivers" class="ml-switch on" onclick="lmToggle('riversOn')" title="Show or hide rivers"></span>
       </div>
-      <div class="ml-layer-row" onclick="lmToggle('labelsOn')" title="Show or hide map labels">
-        <span class="ml-layer-sample ml-layer-abc">Abc</span>
-        <span class="ml-layer-name">Labels</span>
-        <span id="mlsw-labels" class="ml-switch on"></span>
+      <div class="ml-layer-row" title="Present-day country borders">
+        <svg class="ml-layer-sample" width="26" height="12" viewBox="0 0 26 12"><path d="M1 6 H25" stroke="#1F1F1F" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+        <span class="ml-layer-name">Countries</span>
+        <span id="mlsw-countries" class="ml-switch on" onclick="lmToggle('countriesOn')" title="Show or hide country borders"></span>
+      </div>
+      <div class="ml-layer-row" id="mlrow-states" title="Present-day US state borders">
+        <svg class="ml-layer-sample" width="26" height="12" viewBox="0 0 26 12"><path d="M1 6 H25" stroke="#A89C8C" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>
+        <span class="ml-layer-name">US States</span>
+        <span id="mlsw-states" class="ml-switch on" onclick="lmToggle('statesOn')" title="Show or hide state borders"></span>
+      </div>
+      <div class="ml-layer-row" title="Smaller lakes (the great lakes and inland seas always show)">
+        <svg class="ml-layer-sample ml-swatch" width="32" height="15" viewBox="0 0 32 15"><rect x="3.5" y="1.25" width="25" height="12.5" rx="3" fill="#C4E1F0" stroke="#236992" stroke-width="1"/></svg>
+        <span class="ml-layer-name">Minor Lakes</span>
+        <span id="mlsw-minor-lakes" class="ml-switch on" onclick="lmToggle('minorLakesOn')" title="Show or hide smaller lakes"></span>
+      </div>
+      <div class="ml-layer-row" title="Shaded relief">
+        <svg class="ml-layer-sample ml-swatch" width="32" height="15" viewBox="0 0 32 15"><defs><clipPath id="terrain-clip"><rect x="3.5" y="1.25" width="25" height="12.5" rx="3"/></clipPath></defs><image href="icons/terrain-swatch.png" x="3.5" y="1.25" width="25" height="12.5" preserveAspectRatio="xMidYMid slice" clip-path="url(#terrain-clip)"/><rect x="3.5" y="1.25" width="25" height="12.5" rx="3" fill="none" stroke="#A89C8C" stroke-width="0.8"/></svg>
+        <span class="ml-layer-name">Terrain</span>
+        <span id="mlsw-relief" class="ml-switch on" onclick="lmToggle('reliefOn')" title="Show or hide shaded relief"></span>
+      </div>
+      <div class="ml-layer-row" title="Latitude / longitude grid">
+        <svg class="ml-layer-sample" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b5a33" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><path d="M12 2.5v19"/><path d="M2.5 12h19"/><path d="M4 7.2h16M4 16.8h16"/></svg>
+        <span class="ml-layer-name">Graticule</span>
+        <span id="mlsw-graticule" class="ml-switch on" onclick="lmToggle('graticuleOn')" title="Show or hide the grid"></span>
       </div>
       <div class="ml-layer-row" id="mlrow-title" style="display:none" onclick="toggleTitleLayer()" title="Show or hide the map title">
         <svg class="ml-layer-sample" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b5a33" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/></svg>
@@ -382,6 +407,27 @@
         <svg class="ml-layer-sample" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b5a33" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9"/><path d="m17 6 3 3"/></svg>
         <span class="ml-layer-name">Key</span>
         <span id="mlsw-key" class="ml-switch on"></span>
+      </div>
+      <div class="palette-group-head" id="ml-names-head" onclick="toggleNamesPanel()" title="Map labels — click to collapse or expand">Map Labels <span class="pg-caret" id="ml-names-caret">▾</span><span id="mlsw-all-labels" class="ml-switch on ml-switch-head" onclick="event.stopPropagation(); lmToggleAllLabels()" title="Show or hide ALL map labels"></span></div>
+      <div class="ml-layer-row ml-names-row" title="River names">
+        <span class="ml-layer-sample ml-layer-abc">Abc</span>
+        <span class="ml-layer-name">Rivers</span>
+        <span id="mlsw-river-labels" class="ml-switch on" onclick="lmToggle('riverLabelsOn')" title="Show or hide river names"></span>
+      </div>
+      <div class="ml-layer-row ml-names-row" title="Ocean, sea and lake names">
+        <span class="ml-layer-sample ml-layer-abc">Abc</span>
+        <span class="ml-layer-name">Oceans/Lakes</span>
+        <span id="mlsw-labels" class="ml-switch on" onclick="lmToggle('labelsOn')" title="Show or hide ocean, sea and lake names"></span>
+      </div>
+      <div class="ml-layer-row ml-names-row" title="Country names">
+        <span class="ml-layer-sample ml-layer-abc" style="color:#1F1F1F;font-style:normal;font-family:'Colus',Georgia,serif;font-weight:400;letter-spacing:.04em">ABC</span>
+        <span class="ml-layer-name">Countries</span>
+        <span id="mlsw-country-labels" class="ml-switch on" onclick="lmToggle('countryLabelsOn')" title="Show or hide country names"></span>
+      </div>
+      <div class="ml-layer-row ml-names-row" id="mlrow-state-labels" title="US state names">
+        <span class="ml-layer-sample ml-layer-abc" style="color:#5C5145;font-style:normal">Abc</span>
+        <span class="ml-layer-name">US States</span>
+        <span id="mlsw-state-labels" class="ml-switch on" onclick="lmToggle('stateLabelsOn')" title="Show or hide state names"></span>
       </div>
     </div>
 
@@ -881,7 +927,7 @@
   <div id="ss-choices">
     <div class="ss-choice-primary" onclick="showMapLibrary()">
       <div class="ss-choice-icon">
-        <span class="ss-choice-icon-img" style="--icon:url('icons/Map.svg')"></span>
+        <span class="ss-choice-icon-img" style="--icon:url('icons/Map.svg?v=2026-09-15')"></span>
       </div>
       <div class="ss-choice-title">Map Library</div>
       <div class="ss-choice-desc">Ready-to-annotate historical maps &mdash; live world regions and US base maps</div>
@@ -889,7 +935,7 @@
 
     <label class="ss-choice" for="ss-upload-input">
       <div class="ss-choice-icon">
-        <span class="ss-choice-icon-img" style="--icon:url('icons/Upload.svg')"></span>
+        <span class="ss-choice-icon-img" style="--icon:url('icons/Upload.svg?v=2026-09-15')"></span>
       </div>
       <div class="ss-choice-title">Upload Your Own</div>
       <div class="ss-choice-desc">Use your own map image</div>
@@ -899,7 +945,7 @@
 
     <div class="ss-choice" onclick="beginFreshMap(null);startLiveMap()">
       <div class="ss-choice-icon">
-        <span class="ss-choice-icon-img" style="--icon:url('icons/Select.svg')"></span>
+        <span class="ss-choice-icon-img" style="--icon:url('icons/Select.svg?v=2026-09-15')"></span>
       </div>
       <div class="ss-choice-title">Custom Region</div>
       <div class="ss-choice-desc">Frame any region of a live world map — pan, zoom, and spin the globe, then annotate</div>
@@ -913,7 +959,7 @@
   </div>
 
   <div id="ss-library" style="display:none;">
-    <div id="ss-back" onclick="showMapChoices()">← Back</div>
+    <button id="ss-back" type="button" onclick="showMapChoices()" title="Back to home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 9-8 9 8"/><path d="M5 9v11h14V9"/><path d="M10 20v-6h4v6"/></svg><span>Back</span></button>
     <div id="ss-library-grid"></div>
   </div>
 </div>
@@ -1081,16 +1127,17 @@
     </div>
     <p style="margin:12px 0 6px;font:400 13px/1.4 'Jost',Georgia,serif;color:#2a1f0e;">Where to next?</p>
     <div class="cm-options">
+      <!-- Same icon files as the home cards (icons/Map|Upload|Select.svg) — one set app-wide. -->
       <button class="cm-opt" onclick="cmGo('library')">
-        <svg width="26" height="26" viewBox="0 0 44 44" fill="none"><path d="M6 34V10C6 10 13 8 22 12C31 8 38 10 38 10V34C38 34 31 32 22 36C13 32 6 34 6 34Z" stroke="#a06810" stroke-width="1.8" fill="#f5e8c0" fill-opacity="0.6"/><line x1="22" y1="12" x2="22" y2="36" stroke="#a06810" stroke-width="1.4" stroke-dasharray="2 2"/></svg>
+        <span class="cm-opt-icon" style="--icon:url('icons/Map.svg?v=2026-09-15')" aria-hidden="true"></span>
         Map Library
       </button>
       <button class="cm-opt" onclick="cmGo('upload')">
-        <svg width="26" height="26" viewBox="0 0 44 44" fill="none"><path d="M8 34 L16 20 L22 28 L28 18 L36 34Z" stroke="#a06810" stroke-width="1.8" stroke-linejoin="round" fill="#f5e8c0" fill-opacity="0.5"/><line x1="22" y1="14" x2="22" y2="26" stroke="#a06810" stroke-width="1.8" stroke-linecap="round"/><polyline points="17,19 22,14 27,19" stroke="#a06810" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        <span class="cm-opt-icon" style="--icon:url('icons/Upload.svg?v=2026-09-15')" aria-hidden="true"></span>
         Upload Your Own
       </button>
       <button class="cm-opt" onclick="cmGo('region')">
-        <svg width="26" height="26" viewBox="0 0 44 44" fill="none"><rect x="10" y="10" width="24" height="24" rx="2" stroke="#a06810" stroke-width="1.8" stroke-dasharray="4 3" fill="#f5e8c0" fill-opacity="0.4"/><rect x="16" y="16" width="12" height="12" rx="1.5" stroke="#c8a030" stroke-width="1.5" fill="#f5e8c0" fill-opacity="0.7"/></svg>
+        <span class="cm-opt-icon" style="--icon:url('icons/Select.svg?v=2026-09-15')" aria-hidden="true"></span>
         Custom Region
       </button>
     </div>
@@ -1201,9 +1248,9 @@
       <div class="exp-keyhint">A standalone image of just the key — drop it into slides or worksheets.</div>
       <button class="exp-btn exp-ghost exp-tiny" onclick="exportKeyImage()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:8px;"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></svg>Download key image only</button>
     </div>
-    <div id="export-spinner-row" style="display:none;align-items:center;justify-content:center;gap:10px;margin-top:16px;">
-      <div style="width:16px;height:16px;border:2.5px solid rgba(200,160,48,.3);border-top-color:#C8A030;border-radius:50%;animation:expspin 0.9s linear infinite;flex:0 0 16px;"></div>
-      <span id="export-spinner-msg"></span>
+    <div id="export-spinner-row" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin-top:16px;">
+      <div class="mf-busy-globe" aria-hidden="true"><div class="g-strip"></div></div>
+      <span id="export-spinner-msg" class="mf-busy-label">Exporting…</span>
     </div>
     <div id="export-status"></div>
   </div>
@@ -1223,6 +1270,7 @@
 
 <!-- ── Shared toolbar tooltip (JS-positioned, escapes overflow clipping) ── -->
 
+<script src="mapforge-busy.js"></script>
 <script src="mapforge-icons.js"></script>
 <script src="mapforge-registry.js"></script>
 <script>
@@ -2852,6 +2900,22 @@ function lmSyncPills() {
   document.getElementById('ml-layers-panel').style.display = baseMode === 'live' ? '' : 'none';
   document.getElementById('mlsw-rivers').classList.toggle('on', t.riversOn);
   document.getElementById('mlsw-labels').classList.toggle('on', t.labelsOn);
+  document.getElementById('mlsw-countries').classList.toggle('on', t.countriesOn !== false);
+  document.getElementById('mlsw-states').classList.toggle('on', t.statesOn !== false);
+  document.getElementById('mlsw-graticule').classList.toggle('on', t.graticuleOn !== false);
+  document.getElementById('mlsw-relief').classList.toggle('on', t.reliefOn !== false);
+  // Credit halo: sampled from the map under the text (sampleCreditHalo, run
+  // when the map settles); the land tone is the fallback until then.
+  if (!sampleCreditHalo()) document.documentElement.style.setProperty('--credit-halo', MLB.landColor());
+  document.getElementById('mlsw-minor-lakes').classList.toggle('on', t.minorLakesOn !== false);
+  document.getElementById('mlsw-all-layers').classList.toggle('on', t.layersGroupOn !== false);
+  // rows dim while their group is off (their own eyes keep their state)
+  document.querySelectorAll('#ml-layers-panel .ml-layer-row:not(.ml-names-row)').forEach(r => r.classList.toggle('group-off', t.layersGroupOn === false));
+  document.querySelectorAll('#ml-layers-panel .ml-names-row').forEach(r => r.classList.toggle('group-off', t.labelsGroupOn === false));
+  document.getElementById('mlsw-river-labels').classList.toggle('on', t.riverLabelsOn !== false);
+  document.getElementById('mlsw-country-labels').classList.toggle('on', t.countryLabelsOn !== false);
+  document.getElementById('mlsw-state-labels').classList.toggle('on', t.stateLabelsOn !== false);
+  document.getElementById('mlsw-all-labels').classList.toggle('on', t.labelsGroupOn !== false);
   // Page Layout (size + orientation popup) = view composition: explore/adjust only.
   document.getElementById('lm-layout').style.display = mlFrameLocked ? 'none' : '';
   if (mlFrameLocked) toggleLayoutPopup(false);
@@ -2934,12 +2998,16 @@ function lmPickSize(key) {
   } else {
     mlPageSize = { ...FRAME_SIZES[key], key };
   }
-  if (mlFrameLocked && mlFrame) setFrame(); else fitCanvas();
-  syncLayoutPopup();
+  lmRelayoutPage();
 }
 
 function lmPickOrient(landscape) {
   mlOrientPref = landscape;
+  lmRelayoutPage();
+}
+
+// Page size/orientation re-renders the map at the new paper pixels.
+function lmRelayoutPage() {
   if (mlFrameLocked && mlFrame) setFrame(); else fitCanvas();
   syncLayoutPopup();
 }
@@ -3319,6 +3387,36 @@ async function _refreshLiveSnapshotInner() {
   markLiveRasterDirty();
   renderFillStamps();
   redraw();
+  sampleCreditHalo();   // map just settled: re-match the credit halo to what's under it
+}
+
+// Credit halo = the MEDIAN colour of the map pixels under the credit text
+// (Maddy 2026-09-15: match ocean/land/relief, whatever is there; the median
+// ignores thin lines). Reads the WebGL canvas (preserveDrawingBuffer). Sets
+// --credit-halo on :root; returns false when it can't sample (then callers
+// fall back to MLB.landColor()).
+function sampleCreditHalo() {
+  try {
+    if (baseMode !== 'live' || !mlMap || !mlFrameLocked) return false;
+    const cb = document.getElementById('credit-box'); if (!cb) return false;
+    const cv = mlMap.getCanvas(), gl = cv.getContext('webgl2') || cv.getContext('webgl');
+    if (!gl) return false;
+    const r = cb.getBoundingClientRect(), m = cv.getBoundingClientRect();
+    if (!r.width || !m.width) return false;
+    const k = cv.width / m.width;
+    const x0 = Math.max(0, Math.floor((r.left - m.left) * k)), x1 = Math.min(cv.width, Math.ceil((r.right - m.left) * k));
+    const yTop = Math.max(0, Math.floor((r.top - m.top) * k)), yBot = Math.min(cv.height, Math.ceil((r.bottom - m.top) * k));
+    const w = x1 - x0, h = yBot - yTop; if (w < 2 || h < 2) return false;
+    const buf = new Uint8Array(w * h * 4);
+    gl.readPixels(x0, cv.height - yBot, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+    const R = [], G = [], B = [];
+    for (let i = 0; i < buf.length; i += 4) { if (buf[i + 3] < 200) continue; R.push(buf[i]); G.push(buf[i + 1]); B.push(buf[i + 2]); }
+    if (R.length < 8) return false;
+    const med = a => { a.sort((p, q) => p - q); return a[a.length >> 1]; };
+    const hex = v => v.toString(16).padStart(2, '0');
+    document.documentElement.style.setProperty('--credit-halo', '#' + hex(med(R)) + hex(med(G)) + hex(med(B)));
+    return true;
+  } catch (e) { return false; }
 }
 
 function startLiveMap() {
@@ -3332,7 +3430,8 @@ function startLiveMap() {
   document.body.classList.add('live-base');
   dismissStartScreen();
   sizeLiveLayout();        // container must have size before map creation
-  const onReady = async () => {
+  const busyId = busyStart('Spinning…', { immediate: true, solid: true });
+  const onReady = async () => { try {
     // Backing sync + working buffers, then fill is available immediately —
     // no commit step required; annotate (and fill) at any view.
     const mc = mlMap.getCanvas();
@@ -3350,7 +3449,7 @@ function startLiveMap() {
     // The engine re-places on every move-end, so it stays live as you pan.
     MLB.setMarineDynOnly(mlMap, true);
     await refreshLiveSnapshot();
-  };
+  } finally { busyEnd(busyId); } };
   if (!mlMap) {
     mlMap = MLB.create(document.getElementById('ml-map'));
     mlRevealOnIdle();
@@ -3362,6 +3461,7 @@ function startLiveMap() {
     else mlMap.once('load', onReady);
   }
   if (!mlMap._geoWired) { wireGeoRenderLoop(); mlMap._geoWired = true; }
+  MLB.resetAutoZoomLayers(mlMap);   // fresh map → automatic graticule/states by zoom
   markLiveRasterDirty();
   deselectStamp();   // enter in PAN mode — pick a tool to start drawing
   updateMapNav();
@@ -4570,7 +4670,9 @@ document.addEventListener('keydown', e => {
   // save-page dialog never appears.
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's' && !e.shiftKey && !e.altKey) {
     e.preventDefault();
-    quickSave();
+    // Never save a half-loaded map: the busy overlay blocks the Save button,
+    // and the shortcut must honour the same rule.
+    if (!document.body.classList.contains('mf-busy')) quickSave();
     return;
   }
 
@@ -4690,8 +4792,11 @@ function eraseAt(x, y) {
 // Only single-point icon stamps are selectable (not lines/shade/fill/desert dots;
 // arrows keep their own control-handle editing under the Arrow tool).
 // (STAMP_DRAW_FACTOR folded into STAMP_TYPES — mapforge-registry.js)
-const STAMP_W_FACTOR = 0.8;     // drawn half-width  = drawSize * 0.8  (icons render at size*1.6 wide)
-const STAMP_H_FACTOR = 0.625;   // drawn half-height = drawSize * 0.625 (… and size*1.25 tall)
+// Select/resize footprint: clipped icons draw with their LONGEST side =
+// drawSize × ICON_LONG (1.44, mapforge-icons.js), so a square of half-side
+// 0.72·drawSize covers every icon whatever its aspect (2026-09-15).
+const STAMP_W_FACTOR = 0.72;
+const STAMP_H_FACTOR = 0.72;
 
 function isMovableStamp(s) {
   const def = s && STAMP_TYPES[s.type];
@@ -5491,9 +5596,11 @@ function updateKeyPreview() {
         for (let dy = ry + 5; dy < ry + rh; dy += 8)
           drawPlus(tc, dx, dy, 2.5);
     }
-    pc.save(); pc.globalAlpha = SHADE_OPACITY; pc.drawImage(tmpC, 0, 0); pc.restore();
-    pc.strokeStyle = '#111'; pc.lineWidth = 1.2;
-    pc.strokeRect(rx, ry, rw, rh);
+    // Matches the key: colour only, rounded corners, no border.
+    pc.save();
+    pc.beginPath(); pc.roundRect(rx, ry, rw, rh, rh * 0.24); pc.clip();
+    pc.globalAlpha = SHADE_OPACITY; pc.drawImage(tmpC, 0, 0);
+    pc.restore();
   }
 }
 
@@ -5598,13 +5705,13 @@ function drawKeyEntryIcon(ec, entry, cx, cy) {
           for (let dy = sp/2; dy < dim; dy += sp)
             drawPlus(tc, dx, dy, 5);
       }
+      // Colour only, rounded corners, NO border — same look as the Map Layers
+      // swatches (rx 3 on a 12.5-tall swatch ≈ 0.24 × height). Maddy 2026-09-15.
       ec.save();
-      ec.beginPath(); ec.rect(rx, ry, rw, rh); ec.clip();
+      ec.beginPath(); ec.roundRect(rx, ry, rw, rh, rh * 0.24); ec.clip();
       ec.globalAlpha = SHADE_OPACITY;
       ec.drawImage(tmpC, rx, ry, dim, dim);
       ec.restore();
-      ec.strokeStyle = '#111'; ec.lineWidth = 2;
-      ec.strokeRect(rx, ry, rw, rh);
       break;
     }
     case 'arrow': {
@@ -5782,11 +5889,10 @@ function renderKeyBox(ec, mapW, mapH, entries) {
     c.dataset.hidpi = '1';
     c.dataset.lw = w; c.dataset.lh = h;      // logical size for renderers
   });
-  // Resizing a canvas ERASES it. Async icon loaders repaint later on their
-  // own; the synchronous ones (city, desert, wall/railroad/canal) were drawn
-  // before this pass and must be re-rendered now.
-  const cc = document.getElementById('icon-city');
-  if (cc && typeof drawCityIcon === 'function') drawCityIcon(cc.getContext('2d'), 14, 12, 14, '#111');
+  // Resizing a canvas ERASES it. Async icon loaders (every SVG stamp, City
+  // included since 2026-09-15) repaint later on their own; the synchronous
+  // ones (desert, wall/railroad/canal) were drawn before this pass and must
+  // be re-rendered now.
   const dc = document.getElementById('icon-desert');
   if (dc && typeof drawDesertIcon === 'function') drawDesertIcon(dc.getContext('2d'), 14, 12, 0.28, '#111');
   if (typeof renderFeaturePreview === 'function') {
@@ -5824,7 +5930,7 @@ function setTextTool(on) {
 // label in real time; the number field takes exact values (8–200 doc px).
 function setTextSize(v) {
   if (!isFinite(v)) return;
-  v = Math.max(8, Math.min(200, Math.round(v)));
+  v = Math.max(11, Math.min(200, Math.round(v)));   // 11 doc px ≈ 8pt floor
   currentFontSize = v;
   lpFontSize = v;
   const fs = document.getElementById('font-size-display');
@@ -5919,11 +6025,15 @@ function gsBuild() {
   document.querySelectorAll('#palette-scroll button').forEach(b => {
     if (b.style.display === 'none') return;   // retired stamps (desert) stay out
     const label = b.textContent.trim();
-    if (label) add(label, 'stamp', () => { b.click();
-      b.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
+    if (label) add(label, 'stamp', () => gsReveal(b));
   });
-  add('Rivers', 'map layer', () => lmToggle('riversOn'));
-  add('Map Labels', 'map layer', () => lmToggle('labelsOn'));
+  // Map Layers / Map Labels rows: a search hit REVEALS the row (opens the
+  // group, scrolls, highlights) — it never flips the eye (Maddy 2026-09-09).
+  document.querySelectorAll('#ml-layers-panel .ml-layer-row').forEach(row => {
+    const nm = row.querySelector('.ml-layer-name'); if (!nm || !nm.textContent.trim()) return;
+    const isLabel = row.classList.contains('ml-names-row');
+    add(nm.textContent.trim() + (isLabel ? ' labels' : ''), isLabel ? 'map label' : 'map layer', () => gsReveal(row));
+  });
   // Palette sections (Terrain, War, Landmarks, Religion, Trade Goods…)
   document.querySelectorAll('#palette-scroll .sr-section-header, #palette-scroll .trade-panel-title').forEach(h => {
     const label = h.textContent.trim();
@@ -5935,9 +6045,22 @@ function gsBuild() {
   document.querySelectorAll('#toolbar [title], #tool-rail [title], #sidebar-right [title], [data-tip]').forEach(el => {
     const tip = el.getAttribute('title') || el.dataset.tip;
     if (!tip || tip.length < 4) return;
-    add(tip, 'hint', () => { el.click(); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
+    add(tip, 'hint', () => gsReveal(el));
   });
   return ix;
+}
+// Reveal a control: expand any collapsed group it sits in, scroll it into
+// view, and flash it. Does NOT activate it.
+function gsReveal(el) {
+  const grp = el.closest('.palette-group');
+  if (grp && grp.classList.contains('collapsed')) toggleGroup(grp.id);
+  if (el.closest('#ml-layers-panel')) {
+    if (document.body.classList.contains('layers-collapsed') && !el.classList.contains('ml-names-row')) toggleLayersPanel();
+    if (document.body.classList.contains('names-collapsed') && el.classList.contains('ml-names-row')) toggleNamesPanel();
+  }
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  el.classList.remove('gs-flash'); void el.offsetWidth; el.classList.add('gs-flash');
+  setTimeout(() => el.classList.remove('gs-flash'), 2400);
 }
 function gsFilter(q) {
   if (!_gsIndex) _gsIndex = gsBuild();
@@ -5990,6 +6113,35 @@ function syncFurnitureLayerRows() {
     document.getElementById('mlsw-key').classList.toggle('on', keyLayerOn);
   }
 }
+// Master eyes on the group headers: any on -> all off; else all on.
+const LABEL_KEYS = ['riverLabelsOn', 'labelsOn', 'countryLabelsOn', 'stateLabelsOn'];
+const LAYER_KEYS = ['riversOn', 'countriesOn', 'statesOn', 'minorLakesOn', 'reliefOn', 'graticuleOn'];
+// Group eyes gate the whole group (Photoshop-style) and leave each row's own
+// eye untouched, so switching the group back on restores the last per-row state.
+function lmToggleAllLayers() {
+  if (!mlMap || !mlMap.isStyleLoaded()) return;
+  MLB.toggle(mlMap, 'layersGroupOn');
+  lmSyncPills();
+  MLB.awaitIdle(mlMap).then(refreshLiveSnapshot);
+}
+// Automatic zoom state flipped Graticule/States → switches must follow.
+MLB.onAutoLayers = () => { lmSyncPills(); if (typeof markLiveRasterDirty === 'function') markLiveRasterDirty(); };
+// US States rows only make sense when US ground is in the frame (Maddy).
+MLB.onUsVisible = (on) => {
+  ['mlrow-states', 'mlrow-state-labels'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; });
+};
+function lmToggleAllLabels() {
+  if (!mlMap || !mlMap.isStyleLoaded()) return;
+  MLB.toggle(mlMap, 'labelsGroupOn');
+  lmSyncPills();
+  MLB.awaitIdle(mlMap).then(refreshLiveSnapshot);
+}
+function toggleNamesPanel() {
+  const collapsed = document.body.classList.toggle('names-collapsed');
+  const c = document.getElementById('ml-names-caret');
+  if (c) c.textContent = collapsed ? '▸' : '▾';
+}
 function toggleLayersPanel() {
   const collapsed = document.body.classList.toggle('layers-collapsed');
   const c = document.getElementById('ml-layers-caret');
@@ -6015,12 +6167,38 @@ function syncTitleModalFrame() {
     mock.style.background = titleFrameOn ? '' : 'transparent';
   }
 }
+// Stacked sticky heads: Stamps sits exactly below the Lines head (its real
+// rendered height — font/padding can change with breakpoints).
+function syncStackedHeads() {
+  const h = document.querySelector('#group-lines > .palette-group-head');
+  if (h && h.offsetHeight) document.getElementById('palette-scroll')
+    .style.setProperty('--pg-lines-h', h.offsetHeight + 'px');
+}
+window.addEventListener('resize', syncStackedHeads);
+document.addEventListener('DOMContentLoaded', syncStackedHeads);
 function toggleGroup(id) {
   const g = document.getElementById(id);
   if (!g) return;
   const collapsed = g.classList.toggle('collapsed');
   const c = g.querySelector('.pg-caret');
   if (c) c.textContent = collapsed ? '▸' : '▾';
+  // Expanding a group scrolls its rows into view (Maddy 2026-09-15): the
+  // heads are sticky, so a click on a head far down the list used to expand
+  // rows the user couldn't see. Stamps sits stacked under the Lines head.
+  if (!collapsed) {
+    const ps = document.getElementById('palette-scroll');
+    const head = g.querySelector('.palette-group-head');
+    const body = g.querySelector('.palette-group-body');
+    if (ps && head && body) {
+      // Measure the BODY (never sticky) — a stuck head reports its pinned
+      // position, and #palette-scroll isn't the offsetParent.
+      const stacked = id === 'group-stamps'
+        ? (document.querySelector('#group-lines > .palette-group-head') || {}).offsetHeight || 0 : 0;
+      const top = body.getBoundingClientRect().top - ps.getBoundingClientRect().top + ps.scrollTop
+                  - head.offsetHeight - stacked;
+      ps.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }
+  }
 }
 // Draw Lines grid: adopt the line-menu's existing buttons (their canvases are
 // drawn by renderLineMenu) plus the arrow tool, so one section holds the family.
@@ -6358,7 +6536,7 @@ function lpSetColor(hex, el) {
 }
 
 function lpAdjustSize(delta) {
-  lpFontSize = Math.max(8, Math.min(120, lpFontSize + delta));
+  lpFontSize = Math.max(11, Math.min(120, lpFontSize + delta));   // 11 doc px ≈ 8pt floor (Maddy 2026-09-15)
   document.getElementById('lp-size-display').textContent = lpFontSize;
   lpUpdatePreview();
   if (selectedTB) {

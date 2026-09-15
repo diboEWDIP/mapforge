@@ -7,7 +7,7 @@
 // Pinned version tag, NOT Date.now() (Eric, 2026-07-21): the old value
 // re-fetched all 41 icon PNGs on every load — invisible locally, slow on a
 // hosted site. Bump the tag when swapping icon art.
-const ICON_BUST = '?v=2026-08-16e';
+const ICON_BUST = '?v=2026-09-15a';   // bumped: City.svg + Major Peak.svg added
 
 const drawMountainIcon = _makeSvgStamp('icons/Mountain.svg', 'icon-mountain');
 
@@ -28,64 +28,14 @@ function _tintedMaster(cv, color) {
   return t;
 }
 
-function drawPeakIcon(ctx, x, y, size, color) {
-  _peakStamp.draw(ctx, x, y, size, color);
-}
+// Major Peak + City joined the standard SVG pipeline 2026-09-15 (built by
+// design/icon-sizing/build_icon_svgs.py): clipped, true aspect, no multiplier.
+// 1.2 optical scale: the peak art is flatter (ink aspect 1.70 vs Mountain's
+// 1.42), so at an equal longest side it read ~17% shorter. 1.2 matches its
+// HEIGHT to Mountain's at the same slider value (Maddy 2026-09-15).
+const drawPeakIcon = _makeSvgStamp('icons/Major Peak.svg', 'icon-peak', 1.2);
 
 const drawOasis = _makeSvgStamp('icons/Oasis.svg', 'icon-oasis');
-
-// ── Dark-toolbar image stamps (danger, peak) ─────────────────────────────────
-// Same pipeline as mountain/oasis: threshold a PNG to black line-art, draw a
-// cream-tinted icon on the dark toolbar button, and a black icon on the map/key.
-function _makeDarkToolbarStamp(src, toolbarId) {
-  const api = { cv: null };
-  const img = new Image();
-  img.onload = () => {
-    const oc = document.createElement('canvas');
-    oc.width = img.naturalWidth; oc.height = img.naturalHeight;
-    const oc2 = oc.getContext('2d');
-    oc2.drawImage(img, 0, 0);
-    const id = oc2.getImageData(0, 0, oc.width, oc.height);
-    const d = id.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const lum = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
-      if (lum > 210) { d[i+3] = 0; }
-      else { d[i+3] = Math.min(255, Math.round((255 - lum) * 1.6)); d[i]=0; d[i+1]=0; d[i+2]=0; }
-    }
-    oc2.putImageData(id, 0, 0);
-    api.cv = _downscaleStepped(oc, 1024);   // high-quality master → sharp on map
-    const c = document.getElementById(toolbarId);
-    if (c) api.toolbar(c.getContext('2d'), 14, 11, 26, 20);
-  };
-  img.src = src + ICON_BUST;
-  api.toolbar = function(ctx, x, y, w, h) {     // sidebar: true map art
-    if (!api.cv) return;
-    ctx.clearRect(x - w/2, y - h/2, w, h);
-    api.draw(ctx, x, y, Math.min(w, h) * 0.82);
-    return;
-    const _tdpr = window.devicePixelRatio || 1;
-    const tmp = document.createElement('canvas');
-    tmp.width = w * _tdpr; tmp.height = h * _tdpr;
-    const tc = tmp.getContext('2d');
-    tc.scale(_tdpr, _tdpr);
-    tc.fillStyle = '#111111'; tc.fillRect(0, 0, w, h);
-    tc.globalCompositeOperation = 'destination-in';
-    tc.drawImage(api.cv, 0, 0, w, h);
-    ctx.clearRect(x - w/2, y - h/2, w, h);
-    ctx.drawImage(tmp, x - w/2, y - h/2, w, h);
-  };
-  api.draw = function(ctx, x, y, size, color) {  // tintable; default black
-    if (!api.cv) return;
-    const w = size * 1.6, h = size * 1.25;
-    ctx.save();
-    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(_tintedMaster(api.cv, color), x - w/2, y - h/2, w, h);
-    ctx.restore();
-  };
-  return api;
-}
-
-const _peakStamp   = _makeDarkToolbarStamp('icons/Major Peak.png', 'icon-peak');
 
 // Danger & Battle now render from crisp SVG (their toolbar buttons are drawn
 // by _makeSvgStamp on load — the old _dangerStamp/_battleStamp.toolbar() init
@@ -96,134 +46,54 @@ const drawBattle = _makeSvgStamp('icons/Battle.svg', 'icon-battle');
 
 
 
-// ── Image-stamp factory (flood-fill background removal) ──────────────────────
-function _removeBackground(data, width, height, tolerance) {
-  // Sample background color from the four corners and average them
-  const corners = [0, (width-1), (height-1)*width, (height-1)*width+(width-1)];
-  let bgR=0, bgG=0, bgB=0;
-  corners.forEach(p => { bgR+=data[p*4]; bgG+=data[p*4+1]; bgB+=data[p*4+2]; });
-  bgR=Math.round(bgR/4); bgG=Math.round(bgG/4); bgB=Math.round(bgB/4);
-
-  // BFS flood-fill from all four corners, removing pixels close to bg color
-  const visited = new Uint8Array(width * height);
-  const queue = [...corners];
-  let head = 0;
-  while (head < queue.length) {
-    const pos = queue[head++];
-    if (visited[pos]) continue;
-    visited[pos] = 1;
-    const i = pos * 4;
-    const dr = data[i]-bgR, dg = data[i+1]-bgG, db = data[i+2]-bgB;
-    if (Math.sqrt(dr*dr + dg*dg + db*db) <= tolerance) {
-      data[i+3] = 0;
-      const x = pos % width, y = Math.floor(pos / width);
-      if (x > 0)        queue.push(pos - 1);
-      if (x < width-1)  queue.push(pos + 1);
-      if (y > 0)        queue.push(pos - width);
-      if (y < height-1) queue.push(pos + width);
-    }
-  }
-
-  // Boost remaining (non-background) pixels to pure black with stronger opacity
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i+3] > 0) {
-      const lum = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
-      data[i+3] = Math.min(255, Math.round((255 - lum) * 1.5));
-      data[i] = 0; data[i+1] = 0; data[i+2] = 0;
-    }
-  }
-}
-
-// Progressive (stepped) high-quality downscale: halving each pass avoids the
-// aliasing/moiré you get downscaling a ~1150px source straight to ~30px in one
-// drawImage. Returns a canvas whose longest side is ~maxDim.
-function _downscaleStepped(src, maxDim) {
-  let cur = src, w = src.width, h = src.height;
-  const longest = Math.max(w, h);
-  if (longest <= maxDim) return src;
-  const scale = maxDim / longest;
-  const tw = Math.max(1, Math.round(w * scale));
-  const th = Math.max(1, Math.round(h * scale));
-  while (w > tw * 2 || h > th * 2) {
-    const nw = Math.max(tw, Math.floor(w / 2));
-    const nh = Math.max(th, Math.floor(h / 2));
-    const tmp = document.createElement('canvas');
-    tmp.width = nw; tmp.height = nh;
-    const tc = tmp.getContext('2d');
-    tc.imageSmoothingEnabled = true; tc.imageSmoothingQuality = 'high';
-    tc.drawImage(cur, 0, 0, nw, nh);
-    cur = tmp; w = nw; h = nh;
-  }
-  if (w !== tw || h !== th) {
-    const fin = document.createElement('canvas');
-    fin.width = tw; fin.height = th;
-    const fc = fin.getContext('2d');
-    fc.imageSmoothingEnabled = true; fc.imageSmoothingQuality = 'high';
-    fc.drawImage(cur, 0, 0, tw, th);
-    cur = fin;
-  }
-  return cur;
-}
-
-function _makeImageStamp(src, toolbarId, tolerance=40) {
-  let _canvas = null;
-  const img = new Image();
-  img.onload = () => {
-    const oc = document.createElement('canvas');
-    oc.width = img.naturalWidth; oc.height = img.naturalHeight;
-    const oc2 = oc.getContext('2d');
-    oc2.drawImage(img, 0, 0);
-    const id = oc2.getImageData(0, 0, oc.width, oc.height);
-    _removeBackground(id.data, oc.width, oc.height, tolerance);
-    oc2.putImageData(id, 0, 0);
-    // Pre-bake a high-quality "master" (longest side ~1024px) so every later
-    // draw is a genuine downscale (supersampled, clean) even for large stamps
-    // in a 2–4× export — matching the crispness of the small key icons. The
-    // source PNGs are 1152px, so this is near their full detail ceiling.
-    _canvas = _downscaleStepped(oc, 1024);
-    if (toolbarId) {
-      const c = document.getElementById(toolbarId);
-      if (c) {
-        // Render the button at device-pixel-ratio resolution so it stays crisp
-        // on retina/HiDPI displays (CSS size unchanged via inline style).
-        const dpr = Math.max(1, window.devicePixelRatio || 1);
-        const cssW = c.width, cssH = c.height;
-        c.style.width = cssW + 'px';
-        c.style.height = cssH + 'px';
-        c.width = Math.round(cssW * dpr);
-        c.height = Math.round(cssH * dpr);
-        const cx = c.getContext('2d');
-        cx.scale(dpr, dpr);
-        draw(cx, cssW / 2, cssH / 2, cssW * 0.44);
-      }
-    }
-  };
-  img.src = src + ICON_BUST;
-  function draw(ctx, x, y, size, color) {
-    const w = size * 1.6, h = size * 1.25;
-    ctx.save();
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    if (_canvas) ctx.drawImage(_tintedMaster(_canvas, color), x - w/2, y - h/2, w, h);
-    ctx.restore();
-  }
-  return draw;
-}
-
 // ── Vector (SVG) stamp factory — crisp at ANY zoom/export ────────────────────
-// Drop-in replacement for _makeImageStamp, but the source is an SVG that we
-// rasterize fresh at the exact device-pixel size each draw, then tint to the
-// annotation colour via source-in. Because the raster is generated at the
-// output resolution (not scaled up from a fixed master), edges stay sharp when
-// the map is zoomed or exported large — fixing the fuzzy PNG edges. Same
-// size*1.6 × size*1.25 footprint as _makeImageStamp, so placement, hit-testing
-// and the Select tool are unchanged. Noun Project icons are solid black paths
-// with transparent backgrounds, so no flood-fill background removal is needed.
-function _makeSvgStamp(svgSrc, toolbarId) {
+// The ONE icon loader (every map stamp is an SVG since 2026-09-15). Each draw
+// rasterizes the vector fresh at the exact device-pixel size, then tints it to
+// the annotation colour via source-in — so edges stay sharp at any zoom or
+// export size. Icons are solid black paths on transparent backgrounds.
+// ICON SIZING (Maddy 2026-09-15): every SVG is CLIPPED to its own ink extent
+// at load (the 1200×1200 canvases carry 0–55% empty margin) and drawn at TRUE
+// proportions with the longest side = size × ICON_LONG. One size setting now
+// means one size for every icon — no per-type multipliers, no 1.6×1.25 stretch.
+// ICON_LONG = 1.44 keeps today's MEDIAN icon (90% fill of the old 1.6·size
+// width) the same size, so existing saves change only where art was off.
+const ICON_LONG = 1.44;
+
+// opticalScale: per-ICON visual weight correction, applied inside the loader
+// so map, key AND sidebar button all agree (a solid disc reads far heavier than
+// line art at the same longest side). 1 for every icon except City (0.65 —
+// Maddy 2026-09-15: 35% smaller at the default slider value of 16).
+function _makeSvgStamp(svgSrc, toolbarId, opticalScale = 1) {
   const img = new Image();
   let ready = false;
+  let ink = { x: 0, y: 0, w: 1, h: 1 };   // ink bbox as fractions of the canvas
   const cache = new Map();          // key `pw x ph | color` → tinted canvas
   const CACHE_CAP = 24;
+
+  // Measure the drawing's extent once (alpha scan of a 512px raster).
+  function measureInk() {
+    const N = 512;
+    const c = document.createElement('canvas');
+    c.width = c.height = N;
+    const cx = c.getContext('2d');
+    cx.drawImage(img, 0, 0, N, N);
+    const a = cx.getImageData(0, 0, N, N).data;
+    let x0 = N, y0 = N, x1 = -1, y1 = -1;
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      if (a[(y * N + x) * 4 + 3] > 20) {
+        if (x < x0) x0 = x; if (x > x1) x1 = x;
+        if (y < y0) y0 = y; if (y > y1) y1 = y;
+      }
+    }
+    if (x1 < 0) return;                     // empty art: keep the full canvas
+    ink = { x: x0 / N, y: y0 / N, w: (x1 - x0 + 1) / N, h: (y1 - y0 + 1) / N };
+  }
+
+  // Drawn footprint for a size setting: longest side ICON_LONG·size, true aspect.
+  function footprint(size) {
+    const L = size * ICON_LONG * opticalScale, m = Math.max(ink.w, ink.h);
+    return { w: L * ink.w / m, h: L * ink.h / m };
+  }
 
   function rasterize(pw, ph, color) {
     const tint = (!color || color === '#111' || color === '#111111') ? '#111' : color;
@@ -234,7 +104,10 @@ function _makeSvgStamp(svgSrc, toolbarId) {
     c.width = pw; c.height = ph;
     const cx = c.getContext('2d');
     cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
-    cx.drawImage(img, 0, 0, pw, ph);            // rasterize the VECTOR at output size
+    // Rasterize the VECTOR at output size, offset so only the ink bbox lands
+    // on this canvas (the canvas bounds do the clipping; stays crisp at any size).
+    const fw = pw / ink.w, fh = ph / ink.h;
+    cx.drawImage(img, -ink.x * fw, -ink.y * fh, fw, fh);
     cx.globalCompositeOperation = 'source-in';  // tint the silhouette, keep its alpha
     cx.fillStyle = tint;
     cx.fillRect(0, 0, pw, ph);
@@ -245,7 +118,7 @@ function _makeSvgStamp(svgSrc, toolbarId) {
 
   function draw(ctx, x, y, size, color) {
     if (!ready) return;
-    const w = size * 1.6, h = size * 1.25;
+    const { w, h } = footprint(size);
     // Device-pixel size from the ctx transform, so HiDPI + supersampled exports
     // rasterize the SVG at their true resolution (this is what keeps it crisp).
     const t = ctx.getTransform ? ctx.getTransform() : null;
@@ -260,6 +133,7 @@ function _makeSvgStamp(svgSrc, toolbarId) {
   }
 
   img.onload = () => {
+    measureInk();
     ready = true;
     if (toolbarId) {
       const c = document.getElementById(toolbarId);
@@ -272,11 +146,13 @@ function _makeSvgStamp(svgSrc, toolbarId) {
         c.height = Math.round(cssH * dpr);
         const cx = c.getContext('2d');
         cx.scale(dpr, dpr);
-        draw(cx, cssW / 2, cssH / 2, cssW * 0.44);
+        // 0.49 → longest side ≈ 0.70 of the button, as the old stretched 0.44·1.6 did.
+        draw(cx, cssW / 2, cssH / 2, cssW * 0.49);
       }
     }
   };
   img.src = svgSrc + ICON_BUST;
+  draw.footprint = footprint;
   return draw;
 }
 
@@ -379,13 +255,9 @@ const drawJudaism      = _makeSvgStamp('icons/Judaism.svg',         'icon-religi
 
 
 
-function drawCityIcon(ctx, x, y, size, color) {
-  ctx.save();
-  ctx.fillStyle = color || '#111';
-  ctx.beginPath();
-  ctx.arc(x, y, size/2, 0, Math.PI*2);
-  ctx.fill(); ctx.restore();
-}
+// City: 35% smaller than the standard icon at the same slider value (0.65 optical
+// scale) — a solid disc outweighs line art. Was a code-drawn arc before 2026-09-15.
+const drawCityIcon = _makeSvgStamp('icons/City.svg', 'icon-city', 0.65);
 
 const DESERT_SPECKS = [
   [-18,-12],[-10,-18],[0,-20],[11,-17],[19,-11],[22,0],[18,11],[10,18],
@@ -469,7 +341,11 @@ function drawStroke(ctx, points, type, color, width) {
   // its fixed rendering (callers don't pass width for it).
   ctx.lineWidth = (type !== 'line-arrow' && width) ? width : 9;
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.setLineDash(LINE_DASH[type] || []);
+  // LINE_DASH is authored at the default width 9. Scale it with the stroke so
+  // a dotted/dashed/dash-dot line looks IDENTICAL at 1 wide and 20 wide
+  // (Maddy 2026-09-15 — wall/railroad already scale their patterns).
+  const dashK = ctx.lineWidth / 9;
+  ctx.setLineDash((LINE_DASH[type] || []).map(v => v * dashK));
 
   if (type === 'line-arrow') {
     const tip = points[points.length - 1];
@@ -783,7 +659,7 @@ const TRADE_GOODS = {
 
 const RELIGIONS = {
   'religion-christianity': { label: 'Christianity', draw: drawChristianity },
-  'religion-islam':        { label: 'Islam',        draw: drawIslam,        mapSize: 38 },
+  'religion-islam':        { label: 'Islam',        draw: drawIslam        },
   'religion-buddhism':     { label: 'Buddhism',     draw: drawBuddhism     },
   'religion-hinduism':     { label: 'Hinduism',     draw: drawHinduism     },
   'religion-judaism':      { label: 'Judaism',      draw: drawJudaism      },
@@ -811,10 +687,8 @@ function initReligionIcons() {
 
 // ── Toolbar icons ────────────────────────────────────────────────────────────
 
-// Mountain, Oasis, Danger, Battle draw their own toolbar buttons via
-// _makeSvgStamp on load (SVG, crisp). Peak stays PNG; City/Desert are programmatic.
-_peakStamp.toolbar(document.getElementById('icon-peak').getContext('2d'), 14, 11, 26, 20);
-drawCityIcon(document.getElementById('icon-city').getContext('2d'), 14, 12, 14, '#111');
+// Every SVG stamp (Mountain, Major Peak, City, Oasis, Danger, Battle, …) draws
+// its own toolbar button on load via _makeSvgStamp. Desert stays programmatic.
 drawDesertIcon(document.getElementById('icon-desert').getContext('2d'), 14, 12, 0.28, '#111');
 (function() {
   const ac = document.getElementById('icon-arrow-black').getContext('2d');

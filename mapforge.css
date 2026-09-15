@@ -1341,6 +1341,13 @@ fallback (shows if homescreen-bg.png isn't present, so nothing breaks). */
 /* Homescreen card icons: solid SVG silhouettes recolored to the bronze accent
    via CSS mask (same technique as the logo), so a black source SVG themes
    correctly. Swap the file in the element's --icon var to change an icon. */
+/* Change Map picker: the SAME icon files as the home cards, same gold, smaller. */
+.cm-opt-icon {
+  display: block; width: 26px; height: 26px; flex: none;
+  background-color: #a06810;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+          mask: var(--icon) center / contain no-repeat;
+}
 .ss-choice-icon-img {
   width: 44px;
   height: 44px;
@@ -1367,16 +1374,40 @@ fallback (shows if homescreen-bg.png isn't present, so nothing breaks). */
   max-width: 180px;
 }
 #ss-library { width: 100%; max-width: 1200px; }
+/* Library → home: a real button (home icon + "Back"), button radius token 6px. */
 #ss-back {
-  display: inline-block;
-  margin-bottom: 20px;
-  color: #8a5808;
-  font-family: 'Jost', Georgia, serif;
-  font-size: 13px;
-  cursor: pointer;
-  user-select: none;
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-bottom: 20px; padding: 9px 16px 9px 13px;
+  background: #FAF5EA; color: #2a1f0e; border: none; border-radius: 6px;
+  font: 600 14px/1 'Jost', Georgia, serif; letter-spacing: .02em;
+  box-shadow: 0 2px 8px rgba(42,31,14,.14);
+  cursor: pointer; user-select: none;
 }
-#ss-back:hover { color: #2a1f0e; }
+#ss-back svg { color: #a06810; flex: none; }
+#ss-back:hover { background: #fffaf0; box-shadow: 0 3px 12px rgba(42,31,14,.2); }
+#ss-back:focus-visible { outline: 2px solid #a06810; outline-offset: 2px; }
+/* Credit on the page (live maps, LOCKED page only — hidden while adjusting
+   the view or layout): no box, a halo in the land tone (--credit-halo is set
+   by lmSyncPills: relief land or flat cream). 7pt of paper = 9.33px at the
+   page's 96px/in, scaled with the page. Mirrors drawExportCredit. */
+:root { --credit-halo: #f8f9fa; }   /* lmSyncPills overrides on the root — never declare it on the box */
+#credit-box {
+  display: none;
+  position: absolute; right: 12px; bottom: 10px;
+  font: italic 500 9.33px/1.15 'Jost', Georgia, serif; color: #2a1f0e;
+  /* Bigger, rounder halo (Maddy): 1.6px ring in 8 directions + soft blur */
+  text-shadow:
+    0 0 3px var(--credit-halo), 0 0 3px var(--credit-halo), 0 0 3px var(--credit-halo),
+     1.6px  0 0 var(--credit-halo), -1.6px  0 0 var(--credit-halo),
+     0  1.6px 0 var(--credit-halo),  0 -1.6px 0 var(--credit-halo),
+     1.1px  1.1px 0 var(--credit-halo), -1.1px -1.1px 0 var(--credit-halo),
+     1.1px -1.1px 0 var(--credit-halo), -1.1px  1.1px 0 var(--credit-halo);
+  white-space: nowrap; pointer-events: none; user-select: none;
+}
+body.live-base:not(.live-explore) #credit-box { display: block; }
+/* Toolbar wordmark doubles as Home. */
+#toolbar-logo { cursor: pointer; }
+#toolbar-logo:focus-visible { outline: 2px solid #a06810; outline-offset: 3px; border-radius: 4px; }
 #ss-library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
 .ss-section-header {
   grid-column: 1 / -1;
@@ -2028,6 +2059,12 @@ body.sr-collapsed #sidebar-right { display: flex !important; }
 #toolbar .toolbar-row + .toolbar-row { border-top: none; }
 /* group heads stick to the top of the scroll until scrolled past */
 #palette-scroll .palette-group-head { position: sticky; top: 0; z-index: 3; }
+/* Stacked headers (Maddy 2026-09-15): a sticky head can't leave its own
+   parent, so each group's head used to scroll away with its group. The group
+   wrappers now generate no box (display: contents) — every head sticks to
+   #palette-scroll itself, and later heads stack beneath earlier ones. */
+#palette-scroll .palette-group { display: contents; }
+#palette-scroll #group-stamps > .palette-group-head { top: var(--pg-lines-h, 27px); z-index: 2; }
 /* collapse must beat the id-specificity display:flex rules */
 .palette-group.collapsed .palette-group-body, .palette-group.collapsed #group-lines-body, .palette-group.collapsed #group-stamps-body { display: none !important; }
 /* subgroup headers: sentence case, not uppercase */
@@ -2350,11 +2387,17 @@ outlines everywhere we can. */
   box-shadow: 0 2px 10px rgba(42,31,14,0.08);
 }
 #ss-saves-list { list-style: none; margin: 0; padding: 0; max-height: 180px; overflow-y: auto; }
+/* More rows below the fold → last visible row fades out (scroll cue). */
+#ss-saves-list.more-below {
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 56px), transparent);
+          mask-image: linear-gradient(#000 calc(100% - 56px), transparent);
+}
+.ss-saves-count { font: 500 15px/1 'Jost', Georgia, serif; color: #8a7a5c; letter-spacing: 0; }
 .ss-save-item {
   display: flex;
   justify-content: space-between;
   gap: 14px;
-  padding: 7px 8px;
+  padding: 5px 8px;          /* ~48px rows: 3 + part of a 4th fit the 180px list (scroll cue) */
   border-radius: 8px;
   cursor: pointer;
   font-family: 'Jost', Georgia, serif;
@@ -2556,6 +2599,9 @@ tooltip (#toolbar-tip, now retired): dark ink card, gold text. ── */
 /* saved-map thumbs keep the page's true aspect (portrait vs landscape),
 like the export preview — fixed height, natural width, no crop */
 .ss-save-thumb, .save-item-thumb { width: auto !important; max-width: 78px; height: 44px; object-fit: contain; background: #fff; }
+/* Home Saved Maps only: shorter thumbs → ~48px rows, so 3 + part of a 4th
+   show in the 180px list (scroll cue). Save/Open dialogs keep 44px. */
+#ss-saves-list .ss-save-thumb, #ss-saves-list .ss-save-thumb-empty { height: 38px; max-width: 67px; }
 /* saved-map rows (home + Change Map): name/date left, thumbnail right */
 .ss-save-item .ss-save-name { order: 1; flex: 0 1 auto; text-align: left; margin-left: 0; }
 .ss-save-item .ss-save-date { order: 2; margin-left: 10px; }
@@ -2780,6 +2826,28 @@ Source: design/map_forge_logo.svg → mapforge-logo.svg. Retained for reference.
     .ss-save-del:hover { background: #cc503e; color: #FAF5EA; }
     .ss-save-del:focus-visible { outline: 2px solid #A06810; outline-offset: 1px; }
 
+/* Map Layers + Names: two groups, ONE eye per row (Maddy 2026-09-09) */
+#ml-layers-panel #ml-names-head { margin-top: 0; }
+body.layers-collapsed #ml-layers-panel .ml-layer-row.ml-names-row { display: flex !important; }
+/* Same specificity as the rule above and AFTER it, so collapsing Map Labels
+   always wins (it used to lose whenever Map Layers was collapsed). */
+body.names-collapsed #ml-layers-panel .ml-layer-row.ml-names-row { display: none !important; }
+#ml-layers-panel .ml-switch-head { float: right; margin: -1px 10px 0 0; }   /* floats right AFTER the caret in DOM = sits left of it */
+/* search hit reveal: gold pulse on the found control */
+@keyframes gsFlash { 0%,100% { box-shadow: 0 0 0 0 rgba(160,104,16,0); } 25%,75% { box-shadow: 0 0 0 3px rgba(160,104,16,.75); } }
+.gs-flash { animation: gsFlash 1.2s ease-in-out 2; position: relative; z-index: 1; }
+/* fill swatches (Oceans/Lakes, Terrain): 25x12.5 = 25% larger than the 20x10 base */
+#ml-layers-panel .ml-layer-sample.ml-swatch { width: 32px !important; flex-basis: 32px; margin-left: -3px; }
+#ml-layers-panel .ml-switch-head::after { background-color: #FAF5EA; }
+#ml-layers-panel .ml-switch-head:not(.on) { opacity: .5; }
+/* group eye off (Maddy 2026-09-15): rows dim; the row eyes KEEP their own
+   glyphs — visible layers keep the open eye but take the same grey as the
+   hidden eyes (opacity .4, as :not(.on)); hidden eyes are untouched. The
+   rows' keys keep their state, so re-enabling the group restores them. */
+#ml-layers-panel .ml-layer-row.group-off { opacity: .7; }
+#ml-layers-panel .ml-layer-row.group-off .ml-switch.on { opacity: .4; }
+
+
 /* Saving workflow (2026-09-09) */
 #hdr-save-btn { position: relative; }
 #hdr-save-btn.file-stale::after { content: ''; position: absolute; top: 4px; right: 6px; width: 7px; height: 7px;
@@ -2803,3 +2871,38 @@ Source: design/map_forge_logo.svg → mapforge-logo.svg. Retained for reference.
 #save-status { min-height: 0; }
 #saves-modal .saves-hint { margin-bottom: 0; }
 
+/* Busy overlay (mapforge-busy.js): tan veil over the map desk only + spinning
+   globe. Spin = transform on HTML → compositor, keeps turning under load. */
+#mf-busy {
+  position: absolute; inset: 0; z-index: 40;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  background: rgba(226, 214, 190, .74);
+  opacity: 0; visibility: hidden; transition: opacity .2s, visibility 0s .2s;
+  pointer-events: none;
+}
+#mf-busy.on { opacity: 1; visibility: visible; transition: opacity .2s; pointer-events: auto; cursor: progress; }
+/* Loads: opaque desk tone — the map draws unseen, then fades in (slower fade). */
+#mf-busy.solid { background: #cfc8bb; transition: opacity .45s, visibility 0s .45s; }
+#mf-busy.solid.on { transition: none; }
+/* 8-frame sprite, 64px frames (192px source = 3x); keep in sync w/ build-busy-globe.py */
+.mf-busy-globe { position: relative; width: 64px; height: 64px; overflow: hidden; }
+.mf-busy-globe .g-strip {
+  position: absolute; top: 0; left: 0; width: 512px; height: 64px;
+  background: url('icons/busy-globe-sprite.png') 0 0 / 512px 64px no-repeat;
+  animation: mf-globe-spin 1.6s steps(8) infinite;
+}
+@keyframes mf-globe-spin { from { transform: translateX(0); } to { transform: translateX(-512px); } }
+/* Globe + label share one cream card (modal radius token 12px). */
+.mf-busy-card {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  background: #FAF5EA; border-radius: 12px; padding: 18px 26px 16px;
+  box-shadow: 0 6px 24px rgba(40,55,64,.16);
+}
+.mf-busy-label { font: 600 12px/1 'Jost', Georgia, serif; letter-spacing: .03em; color: #283740; }
+@media (prefers-reduced-motion: reduce) {
+  .mf-busy-globe .g-meridians { animation: none; }
+  .mf-busy-globe { animation: mf-globe-pulse 1.6s ease-in-out infinite; }
+  @keyframes mf-globe-pulse { 50% { opacity: .55; } }
+}
+/* While busy: nothing may be saved or exported from a half-loaded map. */
+body.mf-busy #hdr-save-btn, body.mf-busy #hdr-export-btn { pointer-events: none; opacity: .45; }

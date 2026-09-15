@@ -114,7 +114,13 @@ async function openLiveLibraryEntry(m, card) {
   // `stamps` array and edited from there. Hand over a fresh copy every time so
   // the cached entry stays pristine for the next open.
   if (typeof beginFreshMap === 'function') beginFreshMap(m.label);   // default save name = this map's
-  restoreProject(JSON.parse(JSON.stringify(data)));
+  const copy = JSON.parse(JSON.stringify(data));
+  // A library map is a FRESH START (Maddy 2026-09-15): it opens in the
+  // automatic zoom state (graticule out / US states in / countries off)
+  // whatever toggles it was authored with; the author's other toggles
+  // (rivers, labels, …) still apply. Student saves are unaffected.
+  if (copy.map) copy.map.toggles = { ...(copy.map.toggles || {}), autoZoomLayers: true };
+  restoreProject(copy);
   if (card) card.classList.remove('ss-live-loading');
 }
 

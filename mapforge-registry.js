@@ -26,25 +26,27 @@ registerStampType('mountain', { kind: 'point', group: 'terrain', sizeField: 'siz
   factor: 1, defaultSize: 16, keyFallback: 16, movable: true,
   draw: (ctx, x, y, size, color) => drawMountainIcon(ctx, x, y, size, color || '#111') });
 registerStampType('peak', { kind: 'point', group: 'terrain', sizeField: 'size',
-  factor: 1.3, defaultSize: 16, keyFallback: 16, movable: true,
+  factor: 1, defaultSize: 16, keyFallback: 16, movable: true,   // SVG since 2026-09-15
   draw: (ctx, x, y, size, color) => drawPeakIcon(ctx, x, y, size, color || '#111') });
 registerStampType('desert', { kind: 'point', group: 'terrain', sizeField: null,
   factor: 1, defaultSize: null, keyFallback: null, movable: false,
   // Desert speckles take a SCALE (redraw passes 1; the key passes 1/dpr).
   draw: (ctx, x, y, scale, color) => drawDesertIcon(ctx, x, y, scale, color || '#111') });
+// factor: 1 for every clipped SVG icon (2026-09-15 icon sizing) — only the
+// hand-drawn city circle and the Major Peak PNG keep a multiplier.
 registerStampType('oasis', { kind: 'point', group: 'terrain', sizeField: 'iconSize',
-  factor: 1.2, defaultSize: 16, keyFallback: null, movable: true,
+  factor: 1, defaultSize: 16, keyFallback: null, movable: true,
   draw: (ctx, x, y, size, color) => drawOasis(ctx, x, y, size, color) });
 
 // ---- Places & events -------------------------------------------------------
 registerStampType('city', { kind: 'point', group: 'places', sizeField: 'size',
-  factor: 36 / 22, defaultSize: 16, keyFallback: 16, movable: true,
+  factor: 1, defaultSize: 16, keyFallback: 16, movable: true,   // SVG since 2026-09-15 (was 36/22)
   draw: (ctx, x, y, size, color) => drawCityIcon(ctx, x, y, size, color || '#111') });
 registerStampType('danger', { kind: 'point', group: 'places', sizeField: 'iconSize',
-  factor: 1.2, defaultSize: 16, keyFallback: null, movable: true,
+  factor: 1, defaultSize: 16, keyFallback: null, movable: true,
   draw: (ctx, x, y, size, color) => drawDanger(ctx, x, y, size, color) });
 registerStampType('battle', { kind: 'point', group: 'places', sizeField: 'iconSize',
-  factor: 1.2, defaultSize: 16, keyFallback: null, movable: true,
+  factor: 1, defaultSize: 16, keyFallback: null, movable: true,
   draw: (ctx, x, y, size, color) => drawBattle(ctx, x, y, size, color) });
 
 // ---- Trade & culture (from the existing per-family registries) -------------

@@ -147,7 +147,6 @@ async function _buildExportCanvasInner() {
   const autoEntries = exportIncludeKey ? collectAutoKeyEntries() : [];
   const allEntries  = exportIncludeKey ? [...autoEntries, ...keyManualEntries] : [];
 
-  const MAP_BORDER = 3;
   // Inset matches the border exactly: the map runs to the neatline with no
   // cream mat ring (the old 8px inset left a visible 5px cream line inside
   // the border). Edge pixels are still cropped by the same amount.
@@ -305,6 +304,8 @@ async function _buildExportCanvasInner() {
     }
   }
 
+  drawExportCredit(ec, mapW, mapH, INSET);   // lower-right credit box, above everything
+
   _exportRestore();   // back to the editing view + selection
   return exportCanvas;
 }
@@ -313,14 +314,63 @@ async function _buildExportCanvasInner() {
 let exportPaper = 'letter';   // 'letter' | 'a4'
 const PAPER_IN = { letter: { w: 8.5, h: 11 }, a4: { w: 8.27, h: 11.69 } };
 const PRINT_DPI = 200;        // good handout quality without huge files
+const MAP_BORDER = 3;         // neatline inset (map px) — shared by the composite and the preview
+
+// ── Export credit (Maddy 2026-09-15) ─────────────────────────────────────────
+// Small semi-transparent cream box, lower-right of every exported map (and the
+// export preview): app + cartography + data credits at 7pt of PHYSICAL paper.
+// ctx is in map px (mapW × mapH); page width in inches sets the pt→px ratio.
+// Wording per Maddy (2026-09-15). Live maps only — the Natural Earth line is
+// only true of them; PNG-library maps carry no credit box. Mirrored on the
+// editing page by #credit-box (index.html / mapforge.css).
+const EXPORT_CREDIT = 'Made in ' + (typeof APP_NAME !== 'undefined' ? APP_NAME : 'Maposaic') + ' with Natural Earth';
+const EXPORT_CREDIT_PT = 7;
+function drawExportCredit(ctx, mapW, mapH, inset) {
+  if (baseMode !== 'live') return;
+  let pageIn;
+  if (baseMode === 'live' && mlFrame && mlFrame.w && mlFrame.h)
+    pageIn = mapW >= mapH ? Math.max(mlFrame.w, mlFrame.h) : Math.min(mlFrame.w, mlFrame.h);
+  else pageIn = mapW >= mapH ? 11 : 8.5;              // PNG-library maps: Letter assumed
+  const px = EXPORT_CREDIT_PT / 72 * (mapW / pageIn); // 7pt on this paper
+  const m = px * 1.0 + inset;
+  ctx.save();
+  ctx.font = `italic 500 ${px}px 'Jost', Georgia, serif`;
+  ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  // No box (Maddy 2026-09-15): a halo in the MEDIAN colour of the composite
+  // under the text (ocean, land or relief — the median ignores thin lines);
+  // the land tone is the fallback if sampling fails.
+  let halo = (typeof MLB !== 'undefined' && MLB.landColor) ? MLB.landColor() : '#f8f9fa';
+  try {
+    const tw = ctx.measureText(EXPORT_CREDIT).width, S = ctx.getTransform().a || 1;
+    const x0 = Math.max(0, Math.floor((mapW - m - tw) * S)), y0 = Math.max(0, Math.floor((mapH - m - px) * S));
+    const w = Math.ceil(tw * S), h = Math.ceil(px * 1.1 * S);
+    const d = ctx.getImageData(x0, y0, w, h).data, R = [], G = [], B = [];
+    for (let i = 0; i < d.length; i += 4) { R.push(d[i]); G.push(d[i + 1]); B.push(d[i + 2]); }
+    const med = a => { a.sort((p, q) => p - q); return a[a.length >> 1]; }, hx = v => v.toString(16).padStart(2, '0');
+    if (R.length > 8) halo = '#' + hx(med(R)) + hx(med(G)) + hx(med(B));
+  } catch (e) {}
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.lineWidth = px * 0.42;   // bigger, rounder (Maddy)
+  ctx.strokeStyle = halo;
+  ctx.strokeText(EXPORT_CREDIT, mapW - m, mapH - m);
+  ctx.fillStyle = '#2a1f0e';
+  ctx.fillText(EXPORT_CREDIT, mapW - m, mapH - m);
+  ctx.restore();
+}
 
 function ensureMapLoaded() {
   if (hasBase()) return true;
   flashExportStatus('Load a map first.');
   return false;
 }
+// Export filename (PNG, key PNG, and the print frame's title → the browser's
+// "Save as PDF" default): the SAVED MAP's name when there is one (Maddy
+// 2026-09-15), else the map title, else "map".
 function exportBaseName() {
-  return (mapTitle || 'map').replace(/[^\w\- ]+/g, '').trim() || 'map';
+  const saved = (typeof _currentSaveName !== 'undefined' && _currentSaveName) || '';
+  // Keep letters/digits in ANY script (accents: "Península" stays intact) plus
+  // space, hyphen, underscore; drop everything else (path/filename-unsafe).
+  const clean = s => String(s || '').replace(/[^\p{L}\p{N}\- _]+/gu, '').replace(/\s+/g, ' ').trim();
+  return clean(saved) || clean(mapTitle) || 'map';
 }
 function downloadCanvas(cv, filename) {
   const link = document.createElement('a');
@@ -340,6 +390,10 @@ function _expStep(msg) {
 // "failed" or the sentinel null hides it.
 function _expProgress(msg) {
   if (/failed/i.test(msg || '')) flashExportStatus(msg);   // failures stay visible
+  // Students see ONE word per job: every export stage ("Exporting: preparing
+  // view…", "…compositing…") reads "Exporting…"; other callers (saving) keep
+  // their own text. Stage detail stays in the console (_expStep).
+  const label = /^export/i.test(msg || '') ? 'Exporting…' : msg;
   // Export modal open → inline spinner between the action buttons and Close.
   const row = document.getElementById('export-spinner-row');
   const modalOpen = (() => {
@@ -355,7 +409,7 @@ function _expProgress(msg) {
     else {
       row.style.display = 'flex';
       if (acts) acts.style.display = 'none';
-      document.getElementById('export-spinner-msg').textContent = msg;
+      document.getElementById('export-spinner-msg').textContent = label;   // stage names → console only
       if (!document.getElementById('expspin-style')) {
         const st = document.createElement('style'); st.id = 'expspin-style';
         st.textContent = '@keyframes expspin { to { transform: rotate(360deg); } }';
@@ -368,23 +422,21 @@ function _expProgress(msg) {
   }
   let el = document.getElementById('export-progress');
   if (msg === null || /failed/i.test(msg || '')) { if (el) el.remove(); return; }
+  // Same look as the load overlay (mapforge-busy.js): tan veil + cream card +
+  // spinning desk globe. One fixed word for students; stage names go to the
+  // console only (logged in _expStep).
   if (!el) {
     el = document.createElement('div');
     el.id = 'export-progress';
+    el.setAttribute('role', 'status');
     el.innerHTML =
-      '<div style="width:34px;height:34px;border:3.5px solid rgba(250,245,234,.25);' +
-      'border-top-color:#C8A030;border-radius:50%;animation:expspin 0.9s linear infinite;"></div>' +
-      '<div id="export-progress-msg" style="font:600 13px/1.4 Jost,Georgia,serif;color:#FAF5EA;"></div>';
-    el.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;' +
-      'gap:14px;align-items:center;justify-content:center;background:rgba(42,31,14,.55);';
-    if (!document.getElementById('expspin-style')) {
-      const st = document.createElement('style'); st.id = 'expspin-style';
-      st.textContent = '@keyframes expspin { to { transform: rotate(360deg); } }';
-      document.head.appendChild(st);
-    }
+      '<div class="mf-busy-card"><div class="mf-busy-globe" aria-hidden="true"><div class="g-strip"></div></div>' +
+      '<div class="mf-busy-label">Exporting…</div></div>';
+    el.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;' +
+      'align-items:center;justify-content:center;background:rgba(226,214,190,.74);cursor:progress;';
     document.body.appendChild(el);
   }
-  document.getElementById('export-progress-msg').textContent = msg;
+  el.querySelector('.mf-busy-label').textContent = label;
 }
 async function exportMap() {
   if (!ensureMapLoaded()) return;
@@ -483,7 +535,17 @@ async function printExport() {
   fd.head.appendChild(st);
   const img = fd.createElement('img');
   img.onload = () => setTimeout(() => {
+    // Chrome's "Save as PDF" default filename comes from the TOP document's
+    // title, not the print iframe's (Maddy 2026-09-15: PDF kept the app name).
+    // Swap the app title to the map's name for the dialog, then restore it.
+    const appTitle = document.title;
+    document.title = exportBaseName();
+    let restored = false;
+    const restore = () => { if (restored) return; restored = true; document.title = appTitle; };
+    fr.contentWindow.addEventListener('afterprint', restore);
+    window.addEventListener('afterprint', restore, { once: true });
     try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) {}
+    setTimeout(restore, 60000);            // backstop if afterprint never fires
     setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
   }, 150);
   img.src = blobUrl;
@@ -609,6 +671,7 @@ function renderExportPreviewDraw() {
     pc.drawImage(img, 0, 0, mapW, mapH);
   }
   pc.drawImage(canvas, 0, 0);
+  try { drawExportCredit(pc, mapW, mapH, MAP_BORDER); } catch (e) {}   // same credit as the print
   if (keyH) {
     try { renderKeyBox(pc, mapW, mapH, entries); } catch (e) {
       // key renderer unavailable → cream block already marks its area

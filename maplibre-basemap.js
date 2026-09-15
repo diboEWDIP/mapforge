@@ -23,8 +23,15 @@
 const ASSET = 'maplibre-map/';
 
 // ---- Palette (matches globe_v2 prototype) ----
-const OCEAN = '#C4E1F0', WATER = '#2E8CC2', LAND = '#f8f9fa';
+const OCEAN = '#C4E1F0', WATER = '#236992', LAND = '#f8f9fa';   // WATER 25% darker (Maddy 2026-09-09; was #2E8CC2)
+// Land when Terrain is OFF: the average tone of relief-over-land, so the page
+// stays the same cream instead of jumping to white (Maddy 2026-09-09).
+const LAND_NO_RELIEF = '#F3F1EE';
 const INK = '#1C6690';
+// Political boundaries (Phase 2): countries near-black and heavier, states
+// a light warm grey and thinner — two clear ranks, both distinct from the
+// water blue (Maddy 2026-09-09).
+const BORDER = '#1F1F1F', BORDER_STATE = '#A89C8C', BORDER_INK = '#5C5145';
 const SHADOW = '#b4d5e8';
 const HALO = '#f3f1ee';
 const GREY = { OCEAN: '#dcdcdc', WATER: '#424242', INK: '#303030', SHADOW: '#c8c8c8',
@@ -165,6 +172,88 @@ const TILELOW = [
   'rivers-texture','land-50m','ocean-50m','lakes-50m','rivers-50m',
   'vignette-50m','vignette-lakes-50m'];
 
+// ---- Political boundaries (Phase 2, 2026-09) ---------------------------------
+// Country borders + US state borders, tiered like the basemap, plus name
+// labels. Solid = settled international boundary; dashed = disputed/indefinite
+// /lease (NE featurecla). States dotted, lighter. Labels ride NE's curated
+// label points and its per-feature min_label zoom.
+const BOUNDARY_SOLID = ['==', ['get', 'featurecla'], 'International boundary (verify)'];
+function boundaryLayers(kind) {   // 'state' | 'country'
+  const tiers = [
+    ['110m', { source: 'boundaries-110m' }, null, TIER_A],
+    ['50m',  { source: 'boundaries', 'source-layer': 'countries-50m' }, TIER_A, TIER_Z],
+    ['10m',  { source: 'boundaries', 'source-layer': 'countries-10m' }, TIER_Z, null],
+  ];
+  const out = [];
+  for (const [t, src, min, max] of tiers) {
+    const zoom = {}; if (min != null) zoom.minzoom = min; if (max != null) zoom.maxzoom = max;
+    const kindC = t === '110m' ? ['==', ['get', 'kind'], 'country'] : null;
+    const kindS = t === '110m' ? ['==', ['get', 'kind'], 'state'] : null;
+    const srcS = t === '110m' ? src : { source: 'boundaries', 'source-layer': `states-${t}` };
+    const and = (...f) => ['all', ...f.filter(Boolean)];
+    // Draw order (Maddy 2026-09-09): STATES sit beneath the rivers; COUNTRIES
+    // above rivers and lakelines. So the country stroke always tops the state
+    // stroke where they share a line (the US national border).
+    if (kind === 'state') { out.push(
+      { id: `states-${t}`, type: 'line', ...srcS, ...zoom,
+        ...(kindS ? { filter: kindS } : {}),
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': BORDER_STATE, 'line-width': 1.0 } }); continue; }   // +25% (Maddy 2026-09-15); sync w/ setPageScale
+    out.push(
+      { id: `countries-${t}`, type: 'line', ...src, ...zoom,
+        filter: and(kindC, BOUNDARY_SOLID),
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': BORDER, 'line-width': 1.4 } },
+      { id: `countries-${t}-dashed`, type: 'line', ...src, ...zoom,
+        filter: and(kindC, ['!', BOUNDARY_SOLID]),
+        layout: { 'line-join': 'round' },
+        paint: { 'line-color': BORDER, 'line-width': 1.4, 'line-dasharray': [3, 2] } });
+  }
+  return out;
+}
+// Boundary NAME labels go at the TOP of the symbol stack: MapLibre places
+// higher layers first, so country names must outrank river/water labels or
+// "United States of America" loses its spot to a river name (Maddy 2026-09-09).
+// Countries sit ABOVE states so a country name beats a state name too.
+function boundaryLabelLayers() {
+  return [
+    { id: 'state-labels', type: 'symbol', source: 'boundarylabels',   // no minzoom: names arrive WITH the state lines (Maddy 2026-09-15)
+      filter: ['==', ['get', 'kind'], 'state'],
+      layout: {
+        'text-field': ['get', 'label'],   // full name, or the postal code where the name won't fit
+        'text-font': ['Jost Medium'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 4, 8, 7, 10.5],   // 8px ≈ 6.7pt printed (was 7 ≈ 5.9pt); keep in sync w/ setPageScale
+        'text-max-width': 6,
+        'text-padding': 4,
+        'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'],
+        'text-radial-offset': 0.7,
+      },
+      paint: { 'text-color': BORDER_INK, 'text-halo-color': HALO, 'text-halo-width': 1.4,
+               'text-opacity': 0.9 } },
+    { id: 'country-labels', type: 'symbol', source: 'boundarylabels', minzoom: 2.5,   // names 0.5 after the lines (Maddy 2026-09-15)
+      filter: ['==', ['get', 'kind'], 'country'],
+      layout: {
+        'text-field': ['get', 'name'],
+        'text-font': ['Colus Regular'],        // display face (caps-only), Maddy 2026-09-09
+        'text-transform': 'uppercase',
+        'text-letter-spacing': 0.12,
+        // Per-country size from the placement engine (Maddy 2026-09-15): the
+        // zoom curve × 1.2 for roomy countries, ×0.85/×0.7 (stacked) where the
+        // name won't fit at full size. Already includes the page scale.
+        'text-size': ['coalesce', ['get', 'size'], 9],
+        'text-max-width': 7,
+        'text-padding': 6,
+        // may slide a little off the computed centre to clear a river name
+        'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'],
+        'text-radial-offset': 0.9,
+      },
+      paint: { 'text-color': BORDER, 'text-halo-color': HALO, 'text-halo-width': 1.6 } },   // ink = country line
+  ];
+}
+const COUNTRY_LINES = ['110m','50m','10m'].flatMap(t => [`countries-${t}`, `countries-${t}-dashed`]);
+const STATE_LINES   = ['110m','50m','10m'].map(t => `states-${t}`);
+const BOUNDARY_LINES = [...COUNTRY_LINES, ...STATE_LINES];
+
 function buildStyle() {
   const D = f => ASSET + 'data/' + f;
   const style = {
@@ -193,6 +282,13 @@ function buildStyle() {
       'dynlabels': { type: 'geojson', buffer: 512, maxzoom: 4,
         data: { type: 'FeatureCollection', features: [] } },
       'graticule':  { type: 'geojson', data: graticule() },
+      // Present-day political boundaries (build-boundaries.sh). 110m as direct
+      // geojson (pole-adjacent globe views drop tiled layers); 50m/10m tiled.
+      'boundaries-110m': { type: 'geojson', data: D('boundaries-110m.geojson') },
+      // Boundary names are placed at RUNTIME (startBoundaryLabels): one point
+      // per visible country/state at the visual centre of its visible part.
+      'boundarylabels':  { type: 'geojson', buffer: 512, maxzoom: 4,
+        data: { type: 'FeatureCollection', features: [] } },
       'marinelabels': { type: 'geojson', data: D('marinelabels.geojson'),
         buffer: 512, maxzoom: 2 },
       'lakelabels':   { type: 'geojson', data: D('lakelabels.geojson'),
@@ -228,9 +324,15 @@ function buildStyle() {
         paint: { 'line-color': WATER, 'line-width': 1.25 } },
       { id: 'coast-10m', type: 'line', source: 'land-10m', minzoom: TIER_Z,
         paint: { 'line-color': WATER, 'line-width': 1.25 } },
+      // DOTTED (Maddy 2026-09-15): solid grey read too much like state lines.
+      // Zero-length dashes + round caps = dots one line-width across; width and
+      // opacity bumped so the dots don't vanish. Dash units scale with width.
       { id: 'graticule', type: 'line', source: 'graticule',
-        paint: { 'line-color': '#5a5a5a', 'line-opacity': 0.3,
-          'line-width': ['case', ['==', ['get', 'eq'], 1], 1.5, 0.75] } },
+        layout: { 'line-cap': 'round' },
+        paint: { 'line-color': '#5a5a5a', 'line-opacity': 0.5,
+          'line-width': ['case', ['==', ['get', 'eq'], 1], 1.8, 1.2],
+          'line-dasharray': [0, 2.5] } },
+      ...boundaryLayers('state'),       // beneath every river layer
       { id: 'rivers-texture', type: 'line', source: 'rivers-texture', maxzoom: TIER_A,
         filter: riverFilter(4),
         paint: { 'line-color': WATER,
@@ -258,6 +360,7 @@ function buildStyle() {
         paint: { 'line-color': WATER, 'line-width': 1.25 } },
       { id: 'lakeline-10m', type: 'line', source: 'lakes-10m', minzoom: TIER_Z,
         paint: { 'line-color': WATER, 'line-width': 1.25 } },
+      ...boundaryLayers('country'),
       ...BAND_DEFS.map(d => labelLayer(d.b, d.tier, d.min, d.max, d.extra)),
       { id: 'ocean-labels', type: 'symbol', source: 'marinelabels',
         filter: ['all', ['==', ['get', 'featurecla'], 'ocean'],
@@ -390,12 +493,16 @@ function buildStyle() {
         },
         paint: { 'text-color': INK,
           'text-halo-color': OCEAN, 'text-halo-width': 4 } },
+      ...boundaryLabelLayers(),
     ],
   };
+  for (const l of style.layers) if (l.filter) { l.metadata = { ...(l.metadata || {}), baseFilter: l.filter }; }
   style.sources.tier10 = { type: 'vector',
     url: 'pmtiles://' + new URL(ASSET + 'data/tier10.pmtiles', location.href).href };
   style.sources.tierlow = { type: 'vector',
     url: 'pmtiles://' + new URL(ASSET + 'data/tierlow.pmtiles', location.href).href };
+  style.sources.boundaries = { type: 'vector',
+    url: 'pmtiles://' + new URL(ASSET + 'data/boundaries.pmtiles', location.href).href };
   for (const l of style.layers) {
     if (TILE10[l.source]) { l['source-layer'] = TILE10[l.source]; l.source = 'tier10'; }
     else if (TILELOW.includes(l.source)) { l['source-layer'] = l.source; l.source = 'tierlow'; }
@@ -416,10 +523,37 @@ const LINES_W    = ['coast-110m','coast-50m','coast-10m','lakeline-50m','lakelin
 const VIGNETTES  = ['vignette-110m','vignette-50m','vignette-10m',
                     'vignette-lakes-50m','vignette-lakes-10m'];
 
+// AUTO ZOOM LAYERS (Maddy 2026-09-15, fixed zooms chosen against the dev
+// readout): a fresh map starts in an automatic state —
+//   z <  2     graticule only
+//   z >= 2     + country lines (names from 2.5 — country-labels minzoom)
+//   z >= 3     + US states, graticule off
+// The first manual Graticule/States/Countries toggle ends the automatic state
+// for all three (state.autoZoomLayers = false) and the user's choices stand.
+const AUTO_COUNTRIES_Z = 2;
+const AUTO_STATES_Z = 3;
+// State NAMES: codes only from AUTO_STATES_Z; full name preferred (code where
+// space is short) from STATE_FULLNAME_Z.
+const STATE_FULLNAME_Z = 3.75;
 const state = { globe: true, greyOn: false, riversOn: true, labelsOn: true,
+  autoZoomLayers: true,
+  countriesOn: true, statesOn: true, graticuleOn: true, reliefOn: true,   // Phase 2 layer toggles
+  minorLakesOn: true,   // lakes under MINOR_LAKE_KM2 (major lakes always show)
+  // GROUP switches (Photoshop-style): gate every row in the group without
+  // changing the rows' own keys, so re-enabling restores the last per-row state.
+  layersGroupOn: true, labelsGroupOn: true,
+  // per-layer NAME switches (Maddy 2026-09-09: every layer gets lines + labels
+  // eyes). labelsOn now means the WATER names (oceans, seas, lakes).
+  riverLabelsOn: true, countryLabelsOn: true, stateLabelsOn: true,
   // Page mode: static ocean/sea labels off, dynamic engine places ALL marine
   // names inside the visible page — guaranteed on-page, no duplicates.
   marineDynOnly: false };
+// Pristine defaults, captured before anything (incl. the automatic zoom state
+// on map load) mutates `state`. Older saves only carry the keys that existed
+// when they were made; their missing keys must come from HERE, not from
+// whatever the live state happens to be (2026-09-15: all 54 library maps lack
+// countriesOn/statesOn and were opening with borders hidden).
+const DEFAULT_STATE = { ...state };
 
 function applyGrey(map) {
   const g = state.greyOn;
@@ -455,16 +589,83 @@ function applyLabelVis(map) {
     if (!map.getLayer(id)) return;
     const staticMarine = (id === 'ocean-labels' || id === 'sea-labels' ||
                           id === 'lake-labels');   // in-lake statics; beside-points stay
-    const vis = state.labelsOn && !(staticMarine && state.marineDynOnly);
+    const vis = state.labelsGroupOn && state.labelsOn && !(staticMarine && state.marineDynOnly);
     map.setLayoutProperty(id, 'visibility', vis ? 'visible' : 'none');
   });
   RIVER_LABELS.forEach(id => map.getLayer(id) && map.setLayoutProperty(id,
-    'visibility', (state.labelsOn && state.riversOn) ? 'visible' : 'none'));
+    'visibility', (state.labelsGroupOn && state.riverLabelsOn && state.riversOn) ? 'visible' : 'none'));
+  applyBoundaryVis(map);
+}
+
+// Boundary lines follow their own switches; their labels also need Labels on.
+function applyBoundaryVis(map) {
+  const G = state.layersGroupOn, L = state.labelsGroupOn;
+  COUNTRY_LINES.forEach(id => map.getLayer(id) && map.setLayoutProperty(id, 'visibility',
+    (G && state.countriesOn) ? 'visible' : 'none'));
+  STATE_LINES.forEach(id => map.getLayer(id) && map.setLayoutProperty(id, 'visibility',
+    (G && state.statesOn) ? 'visible' : 'none'));
+  if (map.getLayer('country-labels')) map.setLayoutProperty('country-labels', 'visibility',
+    (L && state.countryLabelsOn && state.countriesOn) ? 'visible' : 'none');
+  if (map.getLayer('state-labels')) map.setLayoutProperty('state-labels', 'visibility',
+    (L && state.stateLabelsOn && state.statesOn) ? 'visible' : 'none');
+}
+// Minor lakes: lakes (and their vignettes) under MINOR_LAKE_KM2 hide; the
+// great lakes / seas always show. Lake LABELS follow via the major-name list
+// (data/major-lakes.json, built by add-lake-area.sh).
+const MINOR_LAKE_KM2 = 5000;
+const LAKE_AREA_LAYERS = ['lakes-50m', 'lakes-10m', 'lakeline-50m', 'lakeline-10m',
+                          'vignette-lakes-50m', 'vignette-lakes-10m', 'lakes-110m'];
+let MAJOR_LAKE_NAMES = null;
+fetch(ASSET + 'data/major-lakes.json').then(r => r.json()).then(d => { MAJOR_LAKE_NAMES = d.names; }).catch(() => {});
+function applyLakeVis(map) {
+  const minorOn = state.layersGroupOn && state.minorLakesOn;
+  const major = ['>=', ['coalesce', ['get', 'area_km2'], 1e9], MINOR_LAKE_KM2];
+  LAKE_AREA_LAYERS.forEach(id => {
+    if (!map.getLayer(id)) return;
+    const base = map.getLayer(id).metadata && map.getLayer(id).metadata.baseFilter;
+    const f = minorOn ? (base || null) : (base ? ['all', base, major] : major);
+    map.setFilter(id, f);
+  });
+  const names = MAJOR_LAKE_NAMES || [];
+  ['lake-labels', 'lake-labels-pt', 'dyn-lake-labels', 'dyn-lake-stacked'].forEach(id => {
+    if (!map.getLayer(id)) return;
+    const base = map.getLayer(id).metadata && map.getLayer(id).metadata.baseFilter;
+    const nf = ['in', ['get', 'name'], ['literal', names]];
+    map.setFilter(id, minorOn ? (base || null) : (base ? ['all', base, nf] : nf));
+  });
+}
+function applyReliefVis(map) {
+  const on = state.layersGroupOn && state.reliefOn;
+  if (map.getLayer('relief')) map.setLayoutProperty('relief', 'visibility', on ? 'visible' : 'none');
+  if (!state.greyOn) FILL_LAND.forEach(id => map.getLayer(id) &&
+    map.setPaintProperty(id, 'fill-color', on ? LAND : LAND_NO_RELIEF));
+}
+// While the map is in its automatic state, zoom decides: graticule when zoomed
+// out, US states when zoomed in. Returns true if anything changed.
+function applyAutoZoomLayers(map) {
+  if (!state.autoZoomLayers || !map || !map.getZoom) return false;
+  const z = map.getZoom();
+  const countries = z >= AUTO_COUNTRIES_Z;
+  const states = z >= AUTO_STATES_Z;                // graticule leaves when states arrive
+  if (state.graticuleOn === !states && state.statesOn === states &&
+      state.countriesOn === countries) return false;
+  state.graticuleOn = !states;
+  state.statesOn = states;
+  state.countriesOn = countries;
+  applyGraticuleVis(map);
+  applyBoundaryVis(map);
+  if (MLB.onAutoLayers) MLB.onAutoLayers();   // app re-syncs its switches
+  return true;
+}
+
+function applyGraticuleVis(map) {
+  if (map.getLayer('graticule')) map.setLayoutProperty('graticule', 'visibility',
+    (state.layersGroupOn && state.graticuleOn) ? 'visible' : 'none');
 }
 
 function applyRiverVis(map) {
   RIVER_LINE.forEach(id => map.getLayer(id) && map.setLayoutProperty(id, 'visibility',
-    state.riversOn ? 'visible' : 'none'));
+    (state.layersGroupOn && state.riversOn) ? 'visible' : 'none'));
   applyLabelVis(map);
 }
 
@@ -939,6 +1140,193 @@ function startDynLabels(map) {
   map._dynRefresh = queueRefresh;
 }
 
+// ---- Dynamic boundary names (moveend engine, Phase 2) -----------------------
+// Country and US-state names are placed per view at the visual centre (pole
+// of inaccessibility) of the polygon's VISIBLE part: a country half off the
+// page is named in the half you can see, and names never sit on a coast or
+// in a neck. Polygons = 50m (build-boundaries.sh). Screen-space throughout,
+// so globe and Mercator share one path; far-side globe vertices are culled.
+function startBoundaryLabels(map) {
+  let COUNTRIES = null, STATES = null;
+  const load = (file, kind) => fetch(ASSET + 'data/' + file).then(r => r.json()).then(d =>
+    d.features.map(f => ({
+      kind, name: f.properties.name, min_label: f.properties.min_label ?? 0,
+      postal: f.properties.postal || null,   // states: 2-letter code, the fallback label
+      rings: f.geometry.type === 'Polygon' ? [f.geometry.coordinates[0]]
+                                           : f.geometry.coordinates.map(p => p[0]),   // outer rings only
+    })));
+  load('country-polys-50m.geojson', 'country').then(a => { COUNTRIES = a; refresh(); });
+  load('state-polys-50m.geojson', 'state').then(a => { STATES = a; refresh(); });
+
+  // Sutherland-Hodgman clip of a screen-space ring to a rectangle
+  function clipRect(ring, x0, y0, x1, y1) {
+    const edges = [
+      [p => p[0] >= x0, (a, b) => [x0, a[1] + (b[1] - a[1]) * (x0 - a[0]) / (b[0] - a[0])]],
+      [p => p[0] <= x1, (a, b) => [x1, a[1] + (b[1] - a[1]) * (x1 - a[0]) / (b[0] - a[0])]],
+      [p => p[1] >= y0, (a, b) => [a[0] + (b[0] - a[0]) * (y0 - a[1]) / (b[1] - a[1]), y0]],
+      [p => p[1] <= y1, (a, b) => [a[0] + (b[0] - a[0]) * (y1 - a[1]) / (b[1] - a[1]), y1]],
+    ];
+    let out = ring;
+    for (const [inside, cross] of edges) {
+      const inp = out; out = [];
+      if (!inp.length) break;
+      let prev = inp[inp.length - 1];
+      for (const cur of inp) {
+        if (inside(cur)) { if (!inside(prev)) out.push(cross(prev, cur)); out.push(cur); }
+        else if (inside(prev)) out.push(cross(prev, cur));
+        prev = cur;
+      }
+    }
+    return out;
+  }
+  const area = r => { let a = 0; for (let i = 0, j = r.length - 1; i < r.length; j = i++) a += (r[j][0] + r[i][0]) * (r[j][1] - r[i][1]); return Math.abs(a) / 2; };
+  const segDist = (p, a, b) => { let x = a[0], y = a[1], dx = b[0] - x, dy = b[1] - y;
+    if (dx || dy) { const t = ((p[0] - x) * dx + (p[1] - y) * dy) / (dx * dx + dy * dy);
+      if (t > 1) { x = b[0]; y = b[1]; } else if (t > 0) { x += dx * t; y += dy * t; } }
+    return Math.hypot(p[0] - x, p[1] - y); };
+  function pointToPoly(p, ring) {
+    let inside = false, d = Infinity;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const a = ring[i], b = ring[j];
+      if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+      d = Math.min(d, segDist(p, a, b));
+    }
+    return inside ? d : -d;
+  }
+  // polylabel (Mapbox, MIT) — pole of inaccessibility by quadtree refinement
+  function polylabel(ring, precision = 1) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const [x, y] of ring) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
+    const w = maxX - minX, h = maxY - minY, cs = Math.min(w, h);
+    if (cs === 0) return { x: minX, y: minY, d: 0 };
+    let hh = cs / 2;
+    const cell = (x, y, hh) => { const d = pointToPoly([x, y], ring); return { x, y, hh, d, max: d + hh * Math.SQRT2 }; };
+    const queue = [];
+    for (let x = minX; x < maxX; x += cs) for (let y = minY; y < maxY; y += cs) queue.push(cell(x + hh, y + hh, hh));
+    let best = cell(minX + w / 2, minY + h / 2, 0);
+    while (queue.length) {
+      queue.sort((a, b) => a.max - b.max);
+      const c = queue.pop();
+      if (c.d > best.d) best = c;
+      if (c.max - best.d <= precision) continue;
+      const q = c.hh / 2;
+      queue.push(cell(c.x - q, c.y - q, q), cell(c.x + q, c.y - q, q), cell(c.x - q, c.y + q, q), cell(c.x + q, c.y + q, q));
+    }
+    return best;
+  }
+
+  function refresh() {
+    if (!COUNTRIES || !STATES || !map.isStyleLoaded()) { setTimeout(refresh, 300); return; }
+    const z = map.getZoom();
+    const cw = map.getContainer().clientWidth, chh = map.getContainer().clientHeight;
+    const PAD = Math.min(100, Math.round(Math.min(cw, chh) * 0.05));
+    const feats = [];
+    const riverLayers = RIVER_LINE.filter(id => map.getLayer(id));
+    let usVisible = false;   // any US state polygon has ground inside the inset view
+    for (const f of [...COUNTRIES, ...STATES]) {
+      if (f.kind === 'state' && !usVisible) {
+        for (const ring of f.rings) {
+          const scr = [];
+          for (const ll of ring) { if (state.globe && !MLB.isVisible(map, ll)) continue; const p = map.project(ll); scr.push([p.x, p.y]); }
+          if (scr.length >= 3 && clipRect(scr, PAD, PAD, cw - PAD, chh - PAD).length >= 3) { usVisible = true; break; }
+        }
+      }
+      // Countries keep NE's per-feature min_label. States get NO zoom gate
+      // (Maddy 2026-09-15: every state is named the moment state lines show;
+      // the fit test + postal fallback decide name vs code).
+      if (f.kind === 'country' && z < f.min_label) continue;
+      // est. label footprint (px) for the fit test: chars x size x width-factor
+      const size = f.kind === 'country'
+        ? (z <= 2 ? 7.5 : z >= 6 ? 12 : 7.5 + (z - 2) * (z < 4 ? 1.0 : 1.25))
+        : (z <= 4 ? 8 : z >= 7 ? 10.5 : 8 + (z - 4) * 2.5 / 3);   // keep in sync w/ state-labels text-size
+      // Project + clip each ring ONCE; the fit test below runs per candidate text.
+      const rings = [];
+      for (const ring of f.rings) {
+        // project; cull far-side globe vertices (round-trip test, see isVisible)
+        const scr = [];
+        for (const ll of ring) {
+          if (state.globe && !MLB.isVisible(map, ll)) continue;
+          const p = map.project(ll); scr.push([p.x, p.y]);
+        }
+        if (scr.length < 3) continue;
+        const clipped = clipRect(scr, PAD, PAD, cw - PAD, chh - PAD);
+        if (clipped.length >= 3) rings.push(clipped);
+      }
+      if (!rings.length) continue;
+      // Label candidates, first fit wins. States (Maddy 2026-09-15): below
+      // STATE_FULLNAME_Z the 2-letter postal code ONLY; from there the full
+      // name, falling back to the code where space is short ("RI").
+      // Countries (Maddy 2026-09-15): full size first, then 85% and 70% (the
+      // layer stacks long names) so tight countries still get a name; a
+      // country with room to spare steps UP to 120%.
+      let candidates = [{ text: f.name, k: 1 }];
+      if (f.kind === 'country') candidates = [1, 0.85, 0.7].map(k => ({ text: f.name, k }));
+      else if (f.postal) candidates = (z < STATE_FULLNAME_Z ? [f.postal] : [f.name, f.postal]).map(text => ({ text, k: 1 }));
+      const fitOf = (text, k) => {
+        const s = size * k;
+        const wpx = text.length * s * (f.kind === 'country' ? 0.78 : 0.56);
+        const maxW = s * (f.kind === 'country' ? 7 : 6) * 1.6;
+        const lines = Math.max(1, Math.ceil(wpx / maxW));
+        const w = Math.min(wpx, maxW), h = s * 1.25 * lines;
+        let b = null;
+        for (const clipped of rings) {
+          const A = area(clipped);
+          if (A < w * h * 1.3) continue;
+          const c = polylabel(clipped, 2);
+          if (c.d < h * 0.55) continue;            // too thin for this text here
+          if (!b || A > b.A) b = { A, c, ring: clipped };
+        }
+        return b && { best: b, w, h };
+      };
+      let best = null, label = null, needW = 0, needH = 0, sizeK = 1;
+      for (const { text, k } of candidates) {
+        const r = fitOf(text, k);
+        if (r) { best = r.best; label = text; needW = r.w; needH = r.h; sizeK = k; break; }
+      }
+      if (!best) continue;
+      if (f.kind === 'country' && sizeK === 1) {           // roomy? step up
+        const r = fitOf(f.name, 1.2);
+        // 20× the label box = genuinely large countries only (6× gave 19 of
+        // 24 European countries the bump at z3.5).
+        if (r && r.best.A >= r.w * r.h * 20) { best = r.best; needW = r.w; needH = r.h; sizeK = 1.2; }
+      }
+      // Prefer a spot that does not cross a river line (Maddy 2026-09-09):
+      // step outward from the visual centre in rings of candidates, keep the
+      // first whose label box (a) stays inside the polygon and (b) has no
+      // rendered river under it. Falls back to the centre.
+      let cx = best.c.x, cy = best.c.y;
+      if (state.riversOn && riverLayers.length) {
+        const clear = (x, y) => !map.queryRenderedFeatures(
+          [[x - needW / 2, y - needH / 2], [x + needW / 2, y + needH / 2]], { layers: riverLayers }).length;
+        if (!clear(cx, cy)) {
+          let found = null;
+          for (let r = needH; r <= needH * 4 && !found; r += needH) {
+            for (let k = 0; k < 12 && !found; k++) {
+              const a = k * Math.PI / 6, x = best.c.x + Math.cos(a) * r, y = best.c.y + Math.sin(a) * r;
+              if (pointToPoly([x, y], best.ring) < needH * 0.55) continue;   // must stay well inside
+              if (clear(x, y)) found = [x, y];
+            }
+          }
+          if (found) { cx = found[0]; cy = found[1]; }
+        }
+      }
+      const ll = map.unproject([cx, cy]);
+      feats.push({ type: 'Feature', properties: { name: f.name, label, kind: f.kind,
+                     size: f.kind === 'country' ? +(size * sizeK * (state.pageScale || 1)).toFixed(2) : undefined },
+                   geometry: { type: 'Point', coordinates: [ll.lng, ll.lat] } });
+    }
+    if (window.MF_DYN_DEBUG) console.log('[bnd-labels]', feats.length, feats.map(f => f.properties.name).join(', '));
+    map.getSource('boundarylabels').setData({ type: 'FeatureCollection', features: feats });
+    // tell the app whether the US is in frame (US States rows hide when not)
+    if (map._usVisible !== usVisible) { map._usVisible = usVisible; if (MLB.onUsVisible) MLB.onUsVisible(usVisible); }
+  }
+  let t = null;
+  const queue = () => { clearTimeout(t); t = setTimeout(refresh, 120); };
+  map.on('moveend', queue);
+  map.on('load', queue);
+  map._bndRefresh = queue;
+}
+
 // ---- Public API -------------------------------------------------------------
 // (setMarineDynOnly lives on MLB below)
 
@@ -964,12 +1352,14 @@ let _map = null;
 
 let _pmtilesWired = false;
 const MLB = {
+  onUsVisible: null,   // app hook: (bool) => void, fired when US-in-frame changes
   // Page locked → static marine labels off, dyn engine owns all marine names
   // (places them inside the viewport by construction). Unlock → statics back.
   setMarineDynOnly(map, on) {
     state.marineDynOnly = !!on;
     applyLabelVis(map);
     if (map._dynRefresh) map._dynRefresh();
+    if (map._bndRefresh) map._bndRefresh();
   },
   create(containerEl) {
     if (!_pmtilesWired) {
@@ -990,6 +1380,26 @@ const MLB = {
     map.on('webglcontextrestored', () => {
       MLB.applyToggleState(map, state);
     });
+    // Automatic zoom state (graticule out / states in) follows every settled
+    // view while it lasts; a manual toggle clears state.autoZoomLayers.
+    map.on('load', () => applyAutoZoomLayers(map));
+    map.on('moveend', () => applyAutoZoomLayers(map));
+    // DEV-ONLY zoom readout (Maddy 2026-09-15): bottom-left of the desk, shows
+    // the live zoom + the US-framed threshold the auto ladder keys off.
+    // Localhost or `?zoom` in the URL only — never on the hosted site.
+    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || /[?&]zoom\b/.test(location.search)) {
+      let el = document.getElementById('mf-zoom-readout');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'mf-zoom-readout';
+        el.style.cssText = 'position:absolute;left:10px;bottom:10px;z-index:35;pointer-events:none;' +
+          'font:600 11px/1 Jost,Georgia,serif;letter-spacing:.03em;color:#FAF5EA;' +
+          'background:rgba(42,31,14,.75);padding:5px 9px;border-radius:999px;';
+        (document.getElementById('canvas-wrap') || document.body).appendChild(el);
+      }
+      const upd = () => { el.textContent = 'z ' + map.getZoom().toFixed(2); };
+      map.on('move', upd); map.on('load', upd); map.on('resize', upd);
+    }
     // POLAR GUARD: Web Mercator data ends at ±85.05° — staring at the pole
     // shows the projection void ("all map data lost", Maddy 2026-08-14).
     // Softly ease the camera back when the center crosses ±80°.
@@ -1000,6 +1410,7 @@ const MLB = {
       }
     });
     startDynLabels(map);
+    startBoundaryLabels(map);
     _map = map;
     return map;
   },
@@ -1094,9 +1505,29 @@ const MLB = {
   unlockView(map) { HANDLERS.forEach(h => map[h] && map[h].enable()); },
 
   getToggleState() { return { ...state }; },
+  // The land tone currently under the map's text: relief land when Terrain is
+  // on, the flat cream otherwise. Used by the credit halo (page + export).
+  landColor() { return (state.layersGroupOn && state.reliefOn) ? LAND : LAND_NO_RELIEF; },
+
+  onAutoLayers: null,   // app hook: () => void, fired when the automatic state flips a layer
+  autoLayerZoom(map) { return autoLayerZoom(map); },   // the US-framed zoom for this page size
+  // A fresh map starts in the automatic zoom state, even if an earlier map in
+  // this session was switched to manual.
+  resetAutoZoomLayers(map) {
+    state.autoZoomLayers = true;
+    if (map && map.isStyleLoaded && map.isStyleLoaded()) applyAutoZoomLayers(map);
+  },
 
   applyToggleState(map, s) {
-    Object.assign(state, s);
+    // Saves made before autoZoomLayers existed: honour their layer choices
+    // exactly (manual, never re-derived from zoom), and fill any key they
+    // predate from the PRISTINE defaults — not from the live state, which the
+    // automatic zoom state may already have changed on map load.
+    // Every restore starts from the pristine defaults, then the save's own
+    // keys — so a key a save lacks never inherits the previous map's state
+    // (library maps are opened with autoZoomLayers:true but no layer keys).
+    const legacy = !s || !('autoZoomLayers' in s);
+    Object.assign(state, DEFAULT_STATE, legacy ? { autoZoomLayers: false } : {}, s);
     // setProjection/setPaintProperty throw before the style loads, and
     // restoreLiveMap hits exactly that window on a cold cache — the thrown
     // exception aborted the whole restore (found 2026-08-13 by the
@@ -1104,19 +1535,46 @@ const MLB = {
     const run = () => {
       applyProjection(map);
       applyGrey(map);
-      applyRiverVis(map);   // includes label visibility
+      applyRiverVis(map);   // includes label + boundary-label visibility
+      applyGraticuleVis(map);
+      applyReliefVis(map);
+      applyLakeVis(map);
+      applyAutoZoomLayers(map);   // saves made in the automatic state keep it
     };
     if (map.style && map.style._loaded) run();
     else map.once('style.load', run);
   },
 
-  // Toggle one of 'globe' | 'greyOn' | 'riversOn' | 'labelsOn'; returns new value.
+  // Toggle one of 'globe' | 'greyOn' | 'riversOn' | 'riverLabelsOn' | 'labelsOn'
+  // (water names) | 'countriesOn' | 'countryLabelsOn' | 'statesOn' |
+  // 'stateLabelsOn' | 'graticuleOn'; returns the new value.
   toggle(map, key) {
+    // A manual Graticule/States/Countries choice ends the automatic zoom state for good.
+    if (key === 'graticuleOn' || key === 'statesOn' || key === 'countriesOn') state.autoZoomLayers = false;
     state[key] = !state[key];
+    // A layer's NAMES follow the layer, with MEMORY (Maddy 2026-09-15):
+    // layer off → its names go off; layer back on → the names return to
+    // whatever they were BEFORE the layer went off (names the user had
+    // switched off stay off until they switch them on). Minor Lakes has no
+    // own label key (lake names filter by MAJOR_LAKE_NAMES); water names have
+    // no single layer.
+    const PAIRED_LABEL = { riversOn: 'riverLabelsOn', countriesOn: 'countryLabelsOn', statesOn: 'stateLabelsOn' };
+    const lab = PAIRED_LABEL[key];
+    if (lab) {
+      state._labelBeforeOff = state._labelBeforeOff || {};
+      if (!state[key]) { state._labelBeforeOff[lab] = state[lab]; state[lab] = false; }
+      else state[lab] = lab in state._labelBeforeOff ? state._labelBeforeOff[lab] : true;
+    }
     if (key === 'globe') applyProjection(map);
     else if (key === 'greyOn') applyGrey(map);
     else if (key === 'riversOn') applyRiverVis(map);
-    else applyLabelVis(map);
+    else if (key === 'countriesOn' || key === 'statesOn' ||
+             key === 'countryLabelsOn' || key === 'stateLabelsOn') applyBoundaryVis(map);
+    else if (key === 'graticuleOn') applyGraticuleVis(map);
+    else if (key === 'reliefOn') applyReliefVis(map);
+    else if (key === 'minorLakesOn') applyLakeVis(map);
+    else if (key === 'layersGroupOn') { applyRiverVis(map); applyGraticuleVis(map); applyReliefVis(map); applyLakeVis(map); }
+    else applyLabelVis(map);   // labelsGroupOn and every *LabelsOn key
     return state[key];
   },
 
@@ -1155,7 +1613,15 @@ const MLB = {
       map.setPaintProperty('rivers-texture', 'line-width', 0.6 * k);
     if (map.getLayer('graticule'))
       map.setPaintProperty('graticule', 'line-width',
-        ['case', ['==', ['get', 'eq'], 1], 1.5 * k, 0.75 * k]);
+        ['case', ['==', ['get', 'eq'], 1], 1.8 * k, 1.2 * k]);   // keep in sync w/ style (dotted)
+    // Boundaries
+    COUNTRY_LINES.forEach(id => map.getLayer(id) && map.setPaintProperty(id, 'line-width', 1.4 * k));
+    STATE_LINES.forEach(id => map.getLayer(id) && map.setPaintProperty(id, 'line-width', 1.0 * k));
+    // Country sizes are per-feature (placement engine bakes in pageScale) —
+    // only the halo is set here; re-place so the sizes pick up the new k.
+    if (map.getLayer('country-labels')) map.setPaintProperty('country-labels', 'text-halo-width', 1.6 * k);
+    if (map._bndRefresh) map._bndRefresh();
+    T('state-labels',   ['interpolate', ['linear'], ['zoom'], 4, 8, 7, 10.5], 1.4);   // keep in sync w/ style
   },
 
   // Resolves when the map is fully rendered; safe to call while already idle.
@@ -1284,7 +1750,7 @@ const MLB = {
       // VIGNETTES must hide too: their soft water-glow radiates past the true
       // coastline and classifies as water, standing the fill/shade masks off
       // every coast and haloing small lakes (misaligned clip edges).
-      const hideIds = ['relief', 'graticule', 'mf-shades', ...VIGNETTES, ...symbolIds];
+      const hideIds = ['relief', 'graticule', 'mf-shades', ...VIGNETTES, ...BOUNDARY_LINES, ...symbolIds];
       const prev = {};
       hideIds.forEach(id => {
         if (!map.getLayer(id)) return;
@@ -1298,7 +1764,11 @@ const MLB = {
       // The captured visibility can be stale: if toggles/marineDynOnly changed
       // while this pass was in flight, restoring `prev` would resurrect layers
       // that should be hidden. State is truth — re-assert after every restore.
+      // Graticule + relief too: the automatic zoom state flips the graticule on
+      // moveend, the same moment this pass runs, so a stale `prev` could undo it.
       applyRiverVis(map);
+      applyGraticuleVis(map);
+      applyReliefVis(map);
       await MLB.awaitIdle(map);   // restored layers repainted BEFORE unfreezing
       return snap;
     } finally {

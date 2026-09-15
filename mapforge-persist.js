@@ -187,7 +187,7 @@ function restoreProject(data) {
   if (!data || !data.map) { alert('That file is not a valid ' + APP_NAME + ' map.'); return; }
   pendingRestore = data;
   const m = data.map;
-  if (m.kind === 'maplibre') { restoreLiveMap(m); return; }
+  if (m.kind === 'maplibre') { busyWrap('Spinning…', () => restoreLiveMap(m), { immediate: true, solid: true }); return; }
   if (m.kind === 'blob') { restoreStoredImageMap(m); return; }
   // An inlined picture (a .mapforge file, or a save made without the image
   // store): adopt it into the store so this machine gets the smaller form from
@@ -234,6 +234,9 @@ async function restoreLiveMap(m) {
   currentMapSrc = null;
   currentFrameInset = 0;
   document.body.classList.add('live-base');
+  // Reveal the desk NOW so the busy veil is what the student watches — hiding
+  // the start screen only at the end left a frozen-looking home page.
+  dismissStartScreen();
   sizeLiveLayout();                        // free layout; annotations are geo-anchored
   if (!mlMap) { mlMap = MLB.create(document.getElementById('ml-map')); mlRevealOnIdle(); }
   else { MLB.unlockView(mlMap); mlMap.resize(); }
@@ -389,7 +392,9 @@ function refreshCurrentSaveThumb() {
   if (!_currentSaveName || typeof makeSaveThumbAsync !== 'function') return;
   const name = _currentSaveName;
   makeSaveThumbAsync(thumb => {
-    if (typeof _expProgress === 'function') _expProgress(null);
+    // Never clear the progress UI while an EXPORT owns it — an autosave thumb
+    // landing mid-export hid the globe between stages (the "flashes twice").
+    if (typeof _expProgress === 'function' && !(typeof _exporting !== 'undefined' && _exporting)) _expProgress(null);
     if (!thumb) return;
     const saves = loadSavesIndex();
     const i = saves.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
@@ -409,7 +414,7 @@ function saveCurrentProject() {
   if (typeof _expProgress === 'function') {
     _expProgress('Saving map…');
     clearTimeout(saveCurrentProject._pt);
-    saveCurrentProject._pt = setTimeout(() => _expProgress(null), 4000);
+    saveCurrentProject._pt = setTimeout(() => { if (!_exporting) _expProgress(null); }, 4000);
   }
   const input = document.getElementById('save-name-input');
   const name  = (input.value || '').trim() || mapTitle || 'Untitled map';
@@ -736,7 +741,7 @@ function quickSave() {
       if (typeof _expProgress === 'function') {
         _expProgress('Saving map…');
         clearTimeout(quickSave._pt);
-        quickSave._pt = setTimeout(() => _expProgress(null), 4000);
+        quickSave._pt = setTimeout(() => { if (!_exporting) _expProgress(null); }, 4000);
       }
       writeNamedSave(saves[i].name, saves, i, { quiet: true });
       flashSaved();               // the modal's status line isn't visible here
@@ -1034,6 +1039,14 @@ function renderHomeSavesPanel() {
     .sort((a, b) => (b.s.savedAt || 0) - (a.s.savedAt || 0));
   ul.innerHTML = '';
   if (!saves.length) { wrap.style.display = 'none'; return; }
+  // Scroll cues: the count says how many exist; a bottom fade (CSS
+  // .more-below) says the list continues past what's visible.
+  const title = document.getElementById('ss-saves-title');
+  if (title) title.innerHTML = 'Saved Maps <span class="ss-saves-count">(' + saves.length + ')</span>';
+  const updMore = () => ul.classList.toggle('more-below',
+    ul.scrollTop + ul.clientHeight < ul.scrollHeight - 2);
+  ul.onscroll = updMore;
+  requestAnimationFrame(updMore);
   saves.forEach(({ s, i }) => {
     const li = document.createElement('li');
     li.className = 'ss-save-item';

@@ -1769,6 +1769,11 @@ function drawAnalyticShade(stc, s) {
 const SHADE_SPACING = 6;
 let landMaskCanvas  = null;
 let shadeTmpCanvas  = null;
+// Political-boundary FLOOD BARRIERS (2026-09-19): the classification pass
+// renders visible country/state lines in magenta; those pixels land here as
+// opaque black and are overlaid onto the fill tool's flood source only — the
+// land/shade masks never see them (a border is not water, shades cross it).
+let boundaryMaskCanvas = null;
 
 // ── Fill tool ────────────────────────────────────────────────────────────────
 let fillCanvas = null;  // off-screen layer rendered between base map and shade
@@ -1805,6 +1810,9 @@ function buildFillSourceCanvas(oceanMode) {
     // would stop fills at every mountain range. The mask keeps water, coasts,
     // and rivers as barriers (they classify as water) with uniform land.
     tx.drawImage(landMaskCanvas, 0, 0, W, H);
+    // Visible country/state borders are barriers too — fill one state at a
+    // time. Flood-source only: the land/shade masks stay border-free.
+    if (boundaryMaskCanvas) tx.drawImage(boundaryMaskCanvas, 0, 0, W, H);
   }
   else tx.drawImage(img, 0, 0);
   // Overlay any drawn line or feature stamps — these act as additional boundaries
@@ -2058,6 +2066,38 @@ function drawOneVectorShade(target, s) {
 // Vector fills: project + path-fill directly, every frame. Cheap (a few ms
 // even for continental rings), so fills stay glued through pans, zooms, and
 // projection morphs with zero lag or settle-snap.
+// Committed vector fills as geojson features for the native mf-fills map
+// layer (below coasts/borders/labels — names stay readable over a fill).
+// A flood region is one connected blob: exactly one exterior ring plus holes,
+// so the largest ring is the exterior and the rest nest inside it.
+function buildFillPolygonFeatures() {
+  if (baseMode !== 'live' || !mlMap) return [];
+  const ringArea = r => {
+    let a = 0;
+    for (let i = 0; i < r.length; i++) {
+      const p = r[i], q = r[(i + 1) % r.length];
+      a += p[0] * q[1] - q[0] * p[1];
+    }
+    return Math.abs(a);
+  };
+  const feats = [];
+  for (const s of stamps) {
+    if (s.type !== 'fill' || !s.geoRings || !s.geoRings.length) continue;
+    const rings = s.geoRings
+      .filter(r => r.length > 2)
+      .map(r => {   // geojson rings must close
+        const a = r[0], z = r[r.length - 1];
+        return (a[0] === z[0] && a[1] === z[1]) ? r : [...r, a];
+      })
+      .sort((a, b) => ringArea(b) - ringArea(a));
+    if (!rings.length) continue;
+    feats.push({ type: 'Feature',
+      properties: { color: s.color, style: s.fillStyle || 'solid' },
+      geometry: { type: 'Polygon', coordinates: rings } });
+  }
+  return feats;
+}
+
 function drawVectorFills(target, filter) {
   for (const s of stamps) {
     if (s.type !== 'fill' || !s.geoRings || s._hidden) continue;
@@ -2139,6 +2179,34 @@ function buildLandMask(srcImg) {
     if (isDark || isWater || isBlocked) { px[i]=px[i+1]=px[i+2]=0; px[i+3]=0; }
     else                                { px[i]=px[i+1]=px[i+2]=255; px[i+3]=255; }
   }
+  mx.putImageData(id, 0, 0);
+  return mc;
+}
+
+// Lift the classification pass's magenta boundary ink (visible country/state
+// lines, rendered solid + widened for this exact purpose) into an opaque-black
+// barrier layer for the FILL flood source. Kept separate from the land mask on
+// purpose: a border is not water — shades must cross it, and the per-frame
+// fill/coast clipping must not punch seams along it. Magenta cannot occur in
+// the base map palette (creams, blues, greys), so the key never false-hits.
+function buildBoundaryMask(srcImg) {
+  const mc = document.createElement('canvas');
+  mc.width  = srcImg.width;
+  mc.height = srcImg.height;
+  const mx = mc.getContext('2d');
+  mx.drawImage(srcImg, 0, 0);
+  const id = mx.getImageData(0, 0, mc.width, mc.height), px = id.data;
+  let any = false;
+  for (let i = 0; i < px.length; i += 4) {
+    // Core magenta only (anti-aliased fringe stays land): the barrier band is
+    // ~2.5 css px wide, so the pure core is plenty to seal a flood.
+    if (px[i] > 180 && px[i+2] > 180 && px[i+1] < 100) {
+      px[i] = px[i+1] = px[i+2] = 0; px[i+3] = 255; any = true;
+    } else {
+      px[i] = px[i+1] = px[i+2] = 0; px[i+3] = 0;
+    }
+  }
+  if (!any) return null;   // boundaries hidden (or out of zoom): no overlay at all
   mx.putImageData(id, 0, 0);
   return mc;
 }
@@ -3360,6 +3428,7 @@ async function _refreshLiveSnapshotInner() {
     mlSnapshotCanvas = c;
   }
   landMaskCanvas = buildLandMask(mlSnapshotCanvas);
+  boundaryMaskCanvas = buildBoundaryMask(mlSnapshotCanvas);
   // Shade-only mask: dilate the LAND by ~2px so anti-aliased halo pixels along
   // rivers/coasts (which classify as water) don't leave unshaded outlines.
   // Fills keep the RAW mask — thin river lines must survive as barriers.
@@ -3794,6 +3863,7 @@ function dismissStartScreen() {
 
 function resetAnnotations() {
   onmapKeyXPct = 2; onmapKeyYPct = 2;    // fresh maps: key defaults upper-left
+  window._mfFillSig = null;   // force a fresh mf-fills push on the next redraw
   stamps.length = 0;
   textBoxes.forEach(tb => tb.el.remove());
   textBoxes.length = 0;
@@ -4054,27 +4124,43 @@ function redraw(preview) {
   // is corrected at the next settle); a full recompute happens only when the
   // content or the settled view actually changes (markLiveRasterDirty()).
   if (baseMode === 'live') {
-    // Vector fills render via a buffer so the CURRENT land mask can re-clip
-    // their coast edges each frame (fill rings carry creation-tier coastline
-    // resolution; the live mask supplies the displayed tier's detail).
-    if (!window._vfillBuf) window._vfillBuf = document.createElement('canvas');
-    const vb = window._vfillBuf;
-    if (vb.width !== canvas.width || vb.height !== canvas.height) {
-      vb.width = canvas.width; vb.height = canvas.height;
+    if (mlMap && MLB.setFillFeatures) {
+      // Committed vector fills live in the NATIVE mf-fills map layer (below
+      // coasts, borders, and every label — names stay readable over a fill;
+      // 2026-09-19, same architecture as the shade 'ml' engine). Geometry is
+      // view-independent: push only when the fill set changes.
+      const vf = stamps.filter(s => s.type === 'fill' && s.geoRings && s.geoRings.length);
+      const sig = vf.map(s => s.geoRings[0][0] + '' + s.color +
+                              (s.fillStyle || 'solid') + (s.clip || 'land') +
+                              s.geoRings.length).join('|');
+      if (sig !== window._mfFillSig) {
+        window._mfFillSig = sig;
+        MLB.setFillFeatures(mlMap, buildFillPolygonFeatures());
+      }
+    } else {
+      // Fallback (no native layer): vector fills render via a buffer so the
+      // CURRENT land mask can re-clip their coast edges each frame (fill rings
+      // carry creation-tier coastline resolution; the live mask supplies the
+      // displayed tier's detail).
+      if (!window._vfillBuf) window._vfillBuf = document.createElement('canvas');
+      const vb = window._vfillBuf;
+      if (vb.width !== canvas.width || vb.height !== canvas.height) {
+        vb.width = canvas.width; vb.height = canvas.height;
+      }
+      const vbc = vb.getContext('2d');
+      vbc.clearRect(0, 0, vb.width, vb.height);
+      drawVectorFills(vbc, s => s.clip !== 'ocean');
+      const clsFresh = typeof isClsStale === 'function' && !isClsStale() && landMaskCanvas;
+      if (clsFresh) {
+        vbc.globalCompositeOperation = 'destination-in';
+        vbc.drawImage(landMaskCanvas, 0, 0, vb.width, vb.height);
+        vbc.globalCompositeOperation = 'source-over';
+      }
+      // Ocean fills bound themselves to the water at flood time — the land
+      // mask would erase them, so they draw after it.
+      drawVectorFills(vbc, s => s.clip === 'ocean');
+      ctx.drawImage(vb, 0, 0);
     }
-    const vbc = vb.getContext('2d');
-    vbc.clearRect(0, 0, vb.width, vb.height);
-    drawVectorFills(vbc, s => s.clip !== 'ocean');
-    const clsFresh = typeof isClsStale === 'function' && !isClsStale() && landMaskCanvas;
-    if (clsFresh) {
-      vbc.globalCompositeOperation = 'destination-in';
-      vbc.drawImage(landMaskCanvas, 0, 0, vb.width, vb.height);
-      vbc.globalCompositeOperation = 'source-over';
-    }
-    // Ocean fills bound themselves to the water at flood time — the land
-    // mask would erase them, so they draw after it.
-    drawVectorFills(vbc, s => s.clip === 'ocean');
-    ctx.drawImage(vb, 0, 0);
     // Legacy flood rasters keep the translate cache (recompute = full flood);
     // SHADE renders live every frame — the screen-space translate was flat-map
     // math and smeared/lagged badly on the globe. Shade is just circle fills +

@@ -1501,6 +1501,82 @@ const MLB = {
     if (map.style && map.style._loaded) apply(); else map.once('style.load', apply);
   },
 
+  // Fills as a native fill layer (2026-09-19, same architecture as the shade
+  // 'ml' engine above): committed fill polygons live INSIDE the map, inserted
+  // beneath the coastlines — so rivers, lakes, boundary lines, and every name
+  // label render on top of the fill instead of being painted over. The canvas
+  // engine keeps rendering legacy (pre-vectorization) flood fills only.
+  setFillFeatures(map, features) {
+    const dpr = (typeof devicePixelRatio !== 'undefined' && devicePixelRatio) || 1;
+    // Pattern sprites: same ids + same tile generation as the shade layer's
+    // ensurePattern, so a stripe fill and a stripe shade share one image.
+    const ensurePattern = (style, color) => {
+      const id = 'mfpat-' + style + '-' + color;
+      if (map.hasImage && map.hasImage(id)) return id;
+      const light42 = blendHex(color, '#ffffff', 0.42);
+      const light52 = blendHex(color, '#ffffff', 0.52);
+      const t = document.createElement('canvas');
+      const tc2 = t.getContext('2d');
+      if (style === 'speckle') {
+        const N = 22; t.width = t.height = N;
+        tc2.fillStyle = color;
+        [[3,4],[11,2],[18,6],[6,10],[14,12],[2,16],[10,19],[19,15],[16,20],[7,15]].forEach(([x,y],i) => {
+          tc2.beginPath(); tc2.arc(x, y, i % 3 === 0 ? 1.4 : 1.0, 0, Math.PI * 2); tc2.fill();
+        });
+      } else if (style === 'stripe') {
+        const W = 24, N = W * 2;
+        t.width = t.height = N;
+        tc2.fillStyle = color; tc2.fillRect(0, 0, N, N);
+        tc2.fillStyle = light42;
+        tc2.beginPath(); tc2.moveTo(0, 0); tc2.lineTo(W, 0); tc2.lineTo(0, W); tc2.closePath(); tc2.fill();
+        tc2.beginPath(); tc2.moveTo(W, N); tc2.lineTo(N, N); tc2.lineTo(N, W); tc2.closePath(); tc2.fill();
+      } else {
+        const SP = 14; t.width = t.height = SP;
+        tc2.fillStyle = light52; tc2.fillRect(0, 0, SP, SP);
+        tc2.strokeStyle = color; tc2.lineWidth = 1.5; tc2.lineCap = 'round';
+        const cx = SP / 2, cy = SP / 2, r = 4;
+        tc2.beginPath(); tc2.moveTo(cx - r, cy); tc2.lineTo(cx + r, cy);
+        tc2.moveTo(cx, cy - r); tc2.lineTo(cx, cy + r); tc2.stroke();
+      }
+      map.addImage(id, tc2.getImageData(0, 0, t.width, t.height), { pixelRatio: dpr });
+      return id;
+    };
+    features.forEach(f => {
+      if (f.properties.style && f.properties.style !== 'solid')
+        f.properties.pat = ensurePattern(f.properties.style, f.properties.color);
+    });
+    const data = { type: 'FeatureCollection', features };
+    const apply = () => {
+      if (!map.getSource('mf-fills')) {
+        // Below the lowest coast layer: above land + relief (a fill covers the
+        // hillshade, as it always has), below every water line, border, label.
+        const before = map.getLayer('coast-110m') ? 'coast-110m' : undefined;
+        map.addSource('mf-fills', { type: 'geojson', data });
+        map.addLayer({ id: 'mf-fills', type: 'fill', source: 'mf-fills',
+          filter: ['==', ['get', 'style'], 'solid'],
+          paint: { 'fill-color': ['get', 'color'] } }, before);
+        map.addLayer({ id: 'mf-fills-pat', type: 'fill', source: 'mf-fills',
+          filter: ['!=', ['get', 'style'], 'solid'],
+          paint: { 'fill-pattern': ['get', 'pat'] } }, before);
+        // Solid fills get a same-color outline: the flood stops at the edge of
+        // the (wider) classification barrier, so the traced ring sits a
+        // hairline short of the border ink — the stroke closes that gap and
+        // smooths the pixel-lattice trace. Pattern fills go without (their
+        // ground is open; an outline would draw a border that isn't there).
+        map.addLayer({ id: 'mf-fills-line', type: 'line', source: 'mf-fills',
+          filter: ['==', ['get', 'style'], 'solid'],
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': ['get', 'color'], 'line-width': 1.5 } }, before);
+      } else {
+        map.getSource('mf-fills').setData(data);
+      }
+      ['mf-fills', 'mf-fills-pat', 'mf-fills-line'].forEach(id => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'visible');
+      });
+    };
+    if (map.style && map.style._loaded) apply(); else map.once('style.load', apply);
+  },
+
   lockView(map) { HANDLERS.forEach(h => map[h] && map[h].disable()); },
   unlockView(map) { HANDLERS.forEach(h => map[h] && map[h].enable()); },
 
@@ -1750,15 +1826,41 @@ const MLB = {
       // VIGNETTES must hide too: their soft water-glow radiates past the true
       // coastline and classifies as water, standing the fill/shade masks off
       // every coast and haloing small lakes (misaligned clip edges).
-      const hideIds = ['relief', 'graticule', 'mf-shades', ...VIGNETTES, ...BOUNDARY_LINES, ...symbolIds];
+      const hideIds = ['relief', 'graticule', 'mf-shades',
+                       'mf-fills', 'mf-fills-pat', 'mf-fills-line',   // committed fills must never classify
+                       ...VIGNETTES, ...symbolIds];
       const prev = {};
       hideIds.forEach(id => {
         if (!map.getLayer(id)) return;
         prev[id] = map.getLayoutProperty(id, 'visibility') || 'visible';
         map.setLayoutProperty(id, 'visibility', 'none');
       });
+      // BOUNDARY LINES stay in the pass, restyled as BARRIERS (2026-09-19):
+      // hidden they can't stop the fill tool, and as-styled they can't either —
+      // state lines are too light to classify and disputed borders are dashed
+      // (a flood walks straight through the gaps). Repaint every VISIBLE
+      // boundary layer solid magenta and a bit wider: buildLandMask reads
+      // magenta as LAND (shade/land masks unchanged — Maddy's seam fix holds),
+      // and the app lifts those pixels into a separate flood-barrier mask.
+      // Hidden boundary layers stay hidden — invisible borders block nothing.
+      const bPrev = {};
+      const BARRIER_PAINT = { 'line-color': '#FF00FF', 'line-width': 2.5,
+                              'line-dasharray': [1, 0] };
+      BOUNDARY_LINES.forEach(id => {
+        if (!map.getLayer(id)) return;
+        if ((map.getLayoutProperty(id, 'visibility') || 'visible') === 'none') return;
+        bPrev[id] = {};
+        Object.entries(BARRIER_PAINT).forEach(([p, v]) => {
+          bPrev[id][p] = map.getPaintProperty(id, p);
+          map.setPaintProperty(id, p, v);
+        });
+      });
       await MLB.awaitIdle(map);
       const snap = MLB.snapshotToCanvas(map);
+      Object.entries(bPrev).forEach(([id, props]) => {
+        if (!map.getLayer(id)) return;
+        Object.entries(props).forEach(([p, v]) => map.setPaintProperty(id, p, v));
+      });
       Object.entries(prev).forEach(([id, v]) =>
         map.setLayoutProperty(id, 'visibility', v));
       // The captured visibility can be stale: if toggles/marineDynOnly changed

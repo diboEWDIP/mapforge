@@ -1706,25 +1706,29 @@ body.live-base:not(.live-explore) #credit-box { display: block; }
 }
 /* ── Text boxes ── */
 .text-box { position: absolute; pointer-events: auto; transform-origin: center center; user-select: none; }
+/* Label chrome sizes multiply by --tbk (set in applyDocZoom, = 1/page-scale)
+   so the rotate handle, its stem, and the selection border render at a
+   CONSTANT SCREEN size — on a fit-zoomed live page the raw 14px handle
+   shrank to a ~5px dot nobody could find or grab. */
 .tb-rotate-line {
   position: absolute;
   left: 50%;
   bottom: 100%;
   transform: translateX(-50%);
-  width: 1px;
-  height: 22px;
+  width: max(1px, calc(1.5px * var(--tbk, 1)));
+  height: calc(22px * var(--tbk, 1));
   background: #4a6fa5;
   display: none;
 }
 .tb-rotate-handle {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 22px);
+  bottom: calc(100% + 22px * var(--tbk, 1));
   transform: translateX(-50%);
-  width: 14px;
-  height: 14px;
+  width: calc(14px * var(--tbk, 1));
+  height: calc(14px * var(--tbk, 1));
   background: #fff;
-  border: 2px solid #4a6fa5;
+  border: calc(2px * var(--tbk, 1)) solid #4a6fa5;
   border-radius: 50%;
   cursor: grab;
   display: none;
@@ -1737,7 +1741,7 @@ body.live-base:not(.live-explore) #credit-box { display: block; }
   outline: none;
   padding: 2px 5px;
   min-width: 10px;
-  border: 2px dashed transparent;
+  border: calc(2px * var(--tbk, 1)) dashed transparent;
   cursor: move;
   line-height: 1.3;
 }

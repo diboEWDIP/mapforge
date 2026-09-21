@@ -3087,19 +3087,27 @@ let mlDocZoom = 1, mlDocTx = 0, mlDocTy = 0;
 let mlFitScale = 1;   // CSS scale fitting the paper-space canvas into the window
 function applyDocZoom() {
   const wrapper = document.getElementById('map-wrapper');
+  // Text-label CHROME (rotate handle/stem, selection border) counter-scales
+  // by --tbk so it stays a constant SCREEN size: the wrapper transform shrinks
+  // a fit-zoomed live page to ~1/3, which left the rotate handle a ~5px dot
+  // nobody could see or grab (Eric, 2026-09-20). Content still scales — only
+  // the chrome is pinned.
+  let s = 1;
   // Live maps scale in BOTH modes now: explore renders on the paper's true
   // pixels and the window fits it, exactly like the locked page.
   if (baseMode === 'live') {
-    const s = mlFitScale * mlDocZoom;
+    s = mlFitScale * mlDocZoom;
     wrapper.style.transform =
       'translate(' + mlDocTx + 'px,' + mlDocTy + 'px) scale(' + s + ')';
   } else if (baseMode !== 'live' && hasBase() && (mlDocZoom !== 1 || mlDocTx || mlDocTy)) {
     // Image maps: same paper-zoom, fit scale is simply 1 (CSS already fits).
+    s = mlDocZoom;
     wrapper.style.transform =
       'translate(' + mlDocTx + 'px,' + mlDocTy + 'px) scale(' + mlDocZoom + ')';
   } else {
     wrapper.style.transform = '';
   }
+  wrapper.style.setProperty('--tbk', (1 / (s || 1)).toFixed(4));
 }
 function clampDocPan() {
   // In pan mode the page may slide on the desk even at fit zoom — allow up

@@ -1694,13 +1694,17 @@ body.live-base:not(.live-explore) #credit-box { display: block; }
   border-color: #c8a030;
   color: #fff;
 }
-/* Text overlay sits exactly over the canvas */
+/* Text overlay sits exactly over the canvas.
+   z-index 2 is LOAD-BEARING: live maps give #map-canvas z-index 1, and with
+   no z-index here the canvas hit-tested ABOVE every label — real clicks could
+   never reach a label on a live map (Eric, 2026-09-20). */
 #text-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  z-index: 2;
   pointer-events: none;
   overflow: visible;
 }

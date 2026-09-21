@@ -4494,6 +4494,10 @@ function bindTBEvents(tb, rotateHandle, content) {
     dragging = true; dragStartX = e.clientX; dragStartY = e.clientY;
     origXPct = tb.xPct; origYPct = tb.yPct;
     gestureBefore = snapshotTB(tb);
+    // SELECT tool: manipulate, don't edit — suppress the contenteditable
+    // caret so a click means select/move/rotate. The Text tool (or no tool)
+    // still drops the caret for editing.
+    if (activeStamp === 'select') e.preventDefault();
     e.stopPropagation();
   });
 

@@ -1739,7 +1739,9 @@ body.live-base:not(.live-explore) #credit-box { display: block; }
   font-family: 'Jost', Georgia, serif;
   white-space: nowrap;
   outline: none;
-  padding: 2px 5px;
+  /* Padding counter-scales too: it is the label's CLICK TARGET, and at fit
+     zoom the raw 2px/5px shrank the hit strip to the bare glyphs. */
+  padding: calc(2px * var(--tbk, 1)) calc(5px * var(--tbk, 1));
   min-width: 10px;
   border: calc(2px * var(--tbk, 1)) dashed transparent;
   cursor: move;

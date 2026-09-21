@@ -4423,9 +4423,19 @@ function selectTB(tb) {
 
 function deselectTB() {
   if (!selectedTB) return;
-  selectedTB.el.classList.remove('selected');
-  selectedTB.el.querySelector('.tb-content').blur();
+  const tb = selectedTB;
+  tb.el.classList.remove('selected');
+  tb.el.querySelector('.tb-content').blur();
   selectedTB = null;
+  // An EMPTY label evaporates on deselect, its placement undo entry with it:
+  // the text tool drops a fresh editable box on every canvas click, so
+  // clicking away from one otherwise banks an invisible ghost box (they
+  // accumulated silently before selection survived creation, 2026-09-20).
+  if (!tb.el.querySelector('.tb-content').textContent.trim()) {
+    const top = undoLog[undoLog.length - 1];
+    if (top && top.kind === 'textbox' && top.id === tb.id) undoLog.pop();
+    removeTB(tb);
+  }
   updateRow2Controls(textToolOn ? 'text' : (activeStamp || 'select'));
   redraw();               // repaint the canvas copy of the label
 }
@@ -5082,6 +5092,11 @@ canvas.addEventListener('mousedown', e => {
                   { ...(typed.trim() ? { text: typed.trim() } : {}),
                     fontStyle: lpFontStyle, fontFamily: lpFontFamily,
                     fontSize: currentFontSize, color: lpColor });
+    // The creating click must not reach the document-level outside-click
+    // deselect: it would strip the NEW box's selection mid-gesture (focus
+    // came back async, so typing worked — but the chrome and rotate handle
+    // never showed; Eric, 2026-09-20).
+    e.stopPropagation();
     return;
   }
   if (!activeStamp) return;   // no tool selected → canvas clicks do nothing

@@ -500,9 +500,13 @@ async function exportPaperImage() {
   flashExportStatus('Downloaded PNG.');
 }
 
-// Print via a hidden same-page iframe: the user never leaves the app — the
-// progress overlay runs here, then the browser's print dialog appears over
-// the app when the page is ready. No popup, no blank tab, no popup blockers.
+// Print by swapping the MAIN document into a one-page sheet with print-media
+// CSS: on screen nothing changes; for the print snapshot the app hides and
+// only the sheet renders. The user never leaves the app — no popup, no blank
+// tab, no popup blockers. NO hidden iframe: Safari's print snapshot renders a
+// visibility:hidden iframe as a BLANK PAGE (WebKit; Eric's Safari PDF bug,
+// 2026-09-19) — the top document prints reliably in every browser, and the
+// PDF filename comes straight from the (swapped) document title.
 async function printExport() {
   if (!ensureMapLoaded()) return;
   let page;
@@ -517,40 +521,52 @@ async function printExport() {
   const landscape = page.width > page.height;
   const blobUrl = await new Promise((res, rej) =>
     page.toBlob(b => b ? res(URL.createObjectURL(b)) : rej(new Error('toBlob failed')), 'image/png'));
-  let fr = document.getElementById('print-frame');
-  if (fr) fr.remove();                     // fresh frame per print
-  fr = document.createElement('iframe');
-  fr.id = 'print-frame';
-  fr.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;visibility:hidden;';
-  document.body.appendChild(fr);
-  const fd = fr.contentDocument;
-  fd.title = exportBaseName();
-  const st = fd.createElement('style');
+  ['print-sheet', 'print-style'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.remove();                   // fresh sheet per print
+  });
+  const st = document.createElement('style');
+  st.id = 'print-style';
   const sizeDecl = (page._pwIn && page._phIn)
     ? page._pwIn + 'in ' + page._phIn + 'in'
     : (exportPaper === 'a4' ? 'A4' : 'Letter') + ' ' + (landscape ? 'landscape' : 'portrait');
   st.textContent =
     '@page{ size:' + sizeDecl + '; margin:0; }' +
-    'html,body{ margin:0; padding:0; } img{ display:block; width:100%; height:100%; object-fit:contain; }';
-  fd.head.appendChild(st);
-  const img = fd.createElement('img');
-  img.onload = () => setTimeout(() => {
-    // Chrome's "Save as PDF" default filename comes from the TOP document's
-    // title, not the print iframe's (Maddy 2026-09-15: PDF kept the app name).
-    // Swap the app title to the map's name for the dialog, then restore it.
-    const appTitle = document.title;
-    document.title = exportBaseName();
-    let restored = false;
-    const restore = () => { if (restored) return; restored = true; document.title = appTitle; };
-    fr.contentWindow.addEventListener('afterprint', restore);
-    window.addEventListener('afterprint', restore, { once: true });
-    try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) {}
-    setTimeout(restore, 60000);            // backstop if afterprint never fires
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
-  }, 150);
+    // Media-scoped, not inline display:none — an element hidden only for
+    // screen still renders in print media, which is the whole trick.
+    '@media screen{ #print-sheet{ display:none; } }' +
+    '@media print{' +
+    '  body > :not(#print-sheet){ display:none !important; }' +
+    // Fixed + zero flow content = exactly one page, the sheet painted on it.
+    '  #print-sheet{ display:block; position:fixed; left:0; top:0; width:100%; height:100%; }' +
+    '  #print-sheet img{ display:block; width:100%; height:100%; object-fit:contain; }' +
+    '}';
+  const sheet = document.createElement('div');
+  sheet.id = 'print-sheet';
+  const img = document.createElement('img');
   img.src = blobUrl;
-  fd.body.appendChild(img);
+  sheet.appendChild(img);
+  document.head.appendChild(st);
+  document.body.appendChild(sheet);
+  // Decoded BEFORE the snapshot — Safari otherwise captures a not-yet-painted
+  // image as white. decode() rejects on some engines; fall back to onload.
+  try { await img.decode(); }
+  catch (e) { await new Promise(r => { img.onload = r; setTimeout(r, 1500); }); }
+  const appTitle = document.title;
+  document.title = exportBaseName();       // the PDF's default filename
+  let done = false;
+  const cleanup = () => {
+    if (done) return; done = true;
+    document.title = appTitle;
+    sheet.remove(); st.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+  };
+  window.addEventListener('afterprint', cleanup, { once: true });
+  setTimeout(cleanup, 120000);             // backstop if afterprint never fires
   flashExportStatus('Print dialog opening — choose “Save as PDF” to make a handout.');
+  // Two rAFs: the sheet's layout must be committed before the snapshot.
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  try { window.print(); } catch (e) { cleanup(); }
 }
 
 // Standalone image of just the key — for slides / worksheets.

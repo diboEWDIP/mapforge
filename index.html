@@ -2904,8 +2904,12 @@ function pageAspectLayout(pw0, ph0, forceLandscape) {
 function updateMapNav() {
   // While locked to the frame, the map never takes the mouse — navigation
   // requires the explicit "Adjust View" unlock.
+  // The Text tool counts as a tool in hand even though it sets no activeStamp:
+  // it needs the annotation canvas to receive the click that stamps a label,
+  // so the map must NOT take the mouse while it is armed (Eric, 2026-09-22).
+  const _textArmed = typeof textToolOn !== 'undefined' && textToolOn;
   document.body.classList.toggle('map-nav',
-    baseMode === 'live' && !mlFrameLocked && (_spaceNav || !activeStamp));
+    baseMode === 'live' && !mlFrameLocked && (_spaceNav || (!activeStamp && !_textArmed)));
   // Bar tool states track the active tool
   const sel = document.getElementById('lm-select');
   if (sel) sel.classList.toggle('pill-on', activeStamp === 'select');
@@ -4223,18 +4227,26 @@ function redraw(preview) {
 
   drawTextBoxesToCanvas(ctx);
 
-  // Text-mode cursor ghost: the label (typed text or a placeholder) previews
-  // at the cursor so "click places a label" is visible before the click.
+  // Text-mode cursor ghost: the staged label previews at the cursor so
+  // "click stamps this label" is visible before the click. With nothing
+  // typed yet, the ghost TEACHES the workflow instead — clicking with an
+  // empty toolbar box places nothing (the click-and-type-in-place flow was
+  // removed 2026-09-22: the toolbar box is the one way to make a label).
   if (_ghostPos && !_exporting && typeof textToolOn !== 'undefined' && textToolOn && !activeStamp) {
-    const typed = ((document.getElementById('r2-label-input') || {}).value || '').trim() || 'Label';
+    const typed = ((document.getElementById('r2-label-input') || {}).value || '').trim();
     const sc2 = canvasScale();
     ctx.save();
     ctx.globalAlpha = 0.55;
-    ctx.font = (lpFontStyle === 'italic' ? 'italic ' : '') + (lpFontStyle === 'bold' ? '700 ' : '') +
-               (currentFontSize * sc2) + 'px ' + lpFamStack(lpFontFamily);
-    ctx.fillStyle = lpColor;
+    if (typed) {
+      ctx.font = (lpFontStyle === 'italic' ? 'italic ' : '') + (lpFontStyle === 'bold' ? '700 ' : '') +
+                 (currentFontSize * sc2) + 'px ' + lpFamStack(lpFontFamily);
+      ctx.fillStyle = lpColor;
+    } else {
+      ctx.font = 'italic ' + (13 * sc2) + 'px ' + lpFamStack('Jost');
+      ctx.fillStyle = '#8a7c66';
+    }
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(typed, _ghostPos.x, _ghostPos.y);
+    ctx.fillText(typed || 'Type a label in the toolbar…', _ghostPos.x, _ghostPos.y);
     ctx.restore();
   }
 
@@ -4347,7 +4359,10 @@ function createTextBox(xPct, yPct, opts, silent) {
   if (!_recreatingLabel) {
     redoStack.length = 0;
     selectedTB = tb;
-    setTimeout(() => content.focus(), 30);
+    // A label stamped WITH its text (toolbar click/drop) is finished — no
+    // editing caret. The delayed focus otherwise lands AFTER the caller's
+    // deselect and re-arms an invisible editor (2026-09-22).
+    if (!(opts && opts.text)) setTimeout(() => content.focus(), 30);
   }
   scheduleAutosave();
   return tb;
@@ -4766,6 +4781,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     const ae = document.activeElement;
     if (ae && ae.classList && ae.classList.contains('tb-content')) { ae.blur(); e.preventDefault(); return; }
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) { ae.blur(); e.preventDefault(); return; }
     if (typeof selectedFurniture !== 'undefined' && selectedFurniture) { deselectFurniture(); e.preventDefault(); return; }
     if (selectedTB)                                                { deselectTB(); e.preventDefault(); return; }
     if (selectedStampIdx != null || selectedArrowIdx != null)     { selectedStampIdx = null; selectedArrowIdx = null; redraw(); e.preventDefault(); return; }
@@ -4801,6 +4817,13 @@ document.addEventListener('keydown', e => {
 
   // While typing in a label, let the browser handle the keys (incl. Backspace).
   if (e.target && e.target.classList && e.target.classList.contains('tb-content')) return;
+  // Same for ANY text field — the toolbar's label box, size number, search….
+  // Backspace there edits TEXT; falling through to the map shortcuts deleted
+  // the still-selected label a teacher had just dropped (clearing "Yogi Bear"
+  // from the toolbar erased the map's Yogi Bear — Eric, 2026-09-22).
+  const _tag = e.target && e.target.tagName;
+  if (_tag === 'INPUT' || _tag === 'TEXTAREA' || _tag === 'SELECT' ||
+      (e.target && e.target.isContentEditable)) return;
 
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') { e.preventDefault(); redo(); return; }
   if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); undo(); return; }
@@ -5089,17 +5112,22 @@ canvas.addEventListener('mouseenter', e => {
 
 canvas.addEventListener('mousedown', e => {
   if (textToolOn && !activeStamp) {
+    // The toolbar box is the ONE way to make a label (Eric, 2026-09-22):
+    // type a name there, then each map click stamps it. An empty box stamps
+    // nothing — the cursor ghost shows the hint. (The old empty-click flow
+    // dropped a blank type-in-place label here.)
+    const typed = ((document.getElementById('r2-label-input') || {}).value || '').trim();
+    if (!typed) return;
     const r = canvas.getBoundingClientRect();
-    const typed = (document.getElementById('r2-label-input') || {}).value || '';
     createTextBox((e.clientX - r.left) / r.width * 100,
                   (e.clientY - r.top) / r.height * 100,
-                  { ...(typed.trim() ? { text: typed.trim() } : {}),
+                  { text: typed,
                     fontStyle: lpFontStyle, fontFamily: lpFontFamily,
                     fontSize: currentFontSize, color: lpColor });
-    // The creating click must not reach the document-level outside-click
-    // deselect: it would strip the NEW box's selection mid-gesture (focus
-    // came back async, so typing worked — but the chrome and rotate handle
-    // never showed; Eric, 2026-09-20).
+    // Stamped labels land DESELECTED: the toolbar stays a staging box for
+    // the next stamp, wired to nothing on the map — rotate/move/edit go
+    // through the Select and Text tools on the label itself.
+    deselectTB();
     e.stopPropagation();
     return;
   }
@@ -6038,6 +6066,7 @@ function setTextTool(on) {
   updateRow2Controls(on ? 'text' : (activeStamp || 'select'));
   syncTextCtrl();
   updateRailActive();
+  updateMapNav();   // hand the canvas the mouse so map clicks can stamp labels
 }
 // One text size, live everywhere: slider drag previews on the selected
 // label in real time; the number field takes exact values (8–200 doc px).
@@ -6753,6 +6782,9 @@ function lpSetFontStyle(fam, style) {
       const xPct = (e.clientX - oRect.left) / oRect.width  * 100;
       const yPct = (e.clientY - oRect.top)  / oRect.height * 100;
       createTextBox(xPct, yPct, { text, fontSize: lpFontSize, color: lpColor, fontStyle: lpFontStyle, fontFamily: lpFontFamily });
+      // Dropped labels land DESELECTED, same as click-stamped ones — the
+      // toolbar box stays wired to nothing on the map (Yogi Bear, 2026-09-22).
+      deselectTB();
     }
   });
 })();

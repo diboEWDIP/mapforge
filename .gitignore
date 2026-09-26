@@ -4,3 +4,9 @@ mapforge-author.js
 AUTHORING.md
 historical-borders/
 fetch-border-data.py
+# Local launcher: stays on the author's machine, never on the public site.
+# (The server binds loopback-only and is only useful next to mapforge-author.js.)
+Start MapForge.command
+Publish Changes.command
+mapforge-server.py
+.claude/

@@ -240,9 +240,12 @@
     e.stopPropagation();               // keep app-level shortcuts out of the search box
   });
 
-  // Student mode: remove the launcher button entirely.
+  // Student mode: remove the launcher button entirely (the rail button; the
+  // old Terrain-palette id is kept so a stale page can't leak it either).
   if (cfStudentMode()) {
-    const b = document.getElementById('btn-find-city');
-    if (b) b.remove();
+    ['rail-city', 'btn-find-city'].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) b.remove();
+    });
   }
 })();

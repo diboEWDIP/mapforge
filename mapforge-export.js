@@ -323,7 +323,14 @@ const MAP_BORDER = 3;         // neatline inset (map px) — shared by the compo
 // Wording per Maddy (2026-09-15). Live maps only — the Natural Earth line is
 // only true of them; PNG-library maps carry no credit box. Mirrored on the
 // editing page by #credit-box (index.html / mapforge.css).
-const EXPORT_CREDIT = 'Made in ' + (typeof APP_NAME !== 'undefined' ? APP_NAME : 'Maposaic') + ' with Natural Earth';
+// Pleiades (Find a City's ancient places) is CC BY — attribution is a license
+// term, so it is credited on every map, not just maps that used the tool
+// (Eric, 2026-09-25). The short URL is the Data Credits page, which carries
+// the full citations. Same string as #credit-box in index.html.
+const CREDITS_URL_SHORT = 'diboewdip.github.io/mapforge/credits';
+const CREDITS_URL = 'https://diboewdip.github.io/mapforge/credits.html';
+const EXPORT_CREDIT = 'Made in ' + (typeof APP_NAME !== 'undefined' ? APP_NAME : 'Maposaic') +
+                      ' · Data: Natural Earth, Pleiades · ' + CREDITS_URL_SHORT;
 const EXPORT_CREDIT_PT = 7;
 function drawExportCredit(ctx, mapW, mapH, inset) {
   if (baseMode !== 'live') return;
@@ -540,12 +547,26 @@ async function printExport() {
     // Fixed + zero flow content = exactly one page, the sheet painted on it.
     '  #print-sheet{ display:block; position:fixed; left:0; top:0; width:100%; height:100%; }' +
     '  #print-sheet img{ display:block; width:100%; height:100%; object-fit:contain; }' +
+    // Data-credits link as REAL text in the page's bottom margin (the page
+    // canvas bakes a white margin in), so "Save as PDF" keeps it clickable —
+    // the credit inside the map image is pixels and cannot link (Maddy's
+    // ask, 2026-09-25). Fixed, so it never adds a page.
+    '  #print-sheet .print-credit{ position:fixed; left:0; right:0; bottom:0.12in; text-align:center;' +
+    '    font:italic 500 7pt/1.2 Jost,Georgia,serif; color:#5c4a2a; }' +
+    '  #print-sheet .print-credit a{ color:#5c4a2a; text-decoration:none; }' +
     '}';
   const sheet = document.createElement('div');
   sheet.id = 'print-sheet';
   const img = document.createElement('img');
   img.src = blobUrl;
   sheet.appendChild(img);
+  const credit = document.createElement('div');
+  credit.className = 'print-credit';
+  const a = document.createElement('a');
+  a.href = CREDITS_URL;
+  a.textContent = 'Data credits and citations: ' + CREDITS_URL;
+  credit.appendChild(a);
+  sheet.appendChild(credit);
   document.head.appendChild(st);
   document.body.appendChild(sheet);
   // Decoded BEFORE the snapshot — Safari otherwise captures a not-yet-painted

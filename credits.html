@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Credits · Maposaic</title>
+<meta name="description" content="Every data source, library, and typeface used in Maposaic, with full citations and licenses.">
+<style>
+  @font-face { font-family: 'Jost'; src: url('maplibre-map/fonts/JostRegular.ttf'); font-weight: 400; font-style: normal; }
+  @font-face { font-family: 'Jost'; src: url('maplibre-map/fonts/JostItalic.ttf'); font-weight: 400; font-style: italic; }
+  @font-face { font-family: 'Jost'; src: url('maplibre-map/fonts/JostSemiBold.ttf'); font-weight: 600 700; font-style: normal; }
+  @font-face { font-family: 'Colus'; src: url('maplibre-map/fonts/Colus-Regular.woff2') format('woff2'); font-weight: 400 700; font-style: normal; }
+
+  :root {
+    --ink: #2a1f0e; --ink-soft: #5c4a2a; --bronze: #a06810; --bronze-light: #b8903a;
+    --parch: #f2ead8; --card: #faf5ea; --rule: #d9c9a6;
+  }
+  html { color-scheme: light; }
+  body {
+    margin: 0; color: var(--ink);
+    font: 400 16px/1.55 'Jost', Georgia, serif;
+    background: linear-gradient(160deg, #e8e0d0 0%, #f2ead8 60%, #e4d8c0 100%) fixed;
+    min-height: 100vh;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 44px 24px 72px; }
+  a { color: var(--bronze); text-decoration: none; border-bottom: 1px solid rgba(160,104,16,.35); }
+  a:hover { border-bottom-color: var(--bronze); }
+  .back { display: inline-block; font-size: 13px; letter-spacing: .04em; margin-bottom: 26px; border: 0; }
+  .back:before { content: '\2190\00a0'; }
+  h1 { font-family: 'Colus', Georgia, serif; font-weight: 400; font-size: 34px; letter-spacing: .02em; margin: 0 0 6px; }
+  .lede { font-size: 17px; color: var(--ink-soft); margin: 0 0 34px; max-width: 60ch; }
+  h2 {
+    font-family: 'Colus', Georgia, serif; font-weight: 400; font-size: 12px;
+    letter-spacing: 2.5px; text-transform: uppercase; color: #7a5c1e;
+    margin: 40px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--rule);
+  }
+  .src {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 12px;
+    padding: 18px 22px; margin: 0 0 14px;
+  }
+  .src h3 { margin: 0 0 4px; font-size: 19px; font-weight: 600; }
+  .src .lic {
+    display: inline-block; font-size: 12px; letter-spacing: .03em; color: var(--ink-soft);
+    background: rgba(160,104,16,.08); border-radius: 999px; padding: 2px 10px; margin: 0 0 10px;
+  }
+  .src p { margin: 6px 0; }
+  .src .use { color: var(--ink-soft); }
+  .cite {
+    font-size: 14.5px; background: rgba(255,255,255,.55); border-left: 3px solid var(--bronze-light);
+    padding: 8px 12px; margin: 10px 0 0; border-radius: 0 6px 6px 0;
+  }
+  .cite b { font-weight: 600; }
+  code { font: 500 13.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(42,31,14,.06); padding: 1px 5px; border-radius: 4px; }
+  ul.tight { margin: 6px 0 0; padding-left: 20px; }
+  ul.tight li { margin: 2px 0; }
+  .foot { margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 13.5px; color: var(--ink-soft); }
+  @media print { body { background: #fff; } .src { break-inside: avoid; } .back { display: none; } }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="index.html">Back to Maposaic</a>
+  <h1>Data Credits</h1>
+  <p class="lede">Every map made in Maposaic is drawn from open data. This page lists each source, what it is used for, and how to cite it. Maps you export carry a one-line credit that points here.</p>
+
+  <h2>Citing a map made in Maposaic</h2>
+  <div class="src">
+    <p>The credit line printed on every exported map reads:</p>
+    <p class="cite"><i>Made in Maposaic · Data: Natural Earth, Pleiades · diboewdip.github.io/mapforge/credits</i></p>
+    <p style="margin-top:12px">For a bibliography, a student or teacher can cite a Maposaic map as:</p>
+    <p class="cite"><b>Map title.</b> Map created with Maposaic, &lt;https://diboewdip.github.io/mapforge/&gt;. Base map data: Natural Earth (public domain). Ancient place data: Pleiades, CC BY 3.0. [Date made.]</p>
+  </div>
+
+  <h2>Map data</h2>
+
+  <div class="src" id="natural-earth">
+    <h3>Natural Earth</h3>
+    <span class="lic">Public domain — no permission needed</span>
+    <p class="use">Used for nearly everything you see on a live map: coastlines and land, oceans, lakes, rivers and lake centerlines, country boundaries, United States state boundaries, ocean and sea name positions, the shaded relief, and the modern cities in the Find&nbsp;a&nbsp;City tool (Natural Earth's "populated places"). Maposaic uses the 1:110m, 1:50m, and 1:10m scale datasets, switching between them as you zoom.</p>
+    <p class="cite"><b>Natural Earth.</b> Free vector and raster map data. <a href="https://www.naturalearthdata.com/">https://www.naturalearthdata.com/</a>. Public domain.</p>
+    <p>Natural Earth's own suggested credit: <i>"Made with Natural Earth. Free vector and raster map data @ naturalearthdata.com."</i> Terms: <a href="https://www.naturalearthdata.com/about/terms-of-use/">naturalearthdata.com/about/terms-of-use</a>.</p>
+  </div>
+
+  <div class="src" id="pleiades">
+    <h3>Pleiades: A Gazetteer of Past Places</h3>
+    <span class="lic">Creative Commons Attribution 3.0 (CC&nbsp;BY&nbsp;3.0)</span>
+    <p class="use">Used for the ancient places in the Find&nbsp;a&nbsp;City tool — the locations and names of cities of the ancient world. Where Pleiades lists several variant names for one place (for example "Uruk/Orchoe/Erech"), Maposaic shows the first. Pleiades is a joint project of the Institute for the Study of the Ancient World at New York University and the Ancient World Mapping Center at the University of North Carolina at Chapel Hill.</p>
+    <p class="cite"><b>Roger Bagnall, et al. (eds.)</b>, <i>Pleiades: A Gazetteer of Past Places</i>, 2016, <a href="https://pleiades.stoa.org/">https://pleiades.stoa.org/</a> [Accessed: August 2026].</p>
+    <p>License: <a href="https://creativecommons.org/licenses/by/3.0/us/">Creative Commons Attribution 3.0 United States</a>. Individual place entries carry their own suggested citations on <a href="https://pleiades.stoa.org/places">pleiades.stoa.org/places</a>.</p>
+  </div>
+
+  <div class="src" id="curated">
+    <h3>Curated historical places</h3>
+    <span class="lic">Compiled for Maposaic</span>
+    <p class="use">A small list of places that fall between the two gazetteers above — sites such as Tenochtitlan, Angkor, and Cahokia — added by hand for the Find&nbsp;a&nbsp;City tool.</p>
+  </div>
+
+  <div class="src" id="library-maps">
+    <h3>Map Library base maps</h3>
+    <span class="lic">Drawn from Natural Earth data</span>
+    <p class="use">The ready-to-annotate regions in the Map Library are framed from the live map above, and so carry the same Natural Earth data. The United States history base maps were drawn from Natural Earth boundary and physical data as well.</p>
+  </div>
+
+  <h2>Software</h2>
+
+  <div class="src">
+    <h3>MapLibre GL JS</h3>
+    <span class="lic">BSD 3-Clause</span>
+    <p class="use">Renders the live world map, its globe view, and its labels. Version 5.24.0.</p>
+    <p class="cite"><b>MapLibre GL JS.</b> <a href="https://maplibre.org/">https://maplibre.org/</a>. License: <a href="https://github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt">3-Clause BSD</a>.</p>
+  </div>
+
+  <div class="src">
+    <h3>PMTiles</h3>
+    <span class="lic">BSD 3-Clause</span>
+    <p class="use">The single-file tile archive format that lets the detailed map data load directly from a static website.</p>
+    <p class="cite"><b>PMTiles</b>, by Protomaps. <a href="https://github.com/protomaps/PMTiles">https://github.com/protomaps/PMTiles</a>.</p>
+  </div>
+
+  <div class="src">
+    <h3>polygon-clipping</h3>
+    <span class="lic">MIT</span>
+    <p class="use">Keeps shaded regions clipped exactly to the coastline at every zoom.</p>
+    <p class="cite"><b>polygon-clipping</b>, by Mike Fogel. <a href="https://github.com/mfogel/polygon-clipping">https://github.com/mfogel/polygon-clipping</a>.</p>
+  </div>
+
+  <h2>Typefaces</h2>
+
+  <div class="src">
+    <h3>Jost*</h3>
+    <span class="lic">SIL Open Font License 1.1</span>
+    <p class="use">Labels, the interface, and the credit line.</p>
+    <p class="cite"><b>Jost*</b>, by Owen Earl / indestructible type*. <a href="https://indestructibletype.com/Jost.html">https://indestructibletype.com/Jost.html</a>. License: <a href="https://openfontlicense.org/">SIL OFL 1.1</a>.</p>
+  </div>
+
+  <div class="src">
+    <h3>Colus</h3>
+    <span class="lic">Fontfabric free font license</span>
+    <p class="use">Country names on the map and display headings.</p>
+    <p class="cite"><b>Colus</b>, by Fontfabric. <a href="https://www.fontfabric.com/fonts/colus/">https://www.fontfabric.com/fonts/colus/</a>. Free for personal and commercial use under Fontfabric's free-font license.</p>
+  </div>
+
+  <h2>Everything else</h2>
+  <div class="src">
+    <p>The map icons and stamps, the historical-region library entries, the label placement, and the cartographic styling were made for Maposaic. Maps you create are yours.</p>
+  </div>
+
+  <p class="foot">Questions about a source or a citation? Reach the Maposaic team through the project's <a href="https://github.com/diboEWDIP/mapforge">GitHub page</a>.</p>
+</main>
+</body>
+</html>

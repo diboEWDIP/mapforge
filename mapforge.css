@@ -1405,6 +1405,10 @@ fallback (shows if homescreen-bg.png isn't present, so nothing breaks). */
   white-space: nowrap; pointer-events: none; user-select: none;
 }
 body.live-base:not(.live-explore) #credit-box { display: block; }
+/* Home screen: the data-credits link, quiet, under the three choices. */
+#ss-credits-link { margin: 26px 0 0; font: 400 13px/1 'Jost', Georgia, serif; letter-spacing: .04em; }
+#ss-credits-link a { color: #7a5c1e; text-decoration: none; border-bottom: 1px solid rgba(122,92,30,.35); }
+#ss-credits-link a:hover { color: #a06810; border-bottom-color: #a06810; }
 /* Toolbar wordmark doubles as Home. */
 #toolbar-logo { cursor: pointer; }
 #toolbar-logo:focus-visible { outline: 2px solid #a06810; outline-offset: 3px; border-radius: 4px; }

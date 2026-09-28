@@ -130,5 +130,33 @@
   {
     "file": "crete.mapforge",
     "label": "Crete"
+  },
+  {
+    "file": "shang-dynasty.mapforge",
+    "label": "Shang Dynasty"
+  },
+  {
+    "file": "zhou-dynasty.mapforge",
+    "label": "Zhou Dynasty"
+  },
+  {
+    "file": "han-dynasty.mapforge",
+    "label": "Han Dynasty"
+  },
+  {
+    "file": "sui-dynasty.mapforge",
+    "label": "Sui Dynasty"
+  },
+  {
+    "file": "tang-dynasty.mapforge",
+    "label": "Tang Dynasty"
+  },
+  {
+    "file": "europe-500-ad.mapforge",
+    "label": "Europe - 500 AD"
+  },
+  {
+    "file": "u-s-territorial-acquisitions.mapforge",
+    "label": "U.S. Territorial Acquisitions"
   }
 ]

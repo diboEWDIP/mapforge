@@ -24,10 +24,6 @@
     "label": "India"
   },
   {
-    "file": "the-maurya-empire.mapforge",
-    "label": "The Maurya Empire"
-  },
-  {
     "file": "babylonian-empire.mapforge",
     "label": "Babylonian Empire"
   },
@@ -158,5 +154,69 @@
   {
     "file": "u-s-territorial-acquisitions.mapforge",
     "label": "U.S. Territorial Acquisitions"
+  },
+  {
+    "file": "rome-753-bc.mapforge",
+    "label": "Rome - 753 BC"
+  },
+  {
+    "file": "rome-500-bc.mapforge",
+    "label": "Rome - 500 BC"
+  },
+  {
+    "file": "roman-republic-265-bc.mapforge",
+    "label": "Roman Republic - 265 BC"
+  },
+  {
+    "file": "second-punic-war-218-201-bc.mapforge",
+    "label": "Second Punic War - 218-201 BC"
+  },
+  {
+    "file": "first-punic-war-264-241-bc.mapforge",
+    "label": "First Punic War - 264-241 BC"
+  },
+  {
+    "file": "maurya-empire.mapforge",
+    "label": "Maurya Empire"
+  },
+  {
+    "file": "river-valley-civilizations.mapforge",
+    "label": "River Valley Civilizations"
+  },
+  {
+    "file": "assyrian-empire-650-bc.mapforge",
+    "label": "Assyrian Empire - 650 BC"
+  },
+  {
+    "file": "the-crusades-major-cities-and-crusader-kingdoms.mapforge",
+    "label": "The Crusades - Major Cities and Crusader Kingdoms"
+  },
+  {
+    "file": "the-greek-world.mapforge",
+    "label": "The Greek World"
+  },
+  {
+    "file": "empire-of-ghana.mapforge",
+    "label": "Empire of Ghana"
+  },
+  {
+    "file": "mali-empire.mapforge",
+    "label": "Mali Empire"
+  },
+  {
+    "file": "songhai-empire.mapforge",
+    "label": "Songhai Empire"
+  },
+  {
+    "file": "inca-empire.mapforge",
+    "label": "Inca Empire"
+  },
+  {
+    "file": "aztec-empire.mapforge",
+    "label": "Aztec Empire"
+  },
+  {
+    "file": "mayan-civilization.mapforge",
+    "label": "Mayan Civilization"
   }
 ]

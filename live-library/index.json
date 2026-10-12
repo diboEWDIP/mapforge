@@ -218,5 +218,21 @@
   {
     "file": "mayan-civilization.mapforge",
     "label": "Mayan Civilization"
+  },
+  {
+    "file": "ottoman-empire-1683.mapforge",
+    "label": "Ottoman Empire - 1683"
+  },
+  {
+    "file": "ming-dynasty.mapforge",
+    "label": "Ming Dynasty"
+  },
+  {
+    "file": "mongol-khanates-1294.mapforge",
+    "label": "Mongol Khanates - 1294"
+  },
+  {
+    "file": "renaissance-italy-1494.mapforge",
+    "label": "Renaissance Italy - 1494"
   }
 ]

@@ -3545,7 +3545,11 @@ function startLiveMap() {
     MLB.unlockView(mlMap);
     mlMap.resize();
     if (mlMap.isStyleLoaded()) onReady();
-    else mlMap.once('load', onReady);
+    // 'load' fires ONCE per map. On a reused map whose style is momentarily
+    // busy (tiles/sources mid-fetch after a previous library map), waiting on
+    // it never resolves and the Spinning… overlay stays up forever — wait for
+    // the style itself instead (2026-10-11).
+    else MLB.awaitStyleLoaded(mlMap).then(onReady);
   }
   if (!mlMap._geoWired) { wireGeoRenderLoop(); mlMap._geoWired = true; }
   MLB.resetAutoZoomLayers(mlMap);   // fresh map → automatic graticule/states by zoom

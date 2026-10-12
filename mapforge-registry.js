@@ -37,11 +37,17 @@ registerStampType('desert', { kind: 'point', group: 'terrain', sizeField: null,
 registerStampType('oasis', { kind: 'point', group: 'terrain', sizeField: 'iconSize',
   factor: 1, defaultSize: 16, keyFallback: null, movable: true,
   draw: (ctx, x, y, size, color) => drawOasis(ctx, x, y, size, color) });
+registerStampType('volcano', { kind: 'point', group: 'terrain', sizeField: 'iconSize',
+  factor: 1, defaultSize: 16, keyFallback: null, movable: true,   // 2026-10-11
+  draw: (ctx, x, y, size, color) => drawVolcano(ctx, x, y, size, color) });
 
 // ---- Places & events -------------------------------------------------------
 registerStampType('city', { kind: 'point', group: 'places', sizeField: 'size',
   factor: 1, defaultSize: 16, keyFallback: 16, movable: true,   // SVG since 2026-09-15 (was 36/22)
   draw: (ctx, x, y, size, color) => drawCityIcon(ctx, x, y, size, color || '#111') });
+registerStampType('capital', { kind: 'point', group: 'places', sizeField: 'size',
+  factor: 1, defaultSize: 16, keyFallback: 16, movable: true,   // 2026-10-11, pairs with City
+  draw: (ctx, x, y, size, color) => drawCapitalIcon(ctx, x, y, size, color || '#111') });
 registerStampType('danger', { kind: 'point', group: 'places', sizeField: 'iconSize',
   factor: 1, defaultSize: 16, keyFallback: null, movable: true,
   draw: (ctx, x, y, size, color) => drawDanger(ctx, x, y, size, color) });

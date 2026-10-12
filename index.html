@@ -470,6 +470,11 @@
 
           City
         </button>
+        <button class="trade-btn terrain-btn" id="btn-capital" onclick="selectStamp('capital')" title="Capital City">
+      <canvas id="icon-capital" width="28" height="22"></canvas>
+
+          Capital City
+        </button>
         <!-- Desert retired from the palette (speckle fill covers it) — kept
              mounted for icon init + old saves, hidden from students. -->
         <button class="trade-btn terrain-btn" id="btn-desert" style="display:none" onclick="selectStamp('desert')" title="Desert">
@@ -481,6 +486,11 @@
       <canvas id="icon-oasis" width="28" height="22"></canvas>
     
           Oasis
+        </button>
+        <button class="trade-btn terrain-btn" id="btn-volcano" onclick="selectStamp('volcano')" title="Volcano">
+      <canvas id="icon-volcano" width="28" height="22"></canvas>
+
+          Volcano
         </button>
       </div>
     </div>
@@ -510,6 +520,10 @@
         <button class="trade-btn terrain-btn" id="tbtn-mark-vikings" onclick="selectStamp('mark-vikings')" title="Vikings">
           <canvas id="icon-mark-vikings" width="28" height="22"></canvas>
           Vikings
+        </button>
+        <button class="trade-btn terrain-btn" id="tbtn-mark-legion" onclick="selectStamp('mark-legion')" title="Legion">
+          <canvas id="icon-mark-legion" width="28" height="22"></canvas>
+          Legion
         </button>
       </div>
     </div>
@@ -582,6 +596,14 @@
           <canvas id="icon-feat-lighthouse" width="36" height="30"></canvas>
           Lighthouse
         </button>
+        <button class="trade-btn" id="tbtn-feat-pagoda" onclick="selectStamp('feat-pagoda')">
+          <canvas id="icon-feat-pagoda" width="36" height="30"></canvas>
+          Pagoda
+        </button>
+        <button class="trade-btn" id="tbtn-feat-printingpress" onclick="selectStamp('feat-printingpress')">
+          <canvas id="icon-feat-printingpress" width="36" height="30"></canvas>
+          Printing Press
+        </button>
       </div>
       <div class="sr-subhead" title="Ships and vehicles of movement and trade">Transport</div>
       <div class="trade-grid">
@@ -623,6 +645,10 @@
         <button class="religion-btn" id="rbtn-religion-judaism" onclick="selectStamp('religion-judaism')">
           <canvas id="icon-religion-judaism" width="48" height="40"></canvas>
           Judaism
+        </button>
+        <button class="religion-btn" id="rbtn-religion-zoroastrianism" onclick="selectStamp('religion-zoroastrianism')">
+          <canvas id="icon-religion-zoroastrianism" width="48" height="40"></canvas>
+          Zoroastrianism
         </button>
       </div>
     </div>
@@ -2556,7 +2582,7 @@ function updateRow2Controls(type) {
   if (tc) { tc.style.display = isText ? 'flex' : 'none'; if (isText && typeof syncTextCtrl === 'function') syncTextCtrl(); }
   const isShade    = type === 'shade';
   const isStamp    = type === 'mountain' || type === 'city' || type === 'peak';
-  const isIconStamp = isTradeStamp(type) || isReligionStamp(type) || type === 'oasis' || type === 'danger' || type === 'battle';
+  const isIconStamp = isTradeStamp(type) || isReligionStamp(type) || type === 'oasis' || type === 'volcano' || type === 'danger' || type === 'battle';
   const isEraser   = type === 'eraser';
   const isSelect   = type === 'select';
   // Plain line-* styles only — line-arrow / feature lines keep fixed rendering.
@@ -4907,7 +4933,7 @@ function eraseAt(x, y) {
     const s = stamps[i];
     if (s._hidden) continue;   // far side of the globe: px cache is stale
     let hit = false;
-    if (s.type === 'mountain' || s.type === 'peak' || s.type === 'city' || s.type === 'desert' || s.type === 'oasis' || s.type === 'danger' || s.type === 'battle' || isTradeStamp(s.type) || isReligionStamp(s.type)) {
+    if (s.type === 'mountain' || s.type === 'peak' || s.type === 'city' || s.type === 'desert' || s.type === 'oasis' || s.type === 'volcano' || s.type === 'capital' || s.type === 'danger' || s.type === 'battle' || isTradeStamp(s.type) || isReligionStamp(s.type)) {
       hit = Math.hypot(x - s.x, y - s.y) <= ERASER_RADIUS * 2;
     } else if (s.type === 'shade' || isLineStamp(s.type) || isFeatureStamp(s.type)) {
       hit = s.points.some(p => Math.hypot(x - p.x, y - p.y) <= ERASER_RADIUS);
@@ -5229,7 +5255,7 @@ canvas.addEventListener('mousedown', e => {
   }
 
   // Single-click stamps (mountain, city, trade, oasis, danger, religion…)
-  const isIconType = isTradeStamp(activeStamp) || isReligionStamp(activeStamp) || activeStamp === 'oasis' || activeStamp === 'danger' || activeStamp === 'battle';
+  const isIconType = isTradeStamp(activeStamp) || isReligionStamp(activeStamp) || activeStamp === 'oasis' || activeStamp === 'volcano' || activeStamp === 'danger' || activeStamp === 'battle';
   // Sliders are DOCUMENT px (1/96" of paper); runtime stamps carry backing px.
   // dpr here (and /dpr at serialize) keeps marks the same physical size on a
   // Chromebook and a retina MacBook — the unit seam behind three past bugs.
@@ -5904,8 +5930,8 @@ function collectAutoKeyEntries() {
   // mountains and green mountains are different legend rows (Maddy
   // 2026-08-14). Entry id carries the colour so suppression/custom labels
   // stay per-combination.
-  const COLOURABLE = { mountain:'Mountain', peak:'Major Peak', city:'City',
-                       desert:'Desert', oasis:'Oasis', danger:'Danger', battle:'Battle' };
+  const COLOURABLE = { mountain:'Mountain', peak:'Major Peak', city:'City', capital:'Capital City',
+                       desert:'Desert', oasis:'Oasis', volcano:'Volcano', danger:'Danger', battle:'Battle' };
   stamps.forEach(s => {
     if (COLOURABLE[s.type]) {
       const col = s.color || '#111111';

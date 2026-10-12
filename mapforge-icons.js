@@ -7,7 +7,7 @@
 // Pinned version tag, NOT Date.now() (Eric, 2026-07-21): the old value
 // re-fetched all 41 icon PNGs on every load — invisible locally, slow on a
 // hosted site. Bump the tag when swapping icon art.
-const ICON_BUST = '?v=2026-09-15a';   // bumped: City.svg + Major Peak.svg added
+const ICON_BUST = '?v=2026-10-11';    // bumped: Pagoda, Volcano, Capital City, Legion, Printing Press, Zoroastrianism
 
 const drawMountainIcon = _makeSvgStamp('icons/Mountain.svg', 'icon-mountain');
 
@@ -247,6 +247,11 @@ const drawConestoga    = _makeSvgStamp('icons/Conestoga Wagon.svg',       'icon-
 const drawPerson       = _makeSvgStamp('icons/Person.svg',                'icon-mark-person');
 const drawFire         = _makeSvgStamp('icons/Fire.svg',                  'icon-mark-fire');
 const drawVikings      = _makeSvgStamp('icons/Vikings.svg',               'icon-mark-vikings');
+// ── 2026-10-11 set (Eric's art, same 1200×1200 black-path format as the rest) ──
+const drawLegion       = _makeSvgStamp('icons/Legion.svg',                'icon-mark-legion');
+const drawPagoda       = _makeSvgStamp('icons/Pagoda.svg',                'icon-feat-pagoda');
+const drawPrintingPress= _makeSvgStamp('icons/Printing Press.svg',        'icon-feat-printingpress');
+const drawZoroastrianism = _makeSvgStamp('icons/Zoroastrianism.svg',      'icon-religion-zoroastrianism');
 const drawChristianity = _makeSvgStamp('icons/Christianity.svg',    'icon-religion-christianity');
 const drawIslam        = _makeSvgStamp('icons/Islam.svg',           'icon-religion-islam');
 const drawBuddhism     = _makeSvgStamp('icons/Buddhism.svg',        'icon-religion-buddhism');
@@ -258,6 +263,10 @@ const drawJudaism      = _makeSvgStamp('icons/Judaism.svg',         'icon-religi
 // City: 35% smaller than the standard icon at the same slider value (0.65 optical
 // scale) — a solid disc outweighs line art. Was a code-drawn arc before 2026-09-15.
 const drawCityIcon = _makeSvgStamp('icons/City.svg', 'icon-city', 0.65);
+// Capital City sits beside City in the Terrain panel; scaled so the two read
+// as a pair at one slider value (City's plain dot runs at 0.65).
+const drawCapitalIcon = _makeSvgStamp('icons/Capital City.svg', 'icon-capital', 0.85);
+const drawVolcano = _makeSvgStamp('icons/Volcano.svg', 'icon-volcano');
 
 const DESERT_SPECKS = [
   [-18,-12],[-10,-18],[0,-20],[11,-17],[19,-11],[22,0],[18,11],[10,18],
@@ -633,6 +642,8 @@ const TRADE_GOODS = {
   'feat-cathedral':      { label: 'Cathedral',       draw: drawCathedral   },
   'feat-egyptiantemple': { label: 'Egyptian Temple', draw: drawEgyptTemple },
   'feat-lighthouse':     { label: 'Lighthouse',      draw: drawLighthouse  },
+  'feat-pagoda':         { label: 'Pagoda',          draw: drawPagoda      },
+  'feat-printingpress':  { label: 'Printing Press',  draw: drawPrintingPress },
   // ── Transport (Noun Project set, 2026-08-16) ──
   'trans-ship':        { label: 'Ship',            draw: drawShip        },
   'trans-trireme':     { label: 'Trireme',         draw: drawTrireme     },
@@ -641,6 +652,7 @@ const TRADE_GOODS = {
   'mark-person':       { label: 'Person',          draw: drawPerson      },
   'mark-fire':         { label: 'Fire',            draw: drawFire        },
   'mark-vikings':      { label: 'Vikings',         draw: drawVikings     },
+  'mark-legion':       { label: 'Legion',          draw: drawLegion      },
   // ── Foods & crops (2026-08-23) ──
   'trade-apples':        { label: 'Apples',         draw: drawApples      },
   'trade-beans':         { label: 'Beans',          draw: drawBeans       },
@@ -663,6 +675,7 @@ const RELIGIONS = {
   'religion-buddhism':     { label: 'Buddhism',     draw: drawBuddhism     },
   'religion-hinduism':     { label: 'Hinduism',     draw: drawHinduism     },
   'religion-judaism':      { label: 'Judaism',      draw: drawJudaism      },
+  'religion-zoroastrianism': { label: 'Zoroastrianism', draw: drawZoroastrianism },
 };
 function isTradeStamp(type)    { return type in TRADE_GOODS; }
 function isReligionStamp(type) { return type in RELIGIONS; }

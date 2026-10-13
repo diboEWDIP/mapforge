@@ -1239,6 +1239,8 @@
       <button class="km-btn secondary" id="save-as-btn" onclick="saveMapAs()" title="Save a copy under a new name" style="display:none">Save As…</button>
     </div>
     <p class="saves-hint" id="save-file-state"></p>
+    <button class="km-btn secondary" id="save-folder-btn" onclick="fsChangeDir()" style="display:none;font-size:12px;padding:4px 10px;"
+            title="Pick a different folder for your maps — for example your Google Drive folder">Change folder…</button>
     <div id="save-status"></div>
     <!-- Opening lives in the Import popup now; the hidden saves-list keeps
          renderSavesList() callers harmless, and the file input stays mounted. -->

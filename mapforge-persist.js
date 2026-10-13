@@ -520,6 +520,22 @@ async function fsConnect() {
     return h;
   } catch (e) { return null; }     // cancelled or blocked by policy
 }
+// "Change folder…" (Save dialog): pick a NEW home for the maps — e.g. move
+// from Documents to Google Drive. The remembered folder stays until the new
+// pick succeeds, so a cancel changes nothing. Existing files are not moved
+// (the map on screen re-saves into the new folder on its next save).
+async function fsChangeDir() {
+  if (!FS.supported) return null;
+  try {
+    const parent = await window.showDirectoryPicker({ id: 'maposaic-maps', mode: 'readwrite', startIn: 'documents' });
+    const h = /^maposaic/i.test(parent.name) ? parent
+            : await parent.getDirectoryHandle(FS_FOLDER, { create: true });
+    FS.dir = h; FS.perm = 'granted'; await fsStoreDir(h);
+    fsSyncReconnectBanner(); updateSaveIndicator();
+    if (typeof flashSaveStatus === 'function') flashSaveStatus('Maps now save to \u201c' + parent.name + '\u201d.');
+    return h;
+  } catch (e) { return null; }     // cancelled or blocked by policy
+}
 async function fsWrite(base, json) {
   const fh = await FS.dir.getFileHandle(base + '.mapforge', { create: true });
   const w = await fh.createWritable(); await w.write(json); await w.close();
@@ -707,6 +723,8 @@ function updateSaveIndicator() {
   const st = document.getElementById('save-file-state');
   if (!st) return;
   // ONE short line for students (Maddy 2026-09-09)
+  const cf = document.getElementById('save-folder-btn');
+  if (cf) cf.style.display = FS.supported ? '' : 'none';   // only where a folder can be picked
   if (fsActive()) st.textContent = 'Saves to your Maposaic folder.';
   else if (FS.supported && FS.dir) st.textContent = 'Reconnect your Maposaic folder when you save.';
   else if (FS.supported) st.textContent = 'You’ll pick where to keep your maps.';

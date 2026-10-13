@@ -1,112 +1,41 @@
 [
   {
-    "file": "fertile-crescent-blank.mapforge",
-    "label": "Fertile Crescent - Blank",
-    "section": "Mesopotamia & the Near East"
+    "file": "africa.mapforge",
+    "label": "Africa",
+    "section": "Africa"
   },
   {
-    "file": "fertile-crescent-border.mapforge",
-    "label": "Fertile Crescent - Border"
+    "file": "empire-of-ghana.mapforge",
+    "label": "Empire of Ghana"
   },
   {
-    "file": "fertile-crescent-cities.mapforge",
-    "label": "Fertile Crescent - Cities"
+    "file": "mali-empire.mapforge",
+    "label": "Mali Empire"
   },
   {
-    "file": "river-valley-civilizations.mapforge",
-    "label": "River Valley Civilizations"
+    "file": "songhai-empire.mapforge",
+    "label": "Songhai Empire"
   },
   {
-    "file": "akkadian-empire.mapforge",
-    "label": "Akkadian Empire"
+    "file": "mesoamerica.mapforge",
+    "label": "Mesoamerica",
+    "section": "The Americas"
   },
   {
-    "file": "babylonian-empire.mapforge",
-    "label": "Babylonian Empire"
+    "file": "south-america.mapforge",
+    "label": "South America"
   },
   {
-    "file": "assyrian-empire.mapforge",
-    "label": "Assyrian Empire"
+    "file": "mayan-civilization.mapforge",
+    "label": "Mayan Civilization"
   },
   {
-    "file": "assyrian-empire-650-bc.mapforge",
-    "label": "Assyrian Empire - 650 BC"
+    "file": "aztec-empire.mapforge",
+    "label": "Aztec Empire"
   },
   {
-    "file": "the-persian-empire.mapforge",
-    "label": "The Persian Empire"
-  },
-  {
-    "file": "ancient-egypt.mapforge",
-    "label": "Ancient Egypt",
-    "section": "Egypt"
-  },
-  {
-    "file": "greece.mapforge",
-    "label": "Greece",
-    "section": "Greece"
-  },
-  {
-    "file": "crete.mapforge",
-    "label": "Crete"
-  },
-  {
-    "file": "ancient-greece-major-cities.mapforge",
-    "label": "Ancient Greece - Major Cities"
-  },
-  {
-    "file": "the-greek-world.mapforge",
-    "label": "The Greek World"
-  },
-  {
-    "file": "alexander-the-great.mapforge",
-    "label": "Alexander the Great"
-  },
-  {
-    "file": "the-mediterranean-world.mapforge",
-    "label": "The Mediterranean World",
-    "section": "Rome"
-  },
-  {
-    "file": "rome-753-bc.mapforge",
-    "label": "Rome - 753 BC"
-  },
-  {
-    "file": "rome-500-bc.mapforge",
-    "label": "Rome - 500 BC"
-  },
-  {
-    "file": "the-roman-republic.mapforge",
-    "label": "The Roman Republic"
-  },
-  {
-    "file": "roman-republic-265-bc.mapforge",
-    "label": "Roman Republic - 265 BC"
-  },
-  {
-    "file": "first-punic-war-264-241-bc.mapforge",
-    "label": "First Punic War - 264-241 BC"
-  },
-  {
-    "file": "second-punic-war-218-201-bc.mapforge",
-    "label": "Second Punic War - 218-201 BC"
-  },
-  {
-    "file": "the-punic-wars.mapforge",
-    "label": "The Punic Wars"
-  },
-  {
-    "file": "roman-empire.mapforge",
-    "label": "Roman Empire"
-  },
-  {
-    "file": "india.mapforge",
-    "label": "India",
-    "section": "India"
-  },
-  {
-    "file": "maurya-empire.mapforge",
-    "label": "Maurya Empire"
+    "file": "inca-empire.mapforge",
+    "label": "Inca Empire"
   },
   {
     "file": "china.mapforge",
@@ -146,42 +75,65 @@
     "label": "Ming Dynasty"
   },
   {
-    "file": "africa.mapforge",
-    "label": "Africa",
-    "section": "Africa"
+    "file": "ancient-egypt.mapforge",
+    "label": "Ancient Egypt",
+    "section": "Egypt"
   },
   {
-    "file": "empire-of-ghana.mapforge",
-    "label": "Empire of Ghana"
+    "file": "viking-exploration.mapforge",
+    "label": "Viking Exploration",
+    "section": "Exploration"
   },
   {
-    "file": "mali-empire.mapforge",
-    "label": "Mali Empire"
+    "file": "voyages-of-columbus.mapforge",
+    "label": "Voyages of Columbus"
   },
   {
-    "file": "songhai-empire.mapforge",
-    "label": "Songhai Empire"
+    "file": "greece.mapforge",
+    "label": "Greece",
+    "section": "Greece"
   },
   {
-    "file": "mesoamerica.mapforge",
-    "label": "Mesoamerica",
-    "section": "The Americas"
+    "file": "crete.mapforge",
+    "label": "Crete"
   },
   {
-    "file": "south-america.mapforge",
-    "label": "South America"
+    "file": "ancient-greece-major-cities.mapforge",
+    "label": "Ancient Greece - Major Cities"
   },
   {
-    "file": "mayan-civilization.mapforge",
-    "label": "Mayan Civilization"
+    "file": "the-greek-world.mapforge",
+    "label": "The Greek World"
   },
   {
-    "file": "aztec-empire.mapforge",
-    "label": "Aztec Empire"
+    "file": "alexander-the-great.mapforge",
+    "label": "Alexander the Great"
   },
   {
-    "file": "inca-empire.mapforge",
-    "label": "Inca Empire"
+    "file": "india.mapforge",
+    "label": "India",
+    "section": "India"
+  },
+  {
+    "file": "maurya-empire.mapforge",
+    "label": "Maurya Empire"
+  },
+  {
+    "file": "islamic-conquests-through-1250.mapforge",
+    "label": "Islamic Conquests through 1250",
+    "section": "The Islamic World & the Mongols"
+  },
+  {
+    "file": "the-mongol-empire-1279.mapforge",
+    "label": "The Mongol Empire - 1279"
+  },
+  {
+    "file": "mongol-khanates-1294.mapforge",
+    "label": "Mongol Khanates - 1294"
+  },
+  {
+    "file": "ottoman-empire-1683.mapforge",
+    "label": "Ottoman Empire - 1683"
   },
   {
     "file": "europe.mapforge",
@@ -217,30 +169,78 @@
     "label": "Renaissance Italy - 1494"
   },
   {
-    "file": "islamic-conquests-through-1250.mapforge",
-    "label": "Islamic Conquests through 1250",
-    "section": "The Islamic World & the Mongols"
+    "file": "fertile-crescent-blank.mapforge",
+    "label": "Fertile Crescent - Blank",
+    "section": "Mesopotamia & the Near East"
   },
   {
-    "file": "the-mongol-empire-1279.mapforge",
-    "label": "The Mongol Empire - 1279"
+    "file": "fertile-crescent-border.mapforge",
+    "label": "Fertile Crescent - Border"
   },
   {
-    "file": "mongol-khanates-1294.mapforge",
-    "label": "Mongol Khanates - 1294"
+    "file": "fertile-crescent-cities.mapforge",
+    "label": "Fertile Crescent - Cities"
   },
   {
-    "file": "ottoman-empire-1683.mapforge",
-    "label": "Ottoman Empire - 1683"
+    "file": "river-valley-civilizations.mapforge",
+    "label": "River Valley Civilizations"
   },
   {
-    "file": "viking-exploration.mapforge",
-    "label": "Viking Exploration",
-    "section": "Exploration"
+    "file": "akkadian-empire.mapforge",
+    "label": "Akkadian Empire"
   },
   {
-    "file": "voyages-of-columbus.mapforge",
-    "label": "Voyages of Columbus"
+    "file": "babylonian-empire.mapforge",
+    "label": "Babylonian Empire"
+  },
+  {
+    "file": "assyrian-empire.mapforge",
+    "label": "Assyrian Empire"
+  },
+  {
+    "file": "assyrian-empire-650-bc.mapforge",
+    "label": "Assyrian Empire - 650 BC"
+  },
+  {
+    "file": "the-persian-empire.mapforge",
+    "label": "The Persian Empire"
+  },
+  {
+    "file": "the-mediterranean-world.mapforge",
+    "label": "The Mediterranean World",
+    "section": "Rome"
+  },
+  {
+    "file": "rome-753-bc.mapforge",
+    "label": "Rome - 753 BC"
+  },
+  {
+    "file": "rome-500-bc.mapforge",
+    "label": "Rome - 500 BC"
+  },
+  {
+    "file": "the-roman-republic.mapforge",
+    "label": "The Roman Republic"
+  },
+  {
+    "file": "roman-republic-265-bc.mapforge",
+    "label": "Roman Republic - 265 BC"
+  },
+  {
+    "file": "first-punic-war-264-241-bc.mapforge",
+    "label": "First Punic War - 264-241 BC"
+  },
+  {
+    "file": "second-punic-war-218-201-bc.mapforge",
+    "label": "Second Punic War - 218-201 BC"
+  },
+  {
+    "file": "the-punic-wars.mapforge",
+    "label": "The Punic Wars"
+  },
+  {
+    "file": "roman-empire.mapforge",
+    "label": "Roman Empire"
   },
   {
     "file": "u-s-territorial-acquisitions.mapforge",

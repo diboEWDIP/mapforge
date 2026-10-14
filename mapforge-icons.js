@@ -7,7 +7,7 @@
 // Pinned version tag, NOT Date.now() (Eric, 2026-07-21): the old value
 // re-fetched all 41 icon PNGs on every load — invisible locally, slow on a
 // hosted site. Bump the tag when swapping icon art.
-const ICON_BUST = '?v=2026-10-13';    // bumped: Great Sphinx, Mine
+const ICON_BUST = '?v=2026-10-13';    // bumped: Great Sphinx, Mine, Mosque
 
 const drawMountainIcon = _makeSvgStamp('icons/Mountain.svg', 'icon-mountain');
 
@@ -254,6 +254,7 @@ const drawPrintingPress= _makeSvgStamp('icons/Printing Press.svg',        'icon-
 // ── 2026-10-13 set ──
 const drawGreatSphinx  = _makeSvgStamp('icons/Great Sphinx.svg',          'icon-feat-greatsphinx');
 const drawMine         = _makeSvgStamp('icons/Mine.svg',                  'icon-feat-mine');
+const drawMosque       = _makeSvgStamp('icons/Mosque.svg',                'icon-feat-mosque');
 const drawZoroastrianism = _makeSvgStamp('icons/Zoroastrianism.svg',      'icon-religion-zoroastrianism');
 const drawChristianity = _makeSvgStamp('icons/Christianity.svg',    'icon-religion-christianity');
 const drawIslam        = _makeSvgStamp('icons/Islam.svg',           'icon-religion-islam');
@@ -649,6 +650,7 @@ const TRADE_GOODS = {
   'feat-printingpress':  { label: 'Printing Press',  draw: drawPrintingPress },
   'feat-greatsphinx':    { label: 'Great Sphinx',    draw: drawGreatSphinx },
   'feat-mine':           { label: 'Mine',            draw: drawMine        },
+  'feat-mosque':         { label: 'Mosque',          draw: drawMosque      },
   // ── Transport (Noun Project set, 2026-08-16) ──
   'trans-ship':        { label: 'Ship',            draw: drawShip        },
   'trans-trireme':     { label: 'Trireme',         draw: drawTrireme     },

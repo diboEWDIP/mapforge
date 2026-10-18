@@ -3472,11 +3472,38 @@ async function refreshLiveSnapshot() {
 }
 async function _refreshLiveSnapshotInner() {
   // Classification snapshot: relief/graticule/labels hidden during capture,
-  // so fills see only real geography (water, coasts, rivers) as barriers.
+  // so fills see only real geography (water, coasts) as barriers.
   // Normalize to the annotation canvas's backing size so the fill source and
   // land mask are 1:1 with stamp coordinates (they can differ from the map's
   // backing after a cross-DPR project restore).
-  const raw = await MLB.classificationSnapshot(mlMap);
+  // RIVERS are hidden for the pass too (2026-10-17, Eric): drawn in the water
+  // blue they classified as water and cut every country a river crosses into
+  // two flood regions, so Fill painted only the bank that was clicked. With
+  // them out of the pass, Fill floods the whole country; the committed fill is
+  // a native layer beneath the river lines, so the river still draws on top.
+  // Political borders that follow rivers remain barriers via the boundary
+  // layers. The basemap's end-of-pass applyRiverVis re-asserts river
+  // visibility from its own state; the finally below is only the safety net.
+  const riverIds = (mlMap.getStyle().layers || [])
+    .filter(l => l.type === 'line' && /^rivers-/.test(l.id)).map(l => l.id);
+  const riverPrev = {};
+  riverIds.forEach(id => {
+    riverPrev[id] = mlMap.getLayoutProperty(id, 'visibility') || 'visible';
+    if (riverPrev[id] !== 'none') mlMap.setLayoutProperty(id, 'visibility', 'none');
+  });
+  let raw;
+  try {
+    raw = await MLB.classificationSnapshot(mlMap);
+  } finally {
+    // State is truth: only bring back layers that should be on now.
+    const t = MLB.getToggleState();
+    const want = t.layersGroupOn !== false && t.riversOn !== false;
+    riverIds.forEach(id => {
+      if (!mlMap.getLayer(id) || riverPrev[id] === 'none') return;
+      if (want && mlMap.getLayoutProperty(id, 'visibility') === 'none')
+        mlMap.setLayoutProperty(id, 'visibility', 'visible');
+    });
+  }
   if (raw.width === canvas.width && raw.height === canvas.height) {
     mlSnapshotCanvas = raw;
   } else {

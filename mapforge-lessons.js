@@ -53,6 +53,7 @@ const CSS = `
   font-size: 14px; color: #5a4020; }
 #lesson-x:hover { background: #e8d8a0; }
 #lesson-body { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+#lesson-body > * { flex-shrink: 0; }   /* children grow with their content; the body scrolls */
 .lesson-sub { font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #8a5808; margin-top: 4px; }
 #lesson-ta { width: 100%; box-sizing: border-box; min-height: 180px; resize: vertical; background: #ffffff;
   border: 1.5px solid #c8a030; border-radius: 5px; color: #2a1f0e; font: 400 13px/1.5 'Jost', Georgia, serif;

@@ -29,8 +29,10 @@ let panel = null, ta = null, preview = null;
 // the parent task (text before "(a)") plus one sub-task per letter.
 // Items: { kind:'task'|'text', text, level:1|2 }. One level of nesting only.
 const TASK_RE   = /^\s*(?:\d+\s*[.)]|[-*•–—]|\[\s?\]|☐)\s+(.+?)\s*$/;
-const SUB_RE    = /^\s*(?:\(?[a-z]\s*[.)]|\([a-z]\))\s+(.+?)\s*$/;
-const INLINE_RE = /\(([a-z])\)\s*/g;
+// Letters may be upper or lower case; parentheses may be the full-width pair
+// that Word and some paste paths substitute (（a）).
+const SUB_RE    = /^\s*(?:[(（]?[a-zA-Z]\s*[.)）]|[(（][a-zA-Z][)）])\s+(.+?)\s*$/;
+const INLINE_RE = /[(（]([a-zA-Z])[)）]\s*/g;
 
 function trimJoiner(t) {
   // "Timbuktu and" → "Timbuktu"; "Timbuktu," → "Timbuktu"; keep a final period.
@@ -42,7 +44,7 @@ function splitInline(text) {
   const marks = [];
   let m;
   INLINE_RE.lastIndex = 0;
-  while ((m = INLINE_RE.exec(text))) marks.push({ letter: m[1], at: m.index, after: m.index + m[0].length });
+  while ((m = INLINE_RE.exec(text))) marks.push({ letter: m[1].toLowerCase(), at: m.index, after: m.index + m[0].length });
   if (marks.length < 2 || marks[0].letter !== 'a') return null;
   for (let i = 1; i < marks.length; i++)
     if (marks[i].letter.charCodeAt(0) !== marks[i-1].letter.charCodeAt(0) + 1) return null;   // must run a, b, c…

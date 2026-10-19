@@ -22,15 +22,64 @@ let panel = null, ta = null, preview = null;
 
 // ── Parsing ──────────────────────────────────────────────────────────────────
 // A task line: "1. Label the Nile", "1) ...", "- ...", "* ...", "• ...", "[ ] ...".
-const TASK_RE = /^\s*(?:\d+\s*[.)]|[-*•–—]|\[\s?\]|☐)\s+(.+?)\s*$/;
+// A sub-step line: "a. ...", "a) ...", "(a) ..." — indented under the task
+// above it (indentation itself is optional; pasted text often loses it).
+// A task line may also carry sub-steps inline: "... label (a) Timbuktu and
+// (b) Djenne." — a run of parenthesized letters starting at (a) splits into
+// the parent task (text before "(a)") plus one sub-task per letter.
+// Items: { kind:'task'|'text', text, level:1|2 }. One level of nesting only.
+const TASK_RE   = /^\s*(?:\d+\s*[.)]|[-*•–—]|\[\s?\]|☐)\s+(.+?)\s*$/;
+const SUB_RE    = /^\s*(?:\(?[a-z]\s*[.)]|\([a-z]\))\s+(.+?)\s*$/;
+const INLINE_RE = /\(([a-z])\)\s*/g;
+
+function trimJoiner(t) {
+  // "Timbuktu and" → "Timbuktu"; "Timbuktu," → "Timbuktu"; keep a final period.
+  return t.replace(/[\s,;]+$/, '').replace(/\s+(?:and|or|then)$/i, '').replace(/[\s,;]+$/, '').trim();
+}
+
+function splitInline(text) {
+  // Returns [parentText, [sub, sub, ...]] or null when there is no (a)...(b) run.
+  const marks = [];
+  let m;
+  INLINE_RE.lastIndex = 0;
+  while ((m = INLINE_RE.exec(text))) marks.push({ letter: m[1], at: m.index, after: m.index + m[0].length });
+  if (marks.length < 2 || marks[0].letter !== 'a') return null;
+  for (let i = 1; i < marks.length; i++)
+    if (marks[i].letter.charCodeAt(0) !== marks[i-1].letter.charCodeAt(0) + 1) return null;   // must run a, b, c…
+  const parent = trimJoiner(text.slice(0, marks[0].at));
+  const subs = marks.map((mk, i) => trimJoiner(text.slice(mk.after, i + 1 < marks.length ? marks[i+1].at : text.length)))
+                    .filter(Boolean);
+  if (subs.length < 2) return null;
+  return [parent, subs];
+}
+
 function lessonParse(text) {
   const out = [];
+  let lastTask = null;   // most recent level-1 task, for attaching sub-steps
   String(text || '').split(/\r?\n/).forEach(raw => {
     const line = raw.replace(/\s+$/, '');
     if (!line.trim()) return;
-    const m = TASK_RE.exec(line);
-    if (m) out.push({ kind: 'task', text: m[1] });
-    else   out.push({ kind: 'text', text: line.trim() });
+    let m;
+    if ((m = SUB_RE.exec(line)) && lastTask) {
+      out.push({ kind: 'task', text: m[1], level: 2 });
+      return;
+    }
+    if ((m = TASK_RE.exec(line)) || (m = SUB_RE.exec(line))) {
+      const body = m[1];
+      const split = splitInline(body);
+      if (split) {
+        const [parent, subs] = split;
+        if (parent) out.push({ kind: 'task', text: parent, level: 1 });
+        subs.forEach(t => out.push({ kind: 'task', text: t, level: parent ? 2 : 1 }));
+        lastTask = out[out.length - 1];
+      } else {
+        lastTask = { kind: 'task', text: body, level: 1 };
+        out.push(lastTask);
+      }
+      return;
+    }
+    out.push({ kind: 'text', text: line.trim(), level: 1 });
+    lastTask = null;   // a heading/note ends the current task's sub-step run
   });
   return out;
 }
@@ -63,6 +112,8 @@ const CSS = `
 #lesson-preview { background: #ffffff; border: 1px solid #e4dcc8; border-radius: 8px; padding: 10px 12px; min-height: 60px; }
 .lesson-item { display: flex; gap: 9px; align-items: flex-start; padding: 4px 0; font-size: 13px; line-height: 1.45; }
 .lesson-item input { margin: 3px 0 0; accent-color: #a06810; flex: 0 0 auto; }
+.lesson-item.lesson-l2 { padding-left: 26px; font-size: 12.5px; }
+.lesson-item.lesson-l2 input { transform: scale(.9); }
 .lesson-item.lesson-text { font-weight: 600; color: #2a1f0e; padding-top: 8px; }
 .lesson-item.lesson-text:first-child { padding-top: 2px; }
 .lesson-empty { font-size: 12px; color: #8a8070; font-style: italic; }
@@ -83,7 +134,7 @@ function build() {
     '<div id="lesson-body">' +
       '<div class="lesson-sub">Instructions for students</div>' +
       '<textarea id="lesson-ta" spellcheck="true" placeholder="Part 1: Rivers and cities\n1. Label the Nile River.\n2. Stamp the city of Memphis.\n3. Shade the Nile Delta green."></textarea>' +
-      '<div class="lesson-hint">Lines that start with a number, a dash, or a bullet become checkboxes. Other lines stay as headings or notes.</div>' +
+      '<div class="lesson-hint">Lines that start with a number, a dash, or a bullet become checkboxes; a., b., c. lines (or (a) … (b) … inside a step) become sub-steps. Other lines stay as headings or notes.</div>' +
       '<div class="lesson-sub">Student preview</div>' +
       '<div id="lesson-preview"></div>' +
     '</div>' +
@@ -119,7 +170,7 @@ function renderPreview() {
   const items = lessonParse(state.instructions);
   if (!items.length) { preview.innerHTML = '<div class="lesson-empty">Students will see your checklist here.</div>'; return; }
   preview.innerHTML = items.map(it => it.kind === 'task'
-    ? `<label class="lesson-item"><input type="checkbox" disabled><span>${esc(it.text)}</span></label>`
+    ? `<label class="lesson-item${it.level === 2 ? ' lesson-l2' : ''}"><input type="checkbox" disabled><span>${esc(it.text)}</span></label>`
     : `<div class="lesson-item lesson-text">${esc(it.text)}</div>`).join('');
 }
 

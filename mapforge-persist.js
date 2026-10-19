@@ -67,6 +67,8 @@ function serializeProject() {
       onmap: { collapsed: onmapKeyCollapsed, xPct: onmapKeyXPct,
                yPct: onmapKeyYPct, widthPx: onmapKeyWidthPx, cols: onmapKeyCols },
     },
+    // Teacher lesson (instructions for students) — optional, additive; see mapforge-lessons.js
+    lesson: (typeof lessonSerialize === 'function') ? lessonSerialize() : null,
   };
   // Return a true snapshot — `stamps`/`keyManualEntries` above are live arrays, so
   // without this a later resetAnnotations() would mutate an already-returned object.
@@ -138,6 +140,7 @@ function applyRestoredState(data) {
     if (keyPlacement === 'onmap' && onmapKeyCollapsed) {
       onmapKeyBody.style.display     = 'none';
     keyLayerOn = (data.key && data.key.layerOn) !== false;
+    if (typeof lessonRestore === 'function') lessonRestore(data.lesson);   // absent in older saves → empty
       onmapKeyResizeEl.style.display = 'none';
       document.getElementById('onmap-key-collapse').textContent = '▸';
     }
@@ -704,11 +707,11 @@ function adoptOpenedFile(fileName, data) {
 // is always current; the dot says "your real save needs updating").
 function updateSaveIndicator() {
   const b = document.getElementById('hdr-save-btn'); if (!b) return;
-  const behind = hasBase() && (stamps.length || textBoxes.length) && (_fileSig === null || _fileSig !== _projSig());
+  const behind = hasBase() && (stamps.length || textBoxes.length || _lessonLive()) && (_fileSig === null || _fileSig !== _projSig());
   // Folder mode: autosave keeps the file current on its own, so the dot only
   // means "the folder can't be written right now" (needs reconnecting / a
   // failed write) — never the 10 s autosave window.
-  const hasWork = hasBase() && (stamps.length || textBoxes.length);
+  const hasWork = hasBase() && (stamps.length || textBoxes.length || _lessonLive());
   // The dot = "you need to do something": folder mode → the map has never
   // been saved (no file yet) or the folder can't be written; download mode →
   // the downloaded file is behind the map.
@@ -918,6 +921,10 @@ function deleteSavedProject(idx) {
 // AND its state differs from the last save (browser save, file save, or the
 // save it was opened from). Saving clears the prompt until the next edit.
 let _savedSig = null;
+// A teacher's lesson counts as work even on a map with no stamps or labels
+// (a reference lesson on a plain library map) — see mapforge-lessons.js.
+function _lessonLive() { return typeof lessonSerialize === 'function' && !!lessonSerialize(); }
+function _lessonIn(d)  { return !!(d && d.lesson && d.lesson.instructions); }
 function _projSig() {
   try { const d = serializeProject(); delete d.savedAt; return JSON.stringify(d); }
   catch (e) { return null; }
@@ -1117,7 +1124,7 @@ function offerRecovery() {
   try { data = JSON.parse(raw); } catch (e) { return; }
   const n = (data && data.stamps ? data.stamps.length : 0) +
             (data && data.textBoxes ? data.textBoxes.length : 0);
-  if (!data || !data.map || n === 0) return;
+  if (!data || !data.map || (n === 0 && !_lessonIn(data))) return;
   // Autosave identical to an existing named save (e.g. a saved map was opened
   // and autosaved, then the session ended with no edits): nothing to recover —
   // it is already in the saved list. Clear the slot so it stops asking.
@@ -1129,7 +1136,7 @@ function offerRecovery() {
   _recoveryData = data;
   const banner = document.getElementById('recovery-banner');
   document.getElementById('recovery-text').textContent =
-    `You have unsaved work from your last session (${n} item${n === 1 ? '' : 's'}, ${fmtSavedAt(data.savedAt)}).`;
+    `You have unsaved work from your last session (${n ? n + ' item' + (n === 1 ? '' : 's') : 'lesson instructions'}, ${fmtSavedAt(data.savedAt)}).`;
   banner.classList.add('show');
 }
 function acceptRecovery() {

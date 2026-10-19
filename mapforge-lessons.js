@@ -24,7 +24,7 @@ let panel = null, ta = null, preview = null;
 // A task line: "1. Label the Nile", "1) ...", "- ...", "* ...", "• ...", "[ ] ...".
 // A sub-step line: "a. ...", "a) ...", "(a) ..." — indented under the task
 // above it (indentation itself is optional; pasted text often loses it).
-// A task line may also carry sub-steps inline: "... label (a) Timbuktu and
+// Any line (numbered or not) may carry sub-steps inline: "... label (a) Timbuktu and
 // (b) Djenne." — a run of parenthesized letters starting at (a) splits into
 // the parent task (text before "(a)") plus one sub-task per letter.
 // Items: { kind:'task'|'text', text, level:1|2 }. One level of nesting only.
@@ -78,6 +78,16 @@ function lessonParse(text) {
         lastTask = { kind: 'task', text: body, level: 1 };
         out.push(lastTask);
       }
+      return;
+    }
+    // A plain sentence that carries an (a) … (b) … run is a task too, even
+    // with no number in front ("In central Egypt, label (a) Thebes, (b) Cairo").
+    const split = splitInline(line.trim());
+    if (split) {
+      const [parent, subs] = split;
+      if (parent) out.push({ kind: 'task', text: parent, level: 1 });
+      subs.forEach(t => out.push({ kind: 'task', text: t, level: parent ? 2 : 1 }));
+      lastTask = out[out.length - 1];
       return;
     }
     out.push({ kind: 'text', text: line.trim(), level: 1 });

@@ -64,6 +64,7 @@ function serializeProject() {
       manualEntries: keyManualEntries,
       suppressed:    [...keySuppressedTypes],
       customLabels:  { ...keyCustomLabels },
+      order:         (typeof keyOrder !== 'undefined') ? [...keyOrder] : [],   // drag-ordered entry ids (2026-10-20)
       onmap: { collapsed: onmapKeyCollapsed, xPct: onmapKeyXPct,
                yPct: onmapKeyYPct, widthPx: onmapKeyWidthPx, cols: onmapKeyCols },
     },
@@ -126,6 +127,7 @@ function applyRestoredState(data) {
     (k.suppressed || []).forEach(t => keySuppressedTypes.add(t));
     Object.keys(keyCustomLabels).forEach(key => delete keyCustomLabels[key]);
     Object.assign(keyCustomLabels, k.customLabels || {});
+    if (typeof keyOrder !== 'undefined') keyOrder = Array.isArray(k.order) ? k.order.slice() : [];
     if (k.lineStyle) keyLineStyle = k.lineStyle;
 
     const om = k.onmap || {};

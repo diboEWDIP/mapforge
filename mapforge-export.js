@@ -144,8 +144,7 @@ async function _buildExportCanvasInner() {
   const mapW = canvas.width;
   const mapH = canvas.height;
 
-  const autoEntries = exportIncludeKey ? collectAutoKeyEntries() : [];
-  const allEntries  = exportIncludeKey ? [...autoEntries, ...keyManualEntries] : [];
+  const allEntries  = exportIncludeKey ? keyEntriesAll() : [];   // teacher's drag order (2026-10-20)
 
   // Inset matches the border exactly: the map runs to the neatline with no
   // cream mat ring (the old 8px inset left a visible 5px cream line inside
@@ -593,7 +592,7 @@ async function printExport() {
 // Standalone image of just the key — for slides / worksheets.
 function exportKeyImage() {
   if (!ensureMapLoaded()) return;
-  const entries = [...collectAutoKeyEntries(), ...keyManualEntries];
+  const entries = keyEntriesAll();
   if (!entries.length) { flashExportStatus('No key entries yet — add some with the Map Key (🗝) button.'); return; }
   const S = 3;   // supersample for crisp projection
   const meas = document.createElement('canvas').getContext('2d');
@@ -643,7 +642,7 @@ function openExportModal() {
   document.getElementById('exp-inc-title').checked = exportIncludeTitle;
   document.getElementById('exp-inc-key').checked   = exportIncludeKey;
   // Grey out toggles with nothing to include
-  const entries = [...collectAutoKeyEntries(), ...keyManualEntries];
+  const entries = keyEntriesAll();
   document.getElementById('exp-inc-key').parentElement.style.opacity = entries.length ? '' : '.45';
   document.getElementById('exp-inc-title').parentElement.style.opacity = mapTitle ? '' : '.45';
   document.getElementById('exp-caption').textContent =
@@ -686,7 +685,7 @@ function renderExportPreviewDraw() {
   const pv = document.getElementById('exp-preview');
   if (!pv || !hasBase()) return;
   const mapW = canvas.width, mapH = canvas.height;
-  const entries = exportIncludeKey ? [...collectAutoKeyEntries(), ...keyManualEntries] : [];
+  const entries = exportIncludeKey ? keyEntriesAll() : [];
   const numRows = Math.min(entries.length, KEY_MAX_ROWS);
   const keyH = (entries.length && keyPlacement === 'below')
     ? KEY_PAD + KEY_TITLE_H + numRows * KEY_ROW_H + KEY_PAD : 0;
@@ -785,7 +784,7 @@ function makeSaveThumbAsync(cb, w) {
 function makeSaveThumb(w) {
   try {
     const mapW = canvas.width, mapH = canvas.height;
-    const entries = [...collectAutoKeyEntries(), ...keyManualEntries];
+    const entries = keyEntriesAll();
     const W = w || 220;
     const t = document.createElement('canvas');
     t.width = W; t.height = Math.max(1, Math.round(W * mapH / mapW));

@@ -4019,6 +4019,7 @@ function resetAnnotations() {
   arrowStart = null;
   mode = 'idle';
   keyManualEntries.length = 0;
+  keyOrder = [];
   keySuppressedTypes.clear();
   Object.keys(keyCustomLabels).forEach(k => delete keyCustomLabels[k]);
   mapTitle = '';
@@ -5530,6 +5531,22 @@ canvas.addEventListener('mouseleave', () => {
 const keyManualEntries   = [];
 const keySuppressedTypes = new Set();
 const keyCustomLabels    = {};   // id → custom display label (overrides default)
+// Teacher-chosen order of key entries (entry ids, first = top). Entries not
+// listed (newly placed stamps) follow in their natural order. Saved with the
+// map; drag rows in the Edit Key tab to change it (2026-10-20).
+let keyOrder = [];
+function keyEntriesAll() {
+  const all = [...collectAutoKeyEntries(), ...keyManualEntries];
+  if (!keyOrder.length) return all;
+  const rank = new Map(keyOrder.map((id, i) => [id, i]));
+  return all.map((e, i) => ({ e, i, r: rank.has(e.id) ? rank.get(e.id) : keyOrder.length + i }))
+            .sort((a, b) => a.r - b.r).map(x => x.e);
+}
+function setKeyOrderFromRows() {
+  keyOrder = [...document.querySelectorAll('#km-edit-list .km-edit-row')].map(r => r.dataset.entryId);
+  refreshOnmapKeyBody();
+  if (typeof scheduleAutosave === 'function') scheduleAutosave();
+}
 let   mapTitle           = '';
 let   mapSubtitle        = '';
 let   titleFrameOn       = true;   // bounding box (border/neatline) around the title
@@ -5572,7 +5589,7 @@ function openKeyEditTab() {
   document.getElementById('km-addmore').style.display = 'none';
   document.getElementById('km-edit').style.display    = 'block';
 
-  const all  = [...collectAutoKeyEntries(), ...keyManualEntries];
+  const all  = keyEntriesAll();
   const list = document.getElementById('km-edit-list');
   list.innerHTML = '';
 
@@ -5585,6 +5602,48 @@ function openKeyEditTab() {
   all.forEach(entry => {
     const row = document.createElement('div');
     row.className = 'km-edit-row';
+    row.dataset.entryId = entry.id;
+    row.draggable = true;
+
+    // Drag handle: mouse-drag the row to reorder; focus it and use ↑/↓ too.
+    const grip = document.createElement('span');
+    grip.className = 'km-grip';
+    grip.textContent = '⋮⋮';
+    grip.title = 'Drag to reorder (or focus and press ↑ / ↓)';
+    grip.tabIndex = 0;
+    grip.addEventListener('click', e => e.stopPropagation());
+    grip.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      e.preventDefault(); e.stopPropagation();
+      const sib = e.key === 'ArrowUp' ? row.previousElementSibling : row.nextElementSibling;
+      if (!sib || !sib.classList.contains('km-edit-row')) return;
+      if (e.key === 'ArrowUp') list.insertBefore(row, sib); else list.insertBefore(sib, row);
+      setKeyOrderFromRows();
+      grip.focus();
+    });
+    row.addEventListener('dragstart', e => {
+      _kmDragRow = row; row.classList.add('km-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', entry.id); } catch (err) {}
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('km-dragging'); _kmDragRow = null;
+      list.querySelectorAll('.km-drop-before, .km-drop-after').forEach(r => r.classList.remove('km-drop-before', 'km-drop-after'));
+    });
+    row.addEventListener('dragover', e => {
+      if (!_kmDragRow || _kmDragRow === row) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+      const before = e.offsetY < row.offsetHeight / 2;
+      list.querySelectorAll('.km-drop-before, .km-drop-after').forEach(r => r.classList.remove('km-drop-before', 'km-drop-after'));
+      row.classList.add(before ? 'km-drop-before' : 'km-drop-after');
+    });
+    row.addEventListener('drop', e => {
+      if (!_kmDragRow || _kmDragRow === row) return;
+      e.preventDefault();
+      const before = e.offsetY < row.offsetHeight / 2;
+      list.insertBefore(_kmDragRow, before ? row : row.nextSibling);
+      setKeyOrderFromRows();
+    });
 
     const cb = document.createElement('input');
     cb.type = 'checkbox';
@@ -5609,6 +5668,7 @@ function openKeyEditTab() {
     // Clicking the input should not toggle the checkbox
     inp.addEventListener('click', e => e.stopPropagation());
 
+    row.appendChild(grip);
     row.appendChild(cb);
     row.appendChild(inp);
     list.appendChild(row);
@@ -5616,6 +5676,7 @@ function openKeyEditTab() {
 
   updateRemoveBtn();
 }
+let _kmDragRow = null;
 
 function updateRemoveBtn() {
   const any = !!document.querySelector('#km-edit-list input[type=checkbox]:checked');
@@ -6584,7 +6645,7 @@ function refreshOnmapKeyBody() {
     return;
   }
   onmapKeyEl.style.display = '';   // eye back on: clear the inline hide
-  const entries = [...collectAutoKeyEntries(), ...keyManualEntries];
+  const entries = keyEntriesAll();
 
   // On-map is now the DEFAULT placement: the key box appears by itself the
   // first time a key-worthy stamp lands (students never opened the modal in
@@ -6694,7 +6755,7 @@ onmapKeyBody.addEventListener('click', () => openKeyModal());
     if (!resizing) return;
     // Photoshop-style: the drag chooses a COLUMN COUNT; the box snaps to the
     // natural size of that layout. Drag wide = horizontal key, narrow = tall.
-    const entries = [...collectAutoKeyEntries(), ...keyManualEntries];
+    const entries = keyEntriesAll();
     if (!entries.length) return;
     const targetW = startW + (e.clientX - startX);
     const cols = Math.max(1, Math.min(entries.length,

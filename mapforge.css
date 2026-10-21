@@ -1188,6 +1188,13 @@ GOLD card; Dismiss = palette red (destroys the autosave). ── */
   user-select: none;
 }
 .km-edit-row:hover { background: #e4d8bc; }
+/* Drag-to-reorder (2026-10-20): grip handle + drop-line cues */
+.km-edit-row .km-grip { color: #a08a5a; font-size: 12px; letter-spacing: -2px; cursor: grab; user-select: none;
+  padding: 0 2px; border-radius: 3px; flex-shrink: 0; }
+.km-edit-row .km-grip:focus { outline: none; box-shadow: 0 0 0 2px #c8a030; color: #5a4020; }
+.km-edit-row.km-dragging { opacity: .45; }
+.km-edit-row.km-drop-before { box-shadow: inset 0 2px 0 #a06810; }
+.km-edit-row.km-drop-after  { box-shadow: inset 0 -2px 0 #a06810; }
 .km-edit-row input[type=checkbox] { cursor: pointer; accent-color: #c8a030; flex-shrink: 0; }
 .km-edit-row .km-label-input {
   flex: 1;

@@ -924,7 +924,7 @@ let _savedSig = null;
 // A teacher's lesson counts as work even on a map with no stamps or labels
 // (a reference lesson on a plain library map) — see mapforge-lessons.js.
 function _lessonLive() { return typeof lessonSerialize === 'function' && !!lessonSerialize(); }
-function _lessonIn(d)  { return !!(d && d.lesson && d.lesson.instructions); }
+function _lessonIn(d)  { return !!(d && d.lesson && (d.lesson.instructions || (d.lesson.links && d.lesson.links.length))); }
 function _projSig() {
   try { const d = serializeProject(); delete d.savedAt; return JSON.stringify(d); }
   catch (e) { return null; }

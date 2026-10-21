@@ -9,7 +9,7 @@
 //
 // Globals used by the host page:
 //   lessonToggle() / lessonOpen() / lessonClose()   — the header button + ✕
-//   lessonSerialize()  → { v, instructions } | null  — called by serializeProject
+//   lessonSerialize()  → { v, instructions, links } | null — called by serializeProject
 //   lessonRestore(d)                                — called by applyRestoredState
 //   lessonReset()                                   — called by resetAnnotations
 //   lessonParse(text)  → [{ kind:'task'|'text', text }]
@@ -17,8 +17,9 @@
 'use strict';
 
 const LESSON_VERSION = 1;
-const state = { instructions: '' };
-let panel = null, ta = null, preview = null;
+const MAX_LINKS = 8;
+const state = { instructions: '', links: [] };   // links: [{ label, url }]
+let panel = null, ta = null, preview = null, linksBox = null;
 
 // ── Parsing ──────────────────────────────────────────────────────────────────
 // A task line: "1. Label the Nile", "1) ...", "- ...", "* ...", "• ...", "[ ] ...".
@@ -129,6 +130,23 @@ const CSS = `
 .lesson-item.lesson-text { font-weight: 600; color: #2a1f0e; padding-top: 8px; }
 .lesson-item.lesson-text:first-child { padding-top: 2px; }
 .lesson-empty { font-size: 12px; color: #8a8070; font-style: italic; }
+#lesson-links { display: flex; flex-direction: column; gap: 6px; }
+.lesson-link-row { display: grid; grid-template-columns: 1fr 1.3fr auto auto; gap: 6px; align-items: center; }
+.lesson-link-row input { width: 100%; box-sizing: border-box; background: #ffffff; border: 1.5px solid #c8a030;
+  border-radius: 5px; color: #2a1f0e; font: 400 12px 'Jost', Georgia, serif; padding: 5px 8px; outline: none; min-width: 0; }
+.lesson-link-row input:focus { border-color: #8a5808; }
+.lesson-link-row input.lesson-missing { border-color: #c84b31; background: #fdf3ef; }
+.lesson-link-open, .lesson-link-del { width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 50%;
+  color: #5a4020; text-decoration: none; cursor: pointer; font-size: 13px; }
+.lesson-link-open:hover, .lesson-link-del:hover { background: #e8d8a0; }
+.lesson-link-open.lesson-off { opacity: .3; pointer-events: none; }
+#lesson-add-link { align-self: flex-start; background: #faf5ea; border: 1.5px solid #c8a030; border-radius: 5px;
+  color: #2a1f0e; font: 400 12px 'Jost', Georgia, serif; padding: 4px 10px; cursor: pointer; }
+#lesson-add-link:hover { background: #e8d8a0; }
+#lesson-add-link[disabled] { opacity: .4; cursor: default; }
+.lesson-links-title { font-weight: 600; font-size: 12.5px; padding: 2px 0 4px; }
+.lesson-ref { display: block; font-size: 13px; line-height: 1.5; color: #1c4f7a; text-decoration: underline; padding: 2px 0; }
+.lesson-ref-wrap { border-bottom: 1px solid #e4dcc8; margin-bottom: 8px; padding-bottom: 6px; }
 #lesson-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 16px;
   border-top: 1px solid #e4dcc8; font-size: 12px; color: #5c5145; }
 #lesson-clear { background: #faf5ea; border: 1.5px solid #c8a030; border-radius: 5px; color: #2a1f0e;
@@ -149,22 +167,82 @@ function build() {
       '<div class="lesson-hint">Lines that start with a number, a dash, or a bullet become checkboxes; a., b., c. lines (or (a) … (b) … inside a step) become sub-steps. Other lines stay as headings or notes.</div>' +
       '<div class="lesson-sub">Student preview</div>' +
       '<div id="lesson-preview"></div>' +
+      '<div class="lesson-sub">Reference maps</div>' +
+      '<div class="lesson-hint">Links students can open in a new tab. A label is required; students see the label, not the address.</div>' +
+      '<div id="lesson-links"></div>' +
+      '<button id="lesson-add-link" type="button">+ Add link</button>' +
     '</div>' +
     '<div id="lesson-foot"><span id="lesson-status">Saved with this map.</span><button id="lesson-clear" type="button">Clear</button></div>';
   const host = document.getElementById('main-area') || document.body;
   host.appendChild(panel);
   ta = panel.querySelector('#lesson-ta');
   preview = panel.querySelector('#lesson-preview');
+  linksBox = panel.querySelector('#lesson-links');
+  panel.querySelector('#lesson-add-link').addEventListener('click', () => { addLinkRow(); renderLinks(true); });
   panel.querySelector('#lesson-x').addEventListener('click', lessonClose);
   panel.querySelector('#lesson-clear').addEventListener('click', () => {
     if (state.instructions && !confirm('Clear the instructions for this map?')) return;
-    ta.value = ''; onInput();
+    ta.value = ''; state.links = []; onInput(); renderLinks();
   });
   ta.addEventListener('input', onInput);
   // The host's Escape handler backs tools out one level per press; inside the
   // editor, Escape just closes the panel and stops there.
   ta.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); lessonClose(); } });
+  renderLinks();
   renderPreview();
+}
+
+// ── Reference links ──────────────────────────────────────────────────────────
+function normalizeUrl(u) {
+  u = String(u || '').trim();
+  if (!u) return '';
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = 'https://' + u;   // bare "drive.google.com/…" → https
+  return /^https?:\/\//i.test(u) ? u : '';                    // only web links; nothing else opens
+}
+function validLinks() {
+  return state.links
+    .map(l => ({ label: String(l.label || '').trim(), url: normalizeUrl(l.url) }))
+    .filter(l => l.label && l.url);
+}
+function addLinkRow() {
+  if (state.links.length >= MAX_LINKS) return;
+  state.links.push({ label: '', url: '' });
+}
+function renderLinks(focusLast) {
+  if (!linksBox) return;
+  while (state.links.length < 3 && state.links.length < MAX_LINKS) state.links.push({ label: '', url: '' });
+  linksBox.innerHTML = state.links.map((l, i) => {
+    const url = normalizeUrl(l.url);
+    const labelMissing = !!url && !String(l.label || '').trim();
+    return `<div class="lesson-link-row" data-i="${i}">` +
+      `<input type="text" class="lesson-link-label${labelMissing ? ' lesson-missing' : ''}" placeholder="Label (e.g. Textbook map, p. 42)" value="${esc(l.label || '')}" title="${labelMissing ? 'Add a label so students see this link' : 'What students will see'}">` +
+      `<input type="text" class="lesson-link-url" placeholder="Paste the address" value="${esc(l.url || '')}">` +
+      `<a class="lesson-link-open${url ? '' : ' lesson-off'}" href="${esc(url || '#')}" target="_blank" rel="noopener noreferrer" title="Open in a new tab">↗</a>` +
+      `<span class="lesson-link-del" title="Remove this link">✕</span>` +
+      `</div>`;
+  }).join('');
+  linksBox.querySelectorAll('.lesson-link-row').forEach(row => {
+    const i = +row.dataset.i;
+    row.querySelector('.lesson-link-label').addEventListener('input', e => { state.links[i].label = e.target.value; onLinksChanged(row, i); });
+    row.querySelector('.lesson-link-url').addEventListener('input',   e => { state.links[i].url   = e.target.value; onLinksChanged(row, i); });
+    row.querySelector('.lesson-link-del').addEventListener('click', () => { state.links.splice(i, 1); renderLinks(); onLinksChanged(); });
+  });
+  const add = panel.querySelector('#lesson-add-link');
+  add.disabled = state.links.length >= MAX_LINKS;
+  add.textContent = state.links.length >= MAX_LINKS ? `Up to ${MAX_LINKS} links` : '+ Add link';
+  if (focusLast) { const last = linksBox.querySelector('.lesson-link-row:last-child .lesson-link-label'); if (last) last.focus(); }
+}
+function onLinksChanged(row, i) {
+  if (row) {   // keep the row's open-icon and missing-label cue live without re-rendering (focus stays put)
+    const l = state.links[i], url = normalizeUrl(l.url);
+    const a = row.querySelector('.lesson-link-open');
+    a.href = url || '#'; a.classList.toggle('lesson-off', !url);
+    row.querySelector('.lesson-link-label').classList.toggle('lesson-missing', !!url && !String(l.label || '').trim());
+  }
+  renderPreview();
+  updateDot();
+  if (typeof scheduleAutosave === 'function') scheduleAutosave();
+  if (typeof updateSaveIndicator === 'function') updateSaveIndicator();
 }
 
 function onInput() {
@@ -180,15 +258,20 @@ function esc(s) { return s.replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '
 function renderPreview() {
   if (!preview) return;
   const items = lessonParse(state.instructions);
-  if (!items.length) { preview.innerHTML = '<div class="lesson-empty">Students will see your checklist here.</div>'; return; }
-  preview.innerHTML = items.map(it => it.kind === 'task'
+  const links = validLinks();
+  const refs = links.length
+    ? '<div class="lesson-ref-wrap"><div class="lesson-links-title">Reference maps</div>' +
+      links.map(l => `<a class="lesson-ref" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.label)}</a>`).join('') + '</div>'
+    : '';
+  if (!items.length && !links.length) { preview.innerHTML = '<div class="lesson-empty">Students will see your checklist and reference maps here.</div>'; return; }
+  preview.innerHTML = refs + items.map(it => it.kind === 'task'
     ? `<label class="lesson-item${it.level === 2 ? ' lesson-l2' : ''}"><input type="checkbox" disabled><span>${esc(it.text)}</span></label>`
     : `<div class="lesson-item lesson-text">${esc(it.text)}</div>`).join('');
 }
 
 function updateDot() {
   const b = document.getElementById('hdr-lesson-btn'); if (!b) return;
-  const has = !!state.instructions.trim();
+  const has = !!state.instructions.trim() || validLinks().length > 0;
   b.classList.toggle('has-lesson', has);
   b.title = has ? 'Lesson: edit the instructions and links for students'
                 : 'Lesson: instructions and links for students';
@@ -198,6 +281,7 @@ function updateDot() {
 function lessonOpen() {
   build();
   ta.value = state.instructions;
+  renderLinks();
   renderPreview();
   panel.classList.add('open');
   setTimeout(() => ta.focus(), 0);
@@ -207,17 +291,20 @@ function lessonToggle() { (panel && panel.classList.contains('open')) ? lessonCl
 
 function lessonSerialize() {
   const text = state.instructions || '';
-  if (!text.trim()) return null;
-  return { v: LESSON_VERSION, instructions: text };
+  const links = validLinks();
+  if (!text.trim() && !links.length) return null;
+  return { v: LESSON_VERSION, instructions: text, links };
 }
 function lessonRestore(d) {
   state.instructions = (d && typeof d.instructions === 'string') ? d.instructions : '';
-  if (ta) { ta.value = state.instructions; renderPreview(); }
+  state.links = (d && Array.isArray(d.links)) ? d.links.map(l => ({ label: String(l.label || ''), url: String(l.url || '') })).slice(0, MAX_LINKS) : [];
+  if (ta) { ta.value = state.instructions; renderLinks(); renderPreview(); }
   updateDot();
 }
 function lessonReset() {
   state.instructions = '';
-  if (ta) { ta.value = ''; renderPreview(); }
+  state.links = [];
+  if (ta) { ta.value = ''; renderLinks(); renderPreview(); }
   lessonClose();
   updateDot();
 }

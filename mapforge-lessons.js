@@ -168,7 +168,7 @@ function build() {
       '<div class="lesson-sub">Student preview</div>' +
       '<div id="lesson-preview"></div>' +
       '<div class="lesson-sub">Reference maps</div>' +
-      '<div class="lesson-hint">Links students can open in a new tab. A label is required; students see the label, not the address.</div>' +
+      '<div class="lesson-hint">Links students can open in a new tab. A label is required; students see the label, not the web link.</div>' +
       '<div id="lesson-links"></div>' +
       '<button id="lesson-add-link" type="button">+ Add link</button>' +
     '</div>' +
@@ -215,8 +215,8 @@ function renderLinks(focusLast) {
     const url = normalizeUrl(l.url);
     const labelMissing = !!url && !String(l.label || '').trim();
     return `<div class="lesson-link-row" data-i="${i}">` +
-      `<input type="text" class="lesson-link-label${labelMissing ? ' lesson-missing' : ''}" placeholder="Label (e.g. Textbook map, p. 42)" value="${esc(l.label || '')}" title="${labelMissing ? 'Add a label so students see this link' : 'What students will see'}">` +
-      `<input type="text" class="lesson-link-url" placeholder="Paste the address" value="${esc(l.url || '')}">` +
+      `<input type="text" class="lesson-link-label${labelMissing ? ' lesson-missing' : ''}" name="mf-link-title-${i}" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Label (e.g. Textbook map, p. 42)" value="${esc(l.label || '')}" title="${labelMissing ? 'Add a label so students see this link' : 'What students will see'}">` +
+      `<input type="url" inputmode="url" class="lesson-link-url" name="mf-link-web-${i}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Paste the web link" value="${esc(l.url || '')}">` +
       `<a class="lesson-link-open${url ? '' : ' lesson-off'}" href="${esc(url || '#')}" target="_blank" rel="noopener noreferrer" title="Open in a new tab">↗</a>` +
       `<span class="lesson-link-del" title="Remove this link">✕</span>` +
       `</div>`;

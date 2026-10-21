@@ -1005,7 +1005,15 @@
 
   <div id="ss-library" style="display:none;">
     <button id="ss-back" type="button" onclick="showMapChoices()" title="Back to home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 9-8 9 8"/><path d="M5 9v11h14V9"/><path d="M10 20v-6h4v6"/></svg><span>Back</span></button>
+    <div id="ss-lib-search-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="ss-lib-search" type="search" placeholder="Search maps (e.g. rome, egypt, 1800s)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+             oninput="libFilter(this.value)"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();libOpenFirst();} if(event.key==='Escape'){event.stopPropagation();this.value='';libFilter('');}">
+      <span id="ss-lib-count"></span>
+    </div>
     <div id="ss-library-grid"></div>
+    <div id="ss-lib-none" style="display:none;">No maps match. Try a shorter word, like a region or century.</div>
   </div>
 </div>
 
@@ -3937,6 +3945,52 @@ function showMapLibrary() {
   document.getElementById('ss-choices').style.display = 'none';
   document.getElementById('ss-saves').style.display   = 'none';
   document.getElementById('ss-library').style.display  = 'block';
+  const q = document.getElementById('ss-lib-search');
+  if (q) { q.value = ''; libFilter(''); setTimeout(() => q.focus(), 0); }
+}
+
+// ── Library search (2026-10-20) ─────────────────────────────────────────────
+// Filters the library cards in place: a card matches when the query appears
+// in its title OR in the section heading above it, so "rome" keeps the whole
+// Rome section and "1800s" keeps every map whose name carries it. Section
+// headers with no visible cards hide too. Pure DOM filtering — the live and
+// base-map builders are untouched and the grid order never changes.
+function libFilter(q) {
+  q = (q || '').trim().toLowerCase();
+  const grid = document.getElementById('ss-library-grid');
+  if (!grid) return;
+  let section = '', shown = 0, total = 0, lastHdr = null, hdrShown = 0;
+  const finishHdr = () => { if (lastHdr) lastHdr.style.display = hdrShown ? '' : 'none'; };
+  for (const el of grid.children) {
+    if (el.classList.contains('ss-section-header')) {
+      finishHdr();
+      lastHdr = el; hdrShown = 0;
+      section = el.textContent.trim().toLowerCase();
+      continue;
+    }
+    if (!el.classList.contains('ss-map-card')) continue;
+    total++;
+    const label = (el.querySelector('.ss-map-label') || el).textContent.trim().toLowerCase();
+    const hit = !q || libMatch(label, q) || libMatch(section, q);
+    el.style.display = hit ? '' : 'none';
+    if (hit) { shown++; hdrShown++; }
+  }
+  finishHdr();
+  const count = document.getElementById('ss-lib-count');
+  if (count) count.textContent = q ? `${shown} of ${total}` : '';
+  const none = document.getElementById('ss-lib-none');
+  if (none) none.style.display = (q && !shown) ? '' : 'none';
+}
+// Match at the START of a word, so "rom" finds Rome and Roman but not
+// Compromise; a query with a space ("punic war") matches as a phrase.
+function libMatch(text, q) {
+  if (q.includes(' ')) return text.includes(q);
+  return text.split(/[^a-z0-9]+/).some(w => w.startsWith(q));
+}
+function libOpenFirst() {
+  const grid = document.getElementById('ss-library-grid');
+  const first = grid && [...grid.querySelectorAll('.ss-map-card')].find(c => c.style.display !== 'none');
+  if (first) first.click();
 }
 
 function showMapChoices() {

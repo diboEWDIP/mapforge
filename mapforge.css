@@ -1374,6 +1374,17 @@ fallback (shows if homescreen-bg.png isn't present, so nothing breaks). */
   max-width: 180px;
 }
 #ss-library { width: 100%; max-width: 1200px; }
+/* Library search (2026-10-20): sits beside Back; filters the cards in place. */
+#ss-lib-search-wrap { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 20px 12px; padding: 0 12px;
+  height: 36px; background: #FAF5EA; border-radius: 6px; box-shadow: 0 2px 8px rgba(42,31,14,.14); color: #7a5c1e;
+  vertical-align: top; }
+#ss-lib-search { width: 260px; border: none; outline: none; background: transparent; color: #2a1f0e;
+  font: 400 14px 'Jost', Georgia, serif; }
+#ss-lib-search::placeholder { color: #9a8a6a; }
+#ss-lib-search::-webkit-search-cancel-button { -webkit-appearance: none; }
+#ss-lib-count { font: 600 11px 'Jost', Georgia, serif; letter-spacing: .04em; color: #7a5c1e; white-space: nowrap; }
+#ss-lib-none { color: #FAF5EA; font: 400 14px 'Jost', Georgia, serif; opacity: .85; padding: 8px 2px; }
+@media (max-width: 640px) { #ss-lib-search-wrap { margin-left: 0; width: 100%; box-sizing: border-box; } #ss-lib-search { width: 100%; } }
 /* Library → home: a real button (home icon + "Back"), button radius token 6px. */
 #ss-back {
   display: inline-flex; align-items: center; gap: 8px;

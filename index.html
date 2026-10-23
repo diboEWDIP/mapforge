@@ -125,6 +125,11 @@
 
     <!-- Text options — shown for the Text tool / a selected label -->
     <div id="text-ctrl" style="display:none;align-items:center;gap:6px;flex-shrink:0;">
+      <!-- Label style presets (2026-10-22): one click sets face, style, size and colour. -->
+      <button class="r2-style-btn r2-preset" id="r2pre-city"   onclick="lpApplyPreset('city')"   title="City label: plain, small, black">City</button>
+      <button class="r2-style-btn r2-preset" id="r2pre-region" onclick="lpApplyPreset('region')" title="Region label: capitals, larger, black">Region</button>
+      <button class="r2-style-btn r2-preset" id="r2pre-water"  onclick="lpApplyPreset('water')"  title="Water label: italic, blue">Water</button>
+      <span class="sep">|</span>
       <button class="r2-style-btn" id="r2fs-jn" onclick="lpSetFontStyle('Jost','normal')" style="font-family:'Jost';">Abc</button>
       <button class="r2-style-btn" id="r2fs-ji" onclick="lpSetFontStyle('Jost','italic')" style="font-family:'Jost';font-style:italic;">Abc</button>
       <button class="r2-style-btn" id="r2fs-cn" onclick="lpSetFontStyle('Tiller','normal')" style="font-family:'Colus';">ABC</button>
@@ -6306,6 +6311,7 @@ function syncTextCtrl() {
     chip.style.fontStyle  = lpFontStyle === 'italic' ? 'italic' : 'normal';
     chip.style.fontWeight = lpFontStyle === 'bold' ? '700' : '400';
   }
+  if (typeof lpSyncPresetButtons === 'function') lpSyncPresetButtons();
   if (typeof renderToolPreview === 'function') renderToolPreview();
 }
 function railPick(mode) {
@@ -6914,6 +6920,43 @@ function lpSetFontStyle(fam, style) {
     el.style.fontFamily = lpFamStack(fam);
     applyFontStyleToEl(el, style);
     commitTBEdit(selectedTB, before);
+  }
+}
+
+// ── Label style presets (2026-10-22) ────────────────────────────────────────
+// A textbook's type hierarchy in one click: face, style, size (document px,
+// so it prints the same at any map zoom) and colour. The +/- size controls
+// and the colour bar still work afterwards — a preset is a starting point.
+// Applied to a selected label as ONE undo step; otherwise sets the tool.
+const LABEL_PRESETS = {
+  city:   { fam: 'Jost',   style: 'normal', size: 12, color: '#111111' },
+  region: { fam: 'Tiller', style: 'normal', size: 18, color: '#111111' },   // Colus caps face
+  water:  { fam: 'Jost',   style: 'italic', size: 12, color: '#1d6996' },   // palette Blue
+};
+function lpApplyPreset(key) {
+  const p = LABEL_PRESETS[key]; if (!p) return;
+  const tb = selectedTB;
+  const before = tb ? snapshotTB(tb) : null;
+  selectedTB = null;                       // the setters below must not each commit an undo step
+  try {
+    setActiveColor(p.color);
+    lpSetFontStyle(p.fam, p.style);
+    setTextSize(p.size);
+  } finally { selectedTB = tb; }
+  if (tb) {
+    tb.color = p.color; tb.fontFamily = p.fam; tb.fontStyle = p.style; tb.fontSize = p.size;
+    const el = tb.el.querySelector('.tb-content');
+    el.style.color = p.color; el.style.fontFamily = lpFamStack(p.fam);
+    applyFontStyleToEl(el, p.style); el.style.fontSize = p.size + 'px';
+    commitTBEdit(tb, before);
+  }
+  lpSyncPresetButtons();
+}
+function lpSyncPresetButtons() {
+  for (const [key, p] of Object.entries(LABEL_PRESETS)) {
+    const b = document.getElementById('r2pre-' + key); if (!b) continue;
+    b.classList.toggle('active', lpFontFamily === p.fam && lpFontStyle === p.style &&
+                                 currentFontSize === p.size && activeColor.toLowerCase() === p.color);
   }
 }
 

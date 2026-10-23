@@ -264,6 +264,8 @@ body.live-explore #tool-rail { pointer-events: none; opacity: 0.35; transition: 
   cursor: pointer;
 }
 .r2-style-btn.active { background: #FAF5EA; border-color: #FAF5EA; }
+/* Label presets (2026-10-22): word buttons, a touch narrower than the face buttons */
+.r2-style-btn.r2-preset { padding: 3px 7px; font-size: 11px; letter-spacing: .2px; }
 /* Labels panel retired from the left slot — text options live in row 2 */
 #sidebar-left, #sl-tab { display: none !important; }
 /* Right column: Map Layers pinned, palettes scroll independently */

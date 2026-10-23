@@ -2757,6 +2757,7 @@ function deselectStamp() {
   updateRow2Controls(null);
   if (typeof renderLineMenu === 'function') renderLineMenu();   // clear Lines trigger highlight
   updateMapNav();   // live mode: no tool in hand = the map takes the mouse
+  if (typeof recentSync === 'function') recentSync();   // clear the Recent clone highlight
   redraw();
 }
 
@@ -2815,6 +2816,7 @@ function selectStamp(type) {
   if ((type === 'fill' || type === 'shade') && baseMode === 'live' && isClsStale()) {
     refreshLiveSnapshot();
   }
+  if (typeof recentSync === 'function') recentSync();   // highlight the Recent clone too
   redraw();
 }
 
@@ -5361,6 +5363,7 @@ canvas.addEventListener('mousedown', e => {
   stamps.push(s);
   geoSyncStamp(s);
   undoLog.push({ kind:'stamp', stamp: s });
+  if (typeof recentNote === 'function') recentNote(activeStamp);   // "Recent" strip (mapforge-recent.js)
     if (typeof refreshOnmapKeyBody === 'function') refreshOnmapKeyBody();
   redoStack.length = 0;
   selectedArrowIdx = null;
@@ -6362,6 +6365,7 @@ function gsBuild() {
   ].forEach(([l,h,r]) => add(l,h,r));
   document.querySelectorAll('#palette-scroll button').forEach(b => {
     if (b.style.display === 'none') return;   // retired stamps (desert) stay out
+    if (b.classList.contains('recent-btn')) return;   // Recent strip clones: already indexed via the palette
     const label = b.textContent.trim();
     if (label) add(label, 'stamp', () => gsReveal(b));
   });
@@ -6830,6 +6834,7 @@ function renderKeyBoxAt(ec, ox, oy, entries, maxRows) {
 <script src="mapforge-library.js"></script>
 <script src="mapforge-persist.js"></script>
 <script src="mapforge-lessons.js"></script>
+<script src="mapforge-recent.js"></script>
 <script>
 // ── Label Panel ─────────────────────────────────────────────────────────────
 

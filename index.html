@@ -4976,11 +4976,82 @@ document.addEventListener('keydown', e => {
     if (copySelectedStamp() && pasteStamp()) e.preventDefault();
     return;
   }
+  // Arrow keys nudge the selection: 1 screen px, Shift = 10 (2026-10-26).
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const step = e.shiftKey ? 10 : 1;
+    const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+    const dy = e.key === 'ArrowUp'   ? -step : e.key === 'ArrowDown'  ? step : 0;
+    if (nudgeSelection(dx, dy)) e.preventDefault();
+    return;
+  }
   // Delete / Backspace: remove the selected label, otherwise the selected stamp.
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (deleteSelectedLabel() || deleteSelectedStamp()) e.preventDefault();
   }
 });
+
+// ── Keyboard nudge ──────────────────────────────────────────────────────────
+// Moves the selected label, else the selected (Select-tool) stamp, by screen
+// pixels. Labels reuse commitTBEdit, which already merges rapid same-property
+// edits into one undo step. Stamps have no such merge, so a run of key
+// presses is held and committed as ONE modify-stamp entry once the keys go
+// quiet for half a second (or when another nudge target takes over).
+let _nudge = null;     // { idx, id, geom, timer } for an in-progress stamp nudge run
+let _nudgeTB = null;   // { tb, before, timer } for an in-progress label nudge run
+function _nudgeFlush() {
+  if (_nudgeTB) {
+    clearTimeout(_nudgeTB.timer);
+    const { tb, before } = _nudgeTB; _nudgeTB = null;
+    if (textBoxes.includes(tb)) commitTBEdit(tb, before);   // one modify-tb for the whole run
+  }
+  if (!_nudge) return;
+  clearTimeout(_nudge.timer);
+  const s = stamps[_nudge.idx];
+  if (s && s.id === _nudge.id) {   // still the same stamp at that index
+    geoSyncStamp(s);
+    const after = stampGeomSnapshot(s);
+    if (!sameGeom(_nudge.geom, after)) {
+      undoLog.push({ kind: 'modify-stamp', id: _nudge.id, idx: _nudge.idx, before: _nudge.geom, after });
+      redoStack.length = 0;
+      scheduleAutosave();
+    }
+  }
+  _nudge = null;
+}
+function nudgeSelection(dx, dy) {
+  if (!dx && !dy) return false;
+  if (selectedTB) {
+    const tb = selectedTB;
+    const r = overlay.getBoundingClientRect();
+    if (!r.width || !r.height) return false;
+    if (_nudge || (_nudgeTB && _nudgeTB.tb !== tb)) _nudgeFlush();
+    if (!_nudgeTB) _nudgeTB = { tb, before: snapshotTB(tb), timer: null };
+    tb.xPct += dx / r.width  * 100;
+    tb.yPct += dy / r.height * 100;
+    geoSyncTextBox(tb);
+    positionTB(tb);
+    clearTimeout(_nudgeTB.timer);
+    _nudgeTB.timer = setTimeout(_nudgeFlush, 500);
+    return true;
+  }
+  if (selectedStampIdx != null && stamps[selectedStampIdx] && isMovableStamp(stamps[selectedStampIdx])) {
+    const idx = selectedStampIdx, s = stamps[idx];
+    if (s.id === undefined) s.id = ++stampIdCounter;   // movable stamps normally have ids already
+    if (_nudgeTB || (_nudge && (_nudge.idx !== idx || _nudge.id !== s.id))) _nudgeFlush();
+    if (!_nudge) _nudge = { idx, id: s.id, geom: stampGeomSnapshot(s), timer: null };
+    const k = canvasScale();           // 1 screen px → backing px
+    const cx = dx * k, cy = dy * k;
+    movePairedLabel(s, cx, cy);        // a city's name travels with its dot
+    s.x += cx; s.y += cy;
+    geoSyncStamp(s);
+    clearTimeout(_nudge.timer);
+    _nudge.timer = setTimeout(_nudgeFlush, 500);
+    redraw();
+    return true;
+  }
+  return false;
+}
 
 document.addEventListener('mousedown', e => {
   if (selectedTB && !e.target.closest('.text-box') && !e.target.closest('#toolbar') && !e.target.closest('#sidebar-left')) deselectTB();

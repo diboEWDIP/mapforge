@@ -5202,7 +5202,7 @@ function hitResizeHandle(s, x, y) {
 
 let stampDragBefore = null;   // { idx, geom, grabDx, grabDy } during a move/resize
 
-function selectToolMouseDown(x, y) {
+function selectToolMouseDown(x, y, alt) {
   // 1. Grab the resize handle of the current selection
   const cur = selectedStampIdx != null ? stamps[selectedStampIdx] : null;
   if (cur && isMovableStamp(cur) && hitResizeHandle(cur, x, y)) {
@@ -5210,13 +5210,26 @@ function selectToolMouseDown(x, y) {
     stampDragBefore = { idx: selectedStampIdx, id: cur.id, geom: stampGeomSnapshot(cur) };
     return;
   }
-  // 2. Click a stamp body → select + start moving
-  const i = stampAt(x, y);
+  // 2. Click a stamp body → select + start moving.
+  //    Alt (Option) held → drag a COPY instead (2026-10-26): the original stays,
+  //    a clone is created under the cursor and the drag moves the clone. The
+  //    whole gesture is one undo step (the clone's placement; the drag is not
+  //    recorded separately — see commitStampDrag's `fresh`).
+  let i = stampAt(x, y);
   if (i != null) {
+    if (alt && isMovableStamp(stamps[i])) {
+      const clone = JSON.parse(JSON.stringify(stamps[i]));
+      clone.id = ++stampIdCounter;
+      delete clone.pair;                 // a copied city dot does not own the original's name label
+      stamps.push(clone);
+      undoLog.push({ kind: 'stamp', stamp: clone });
+      redoStack.length = 0;
+      i = stamps.length - 1;
+    }
     selectedStampIdx = i;
     mode = 'moving-stamp';
     stampDragBefore = { idx: i, id: stamps[i].id, geom: stampGeomSnapshot(stamps[i]),
-                        grabDx: x - stamps[i].x, grabDy: y - stamps[i].y };
+                        grabDx: x - stamps[i].x, grabDy: y - stamps[i].y, fresh: !!alt };
     redraw();
     return;
   }
@@ -5244,7 +5257,9 @@ function commitStampDrag() {
   if (s) {
     geoSyncStamp(s);   // drag moved it in pixel space; geo truth follows
     const after = stampGeomSnapshot(s);
-    if (!sameGeom(stampDragBefore.geom, after)) {
+    if (stampDragBefore.fresh) {
+      scheduleAutosave();                // Alt-drag copy: its 'stamp' action already covers the gesture
+    } else if (!sameGeom(stampDragBefore.geom, after)) {
       undoLog.push({ kind: 'modify-stamp', id: stampDragBefore.id, idx: stampDragBefore.idx, before: stampDragBefore.geom, after });
       redoStack.length = 0;
       scheduleAutosave();
@@ -5352,7 +5367,7 @@ canvas.addEventListener('mousedown', e => {
   }
 
   if (activeStamp === 'select') {
-    selectToolMouseDown(x, y);
+    selectToolMouseDown(x, y, e.altKey);
     return;
   }
 
@@ -5473,7 +5488,7 @@ canvas.addEventListener('mousemove', e => {
   if (activeStamp === 'select' && mode === 'idle') {
     const cur = selectedStampIdx != null ? stamps[selectedStampIdx] : null;
     if (cur && isMovableStamp(cur) && hitResizeHandle(cur, x, y)) canvas.style.cursor = 'nwse-resize';
-    else if (stampAt(x, y) != null)                               canvas.style.cursor = 'move';
+    else if (stampAt(x, y) != null)                               canvas.style.cursor = e.altKey ? 'copy' : 'move';
     else                                                          canvas.style.cursor = 'default';
   }
 

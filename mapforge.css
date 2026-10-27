@@ -213,6 +213,13 @@ top of the viewport. See the tooltip script near the end of <body>. */
 /* ── Canvas area ── */
 /* ── Main area (toolbar below, sidebars + map) ── */
 #main-area { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+/* No page-wide text selection from the workspace (2026-10-26): Safari starts a
+   selection when a drag begins on the canvas (placing a label, dragging a
+   stamp) and paints the whole screen blue (Eric). Text fields and the
+   editable labels opt back in below. */
+#toolbar, #main-area { -webkit-user-select: none; user-select: none; }
+#toolbar input, #toolbar textarea, #main-area input, #main-area textarea,
+#main-area [contenteditable="true"], .tb-content { -webkit-user-select: text; user-select: text; }
 /* ── Left sidebar — Label panel always visible ── */
 #sidebar-left { width: 164px; flex-shrink: 0; background: #f3efe7; overflow-y: auto; overflow-x: hidden; }
 /* ── Right sidebar — Features / Religion / Trade always visible ── */

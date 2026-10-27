@@ -6453,6 +6453,7 @@ function gsBuild() {
    ['Eraser','tool',()=>railPick('eraser')],['Map Key','action',()=>openKeyModal()],
    ['Map Title','action',()=>openTitleModal()],['Export / Print','action',()=>openExportModal()],
    ['Lesson','action',()=>lessonOpen()],
+   ['Keyboard shortcuts','help',()=>showShortcuts()],
    ['Save / Open','action',()=>openSavesModal()],['Page Layout','action',()=>toggleLayoutPopup()],
   ].forEach(([l,h,r]) => add(l,h,r));
   document.querySelectorAll('#palette-scroll button').forEach(b => {
@@ -6927,6 +6928,7 @@ function renderKeyBoxAt(ec, ox, oy, entries, maxRows) {
 <script src="mapforge-persist.js"></script>
 <script src="mapforge-lessons.js"></script>
 <script src="mapforge-recent.js"></script>
+<script src="mapforge-shortcuts.js"></script>
 <script>
 // ── Label Panel ─────────────────────────────────────────────────────────────
 

@@ -4010,6 +4010,8 @@ function dismissStartScreen() {
   const ss = document.getElementById('start-screen');
   ss.style.opacity = '0';
   setTimeout(() => { ss.style.display = 'none'; }, 300);
+  // First visit to the workstation: three pointer cards (mapforge-tips.js).
+  if (typeof firstRunTipsMaybe === 'function') setTimeout(firstRunTipsMaybe, 900);
 }
 
 function resetAnnotations() {
@@ -6454,6 +6456,7 @@ function gsBuild() {
    ['Map Title','action',()=>openTitleModal()],['Export / Print','action',()=>openExportModal()],
    ['Lesson','action',()=>lessonOpen()],
    ['Keyboard shortcuts','help',()=>showShortcuts()],
+   ['Show tips','help',()=>showTips()],
    ['Save / Open','action',()=>openSavesModal()],['Page Layout','action',()=>toggleLayoutPopup()],
   ].forEach(([l,h,r]) => add(l,h,r));
   document.querySelectorAll('#palette-scroll button').forEach(b => {
@@ -6929,6 +6932,7 @@ function renderKeyBoxAt(ec, ox, oy, entries, maxRows) {
 <script src="mapforge-lessons.js"></script>
 <script src="mapforge-recent.js"></script>
 <script src="mapforge-shortcuts.js"></script>
+<script src="mapforge-tips.js"></script>
 <script>
 // ── Label Panel ─────────────────────────────────────────────────────────────
 

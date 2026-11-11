@@ -182,24 +182,32 @@
     "label": "Fertile Crescent - Cities"
   },
   {
+    "file": "neolithic-settlements-fertile-crescent.mapforge",
+    "label": "Neolithic Settlements - Fertile Crescent"
+  },
+  {
     "file": "river-valley-civilizations.mapforge",
     "label": "River Valley Civilizations"
+  },
+  {
+    "file": "mesopotamian-city-states.mapforge",
+    "label": "Mesopotamian City States"
   },
   {
     "file": "akkadian-empire.mapforge",
     "label": "Akkadian Empire"
   },
   {
-    "file": "babylonian-empire.mapforge",
-    "label": "Babylonian Empire"
+    "file": "babylonian-empire-1750-b-c.mapforge",
+    "label": "Babylonian Empire - 1750 B.C."
   },
   {
     "file": "assyrian-empire.mapforge",
     "label": "Assyrian Empire"
   },
   {
-    "file": "assyrian-empire-650-bc.mapforge",
-    "label": "Assyrian Empire - 650 BC"
+    "file": "neo-babylonian-empire.mapforge",
+    "label": "Neo-Babylonian Empire"
   },
   {
     "file": "the-persian-empire.mapforge",

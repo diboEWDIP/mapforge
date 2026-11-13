@@ -1375,7 +1375,11 @@ const MLB = {
       container: containerEl, style: buildStyle(),
       center: [-98.5, 39.8], zoom: 3, minZoom: 2, maxZoom: 6,
       maxPitch: 0, attributionControl: { compact: true },
-      preserveDrawingBuffer: true,   // REQUIRED for snapshot/export readback
+      // REQUIRED for snapshot/export readback. MapLibre v5 reads this ONLY
+      // under canvasContextAttributes — as a top-level option it was silently
+      // ignored, so the classification pass's freeze-frame copied a blank
+      // canvas and the magenta barrier borders flashed on screen (2026-11-12).
+      canvasContextAttributes: { preserveDrawingBuffer: true },
     });
     map.on('webglcontextrestored', () => {
       MLB.applyToggleState(map, state);
